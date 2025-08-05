@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36327.8 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mmlfcp", "mmlfcp.csproj", "{EFCB5765-B837-439F-8779-8864FE74EC7B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EFCB5765-B837-439F-8779-8864FE74EC7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFCB5765-B837-439F-8779-8864FE74EC7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFCB5765-B837-439F-8779-8864FE74EC7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFCB5765-B837-439F-8779-8864FE74EC7B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {78CBD1DC-6223-4FF6-9064-67357C92B9E2}
+	EndGlobalSection
+EndGlobal

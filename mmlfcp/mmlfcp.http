@@ -1,0 +1,7 @@
+@mmlfcp_HostAddress = http://localhost:5153
+
+GET {{mmlfcp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+swagger
+http://localhost:5153/swagger/index.html
