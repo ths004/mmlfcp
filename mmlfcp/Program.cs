@@ -86,9 +86,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// 정적 파일 지원 추가
+app.UseStaticFiles();
+
+// 기본 파일 설정 (index.html을 기본 파일로 설정)
+app.UseDefaultFiles();
+
 app.UseAuthorization();
 
 app.MapControllers();
+
+// 기본 페이지 설정 (루트 경로에서 index.html로 리다이렉트)
+app.MapGet("/", () => Results.Redirect("/index.html"));
 
 app.Run();
 

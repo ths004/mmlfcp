@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+    <!-- 모바일 기기에서 화면 배율 조정 스크립트 -->
+    <meta name="viewport" content="
+        device-width,
+        user-scalable=yes" />
+    <title>한장으로 보는 보험료 비교</title>
+    <link rel="stylesheet" href="./css/common.css?v=1.0">
+
+    <style>
+        /* The Modal (background) */
+        .detailmodal {
+            display: none;
+            position: fixed;
+            z-index: 999999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        /* Modal Content */
+        .detailmodal-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Iframe styling */
+        .detailmodal-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Close button */
+        .detailclose {
+            position: absolute;
+            top: 10px;
+            left: auto;
+            margin-left: 90%;
+            max-width: 1300px;
+            text-align: center;
+            width: 50px;
+            hegith: 50px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            background-color: #2b579a;
+            padding: 10px;
+            border-radius: 50px;
+        }
+
+        .detailclose:hover,
+        .detailclose:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Overlay background */
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Container for the iframe and the close button */
+        #iframeContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Close button */
+        #closeButton {
+            background: #ff4d4d;
+            border: none;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        /* iframe styling to fit horizontally */
+        .niframe {
+            width: 100%;
+            flex: 1;
+            border: none;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- 상세보기 Modal -->
+    <div id="detailmodal" class="detailmodal">
+        <div class="detailmodal-content">
+            <span class="detailclose">&times;</span>
+            <iframe id="detail_modal_iframe"></iframe>
+        </div>
+    </div>
+
+    <!--출력 모달-->
+    <div id="modal-layout" class="modal__layout modal01">
+        <div class="bg"></div>
+        <div class="area">
+            <div class="content">
+
+                <div class="inner">
+                    <div class="modal-title">출력 항목을 선택하세요</div>
+
+                    <form action="">
+                        <ul class="print-table-area">
+
+                            <li id="one-title">
+                                <div class="left">
+                                    <div class="radio-area">
+                                        <input type="radio" id="title01" name="plan_title" value="0">
+                                        <label for="title01">한장 비교 출력</label>
+                                    </div>
+                                </div>
+                                <div class="right">
+                                    <div class="print-info-area">
+                                        <span class="comment">한장 비교 내역은 엑셀로도 다운받으실 수 있습니다.</span>
+                                        <button type="button" id="print-excel" class="btn-modal-download">엑셀로
+                                            다운받기</button>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <li id="plan-title">
+                                <div class="left">
+                                    <div class="radio-area">
+                                        <input type="radio" id="title02" name="plan_title" value="1">
+                                        <label for="title02">플랜별로 비교 출력</label>
+                                    </div>
+                                </div>
+                                <div class="right">
+                                    <div id="planInfo" class="print-info-area">
+                                        <ol>
+                                            <li>
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="plan01" name="planContents" value="0">
+                                                    <label for="plan01">암</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="plan02" name="planContents" value="1">
+                                                    <label for="plan02">뇌질환</label>
+                                                </div>
+                                            </li>
+                                            <li>
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="plan03" name="planContents" value="2">
+                                                    <label for="plan03">심장질환</label>
+                                                </div>
+                                            </li>
+
+                                        </ol>
+                                    </div>
+                                </div>
+                            </li>
+
+
+                            <li id="product-title">
+                                <div class="left">
+                                    <div class="radio-area">
+                                        <input type="radio" id="title03" name="plan_title" value="2">
+                                        <label for="title03">만기 / 연령대별 보험료 비교출력</label>
+                                    </div>
+                                </div>
+                                <div class="right">
+
+                                    <div id="pay_term_info" class="print-info-area">
+                                        <ol>
+                                            <li id="payeterm01">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail01" name="paytermList" value="1">
+                                                    <label for="detail01">20년/80세 만기</label>
+                                                </div>
+                                            </li>
+                                            <li id="payeterm02">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail02" name="paytermList" value="2">
+                                                    <label for="detail02">20년/90세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="payeterm03">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail03" name="paytermList" value="3">
+                                                    <label for="detail03">20년/95세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="payeterm04">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail04" name="paytermList" value="4">
+                                                    <label for="detail04">20년/100세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="payeterm05">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail05" name="paytermList" value="B">
+                                                    <label for="detail05">30년/80세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="payeterm06">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail06" name="paytermList" value="C">
+                                                    <label for="detail06">30년/90세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="payeterm07">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="detail07" name="paytermList" value="E">
+                                                    <label for="detail07">30년/100세 만기</label>
+                                                </div>
+                                            </li>
+                                        </ol>
+                                    </div>
+
+
+                                    <div id="print_companyInfo" class="print-info-area-v2">
+                                        <div class="checkbox-area">
+                                            <input type="checkbox" id="companyAll" name="companyAll">
+                                            <label for="companyAll">보험사 모두 선택</label>
+                                        </div>
+                                        <ol id="selected_company">
+                                        </ol>
+                                    </div>
+
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="button-area">
+                            <button type="button" id="btn_print" class="btn-modal-print">출력하기</button>
+                            <button type="button" class="btn-modal-cancel">취소</button>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!--//출력 모달-->
+
+
+    <!--price 모달-->
+    <div class="modal__layout modal02">
+        <div class="bg"></div>
+        <div class="area">
+            <div class="content_list">
+                <div id="priceList" class="inner_list">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="wrap">
+        <form>
+            <div id="popup" class="popup">
+                <div class="popup-content">
+                    <span class="close" onclick="closePopup()"
+                        style="margin-left: -10px; cursor: pointer; background-color: rgba(0,0,0,0.0); padding: 5px 7px; margin-top: 0px; border-radius: 6px; font-weight: 500;">×</span>
+
+                    <span class="close" onclick="closePopup()"
+                        style="margin-left: 15px; cursor: pointer; padding: 5px 7px; margin-top: 0px; font-weight: 500;">닫기</span>
+
+                    <label class="close"
+                        style="font-weight: 400; cursor: pointer; font-size: 12px; background-color: rgba(0,0,0,0.0); padding: 7px;  margin-top: 2px; color: rgba(255,255,255,0.8);">
+                        하루 동안 열지 않기 ◻︎
+                    </label>
+                    <iframe src="https://www.ohmymanager.com/mmcp_notice.html" width="600px" height="60px"
+                        frameborder="0" scrolling="no"
+                        style="margin-left: 500px; margin-top: -18px; position: absolute;"></iframe>
+
+                    <div class="noticeleft">
+                        <span style="background-color: rgba(50,50,50,0.1); padding: 30px;">
+                            공지사항
+                        </span>
+                        <span style="margin-left: 50px; font-size: 16px; font-weight: 400; cursor: pointer;"><a
+                                href="https://drive.google.com/file/d/1fUxF10UOKH464opRJ4ldIwEHO96PXHZR/preview"
+                                target="_blank">이달의 한장보험료 업데이트 보기<span
+                                    style="margin-left: 15px; cursor: pointer; padding: 5px 10px; margin-top: -5px; border-radius: 6px; font-weight: 500;">></span></a></span>
+                    </div>
+                </div>
+            </div>
+
+            <header class="top-header">
+                <section class="top">
+                    <h1>한장으로 보는 생손보플랜 보험료 비교</h1>
+
+                    <div id="uploadDate" class=""
+                        style="color: #666; margin-left: 270px; font-size: 0.6rem; font-weight: 400; position: absolute;">
+                    </div>
+
+
+                    <span
+                        style="margin-left: -130px; font-size: 0.8rem; font-weight: 600; background-color: #efefef; padding: 5px 25px; border-radius: 100px;">
+                        [조회할때 주의 사항]
+                        <span id="selected_result" style="font-weight: 400; margin-left: 10px;"></span>
+                    </span>
+
+
+
+                </section>
+
+                <section class="bottom">
+                    <ul>
+                        <li>
+                            <span style="font-size: 11px; color: #2f88ff;">이름</span>
+                            <div class="input-area">
+                                <input id="cust_name" type="text" value="홍길동">
+                            </div>
+                        </li>
+                        <li>
+                            <span id="insur_age" style="font-size: 11px; color: #2f88ff;">생년월일 ( 보험나이 : 43세 )</span>
+                            <div class="input-area">
+                                <input type="number" id="birth_date" maxlength="8" value="19800101">
+                            </div>
+                        </li>
+                        <li>
+                            <span style="font-size: 11px; color: #2f88ff;">성별</span>
+                            <select name="gender" id="gender">
+                                <option value="M">남성</option>
+                                <option value="F">여성</option>
+                            </select>
+                        </li>
+                        <li>
+                            <span style="font-size: 11px; color: #2f88ff;">상품 유형</span>
+                            <select name="selProductsGroupCD" id="selProductsGroupCD">
+                            </select>
+                        </li>
+                        <li>
+                            <span style="font-size: 11px; color: #2f88ff;">만기</span>
+                            <select name="selPaymentExpirationCD" id="selPaymentExpirationCD">
+                            </select>
+                        </li>
+
+                    </ul>
+                    <button type="button" id="btn_search" style="width: 310px; font-size: 24px;">
+                        <img src="./images/ico__search.svg" alt="">
+                        <span>조회하기</span>
+                    </button>
+                </section>
+
+            </header>
+
+
+
+
+            <main class="bottom-content">
+
+                <section class="top" style="position:sticky; top: -5px; z-index: 10; height: 40px;">
+                    <div id="product_result" class="result-area" style="margin: 20px 0px 15px 0px;">
+                    </div>
+
+                    <!-- [2025-08-05 수정] 버튼 레이아웃 개선 및 페이지 기능 추가 -->
+                    <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0px 15px 20px;">
+                        <!-- [수정] 버튼 크기 조정: 높이 45px, 제목에 맞는 패딩 적용 -->
+                        <button type="button" id="openDetailModalBtn"
+                            style="height: 45px; padding: 0 10px; background-color: rgb(161, 244, 255); color: #333333; border: none; border-radius: 5px; white-space: nowrap;">상세내용
+                            보기</button>
+
+
+                        <button type="button" id="productList-print"
+                            style="height: 45px; padding: 0 10px; background-color: rgb(161, 244, 255); color: #333333; border: none; border-radius: 5px; white-space: nowrap;">
+                            <img src="./images/ico__print.png" alt=""
+                                style="width: 14px; height: 14px; margin-right: 5px;">
+                            <span>출력하기</span>
+                        </button>
+
+                        <!-- [2025-08-05 추가] 페이지 기능 -->
+                        <div style="display: flex; align-items: center; margin-left: 20px;">
+                            <span style="font-size: 12px; color: white; margin-right: 10px;">조회 결과:</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button type="button" class="page-btn" data-page="1"
+                                    style="height: 30px; width: 30px; background-color: #2b579a; color: white; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">1</button>
+                                <button type="button" class="page-btn" data-page="2"
+                                    style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">2</button>
+                                <button type="button" class="page-btn" data-page="3"
+                                    style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">3</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="product-table-wrap">
+                    <div class="company-area"
+                        style="position:sticky; top:60px; background-color: #ffffff; z-index: 10; padding-left: 20px; box-shadow: 0px 10px 10px rgb(0, 0, 0, 0.2); height: 160px;">
+                        <div id="companyInfo" class="right">
+                        </div>
+                    </div>
+
+                    <div class="table-area">
+                        <!--보장명/가입금액-->
+                        <div class="product-name__list">
+                            <ul id="bojang_lists"></ul>
+                        </div>
+
+                        <!--보험료/상품정보-->
+                        <div class="product-info__list">
+                            <ul id="premium_lists" class="info__price">
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                </section>
+            </main>
+        </form>
+
+
+
+
+        <div class="notice-area">
+            <ul>
+                <li><strong style="color: #ff0000; font-size: 1.1em;">중요 공지: 컨설턴트 교육 자료 활용에 대한 안내</strong><br></li>
+                <li>
+                    <span>
+                        - 본 자료는 컨설턴트 교육용으로 제작되었습니다.<br>
+                        - 본 자료의 내용 일부 또는 전체를 무단으로 전재하거나 복사하는 것을 금합니다.<br>
+                        - 고객에게 판매를 위해 직접 제시하는 용도로 사용할 수 없습니다.<br>
+                        - 본 자료는 담보별 가입 한도와 스코어링이 적용되지 않은 단순 보험료 비교 자료입니다.</span>
+                </li>
+                <li>
+                    <span><strong style="color: #ff0000;">데이터 재활용 및 서비스 제공 관련 법적 고지</strong></span>
+                </li>
+                <li>
+                    <span>
+                        - 본 자료의 데이터를 재활용하여 당사 사이트이외의 곳에서 서비스하는 행위는 불법입니다.<br>
+                        - 관련 법규에 따라 처벌받을 수 있습니다.<br>
+                        - 모든 사용자께서는 이 점을 숙지하시고, 자료 활용에 있어 주의를 기울여 주시기 바랍니다.</span>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+
+    <div class="loader-container">
+        <div class="loader"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <!-- Flatpickr Korean Locale -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+    
+    <!-- ExcelJS-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <script type="module" src="../js/src/main.js?v=25.08.01.1"></script>   
+</body>
+
+</html>

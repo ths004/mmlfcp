@@ -1,0 +1,44 @@
+@import url(//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css);
+
+* { font-family: 'Spoqa Han Sans Neo', 'sans-serif'; }
+
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,fieldset,legend,textarea,p,blockquote,th,td,input,select,textarea,button{margin:0;padding:0}
+button,fieldset,img,input{border:0}
+button{background-color:transparent;cursor: pointer}
+article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}
+audio, canvas, progress, video {display: inline-block}
+dl,ul,ol,menu,li{list-style:none}
+blockquote,q{quotes:none}
+blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}
+table{border-collapse:collapse;border-spacing:0}
+dt{display:block}
+a{cursor:pointer;text-decoration: none;color:#000}
+hr{display:none}
+img{vertical-align: top}
+button::-moz-focus-inner, input::-moz-focus-inner {border: 0;padding: 0}
+input::placeholder {color: #aaa;font-size:10px;vertical-align: middle}
+caption,legend{position: absolute;width: 1px;height: 1px;margin: -1px;padding: 0;overflow: hidden;clip: rect(0,0,0,0);border: 0}
+.blind{overflow: hidden;position: absolute;clip: rect(0 0 0 0);margin: -1px;width: 1px;height: 1px}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+em {
+    font-style: normal;
+}
+i {
+font-style: normal;
+}
+input{
+    -webkit-appearance: none;
+}
+input:focus,
+textarea:focus {
+outline: none;
+}
+input, textarea {
+-moz-user-select: auto;
+-webkit-user-select: auto;
+-ms-user-select: auto;
+user-select: auto;
+}
