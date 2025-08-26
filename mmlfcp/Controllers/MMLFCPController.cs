@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using mmlfcp.Common;
 using mmlfcp.Models;
 using mmlfcp.Repository;
-using mmlfcp.Common;
+using mmlfcp.Services;
 
 namespace mmlfcp.Controllers
 {
@@ -11,11 +12,15 @@ namespace mmlfcp.Controllers
     {
         private readonly IMMLFCPRepository _repository;
         private readonly ILogger<MMLFCPController> _logger;
+        private readonly ReportSevice _reportService; // Inject
 
-        public MMLFCPController(IMMLFCPRepository repository, ILogger<MMLFCPController> logger)
+
+
+        public MMLFCPController(IMMLFCPRepository repository, ReportSevice Ssrvice,ILogger<MMLFCPController> logger)
         {
             _repository = repository;
             _logger = logger;
+            _reportService = Ssrvice;
         }
 
         /// <summary>
@@ -37,7 +42,7 @@ namespace mmlfcp.Controllers
                 }
 
                 var token = authHeader.Substring("Bearer ".Length).Trim();
-                var clientIP = Utility.GetIPAddress(HttpContext);
+                var clientIP = ""; // Utility.GetIPAddress(HttpContext);
                 
                 // Utility 클래스의 JWT 검증 메서드 사용
                 var authResult = Utility.JWTVerifying(token, clientIP);
@@ -240,6 +245,51 @@ namespace mmlfcp.Controllers
                     error_message = "연령별 보험료 조회 중 오류가 발생했습니다."
                 });
             }
+        }
+
+        /// <summary>
+        /// 플랜 기준 상품 보험료 조회
+        /// </summary>
+        /// <param name="request">플랜 ID</param>
+        /// <returns>플랜별 기준보장, 상품별 담보별, 필수보험료 정보</returns>
+        [HttpPost]
+        [Route("api/PrintProducts")]
+        public async Task<ActionResult<PrintProductsResponse>> PrintProducts(
+            [FromBody] PrintProductsRequest request)
+        {
+            PrintProductsResponse response = new PrintProductsResponse();
+            response.is_success = false;
+            // JWT 토큰 검증
+            var authResult = ValidateJwtToken();
+            if (authResult.ErrorCode != 0)
+            {
+                response.error_message = authResult.ErrorMessage;
+
+                return Ok(response);
+            }
+
+            _logger.LogInformation("출력 - PlanId: {PlanId}, Age: {Age}, Gender: {Gender}",
+                request.plan_id, request.age, request.gender);
+
+            // 입력값 검증
+            if (string.IsNullOrEmpty(request.plan_id) ||
+                string.IsNullOrEmpty(request.gender) ||
+                string.IsNullOrEmpty(request.is_required_coverage) ||
+                request.company_codes?.Count <= 0 ||
+                request.coverages?.Count <= 0)
+            {
+                response.error_message = "필수 파라미터가 누락되었습니다.";
+
+                return Ok(response);
+
+            }
+            List<PrintProductCoverage> coverage_list = await _repository.GetPrintProductCoveragePremiumsAsync(request);
+
+
+            response.pdf_uri = _reportService.MakePDFReport(authResult.AgencyCompanyCD, authResult.ConsultantID, request, coverage_list);
+
+            response.is_success = true;
+            return Ok(response);
         }
     }
 }

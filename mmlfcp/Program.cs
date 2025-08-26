@@ -1,5 +1,6 @@
 using mmlfcp.Middleware;
 using mmlfcp.Repository;
+using mmlfcp.Services;
 using Serilog;
 
 
@@ -68,8 +69,12 @@ builder.Services.AddSwaggerGen(c =>
 //Dapper 
 builder.Services.AddSingleton<DapperContext>();
 
+builder.Services.AddSingleton<ReportContext>();
+
 
 builder.Services.AddScoped<IMMLFCPRepository, MMLFCPRepository>();
+
+builder.Services.AddScoped<ReportSevice>();
 
 
 var app = builder.Build();
