@@ -27,11 +27,13 @@ namespace mmlfcp.Repository
         //필수 보험료 조회
         public Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsAsync(
                        string planId, string gender, int age);
+
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
+               PrintProductsRequest request);                       
     }
 
     public class MMLFCPRepository : IMMLFCPRepository
     {
-        private IConfiguration _config;
         private readonly DapperContext _context;
         private readonly ILogger<MMLFCPRepository> _logger;
 
@@ -302,6 +304,59 @@ namespace mmlfcp.Repository
                 return premiums;
             }
         }
+
+        public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
+               PrintProductsRequest request)
+        {
+            // DataTable 생성
+            var coverageDataTable = request.CoverageToDataTable();
+            var companyDataTable = request.CompanyToDataTable();
+        
+            using (var connection = _context.CreateConnection())
+            {
+                var rawResults = await connection.QueryAsync<PrintRawCoverageData>(
+                    "mmlfcp_get_printdata",
+                    new
+                    {
+                        plan_id = request.plan_id,
+                        gender = request.gender,
+                        age = request.age,
+                        is_required_coverage = request.is_required_coverage,
+                        required_coverage_cd = "aa00",
+                        required_coverage_name = "필수담보",
+                        coverage_table = coverageDataTable,
+                        company_table = companyDataTable
+                    }
+                );
+
+                var groupedResults = rawResults
+                        .GroupBy(r => new { r.company_code, r.company_name, r.product_code, r.product_name })
+                        .Select(g => new PrintProductCoverage
+                        {
+                            company_code = g.Key.company_code,
+                            company_name = g.Key.company_name,
+                            product_code = g.Key.product_code,
+                            product_name = g.Key.product_name,
+                            Coverages = g.ToDictionary(
+                                item => item.coverage_cd,
+                                item => new PrintCoveragePremium
+                                {
+                                    coverage_cd = item.coverage_cd,
+                                    coverage_name = item.coverage_name,
+                                    coverage_seq = int.TryParse(item.coverage_seq, out int seq) ? seq : 0,
+                                    plan_coverage_amount = item.plan_coverage_amount,
+                                    plan_coverage_premium = (float)item.plan_coverage_premium,
+                                    coverage_amount = item.coverage_amount,
+                                    premium = (float)item.premium
+                                }
+                            )
+                        })
+                        .ToList();
+
+                return groupedResults;
+            }
+        }
+
     }
 
 }

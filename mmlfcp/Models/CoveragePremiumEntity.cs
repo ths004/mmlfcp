@@ -5,7 +5,7 @@
         public string company_code { get; set; }
         public string company_name { get; set; } // e.CD_NM
         public string product_code { get; set; }
-        public string product_name { get; set; } 
+        public string product_name { get; set; }
         public string product_detail_name { get; set; } // d.attr1
         public string product_conditions { get; set; } // d.mb_conditions
         public string coverage_cd { get; set; }
@@ -14,10 +14,84 @@
         public int coverage_seq { get; set; } // c.coverage_seq
         public string gender { get; set; }
         public int age { get; set; }
-        public float guide_coverage_amount { get; set; } 
-        public float guide_coverage_premium { get; set; } 
+        public float guide_coverage_amount { get; set; }
+        public float guide_coverage_premium { get; set; }
         public float coverage_amount { get; set; } // a.coverage_amount
         public float premium { get; set; } // a.premium
         public float coverage_amount_ratio { get; set; }
     }
+
+    public class ProductCoverage
+    {
+        public string company_code { get; set; }
+        public string company_name { get; set; } // e.CD_NM
+        public string product_code { get; set; }
+        public string product_name { get; set; }
+
+        public List<CoveragePremium> Coverages { get; set; }
+    }
+
+    public class CoveragePremium
+    {
+        public string coverage_cd { get; set; }
+
+        public string is_required_coverage { get; set; }    //필수담보여부 Y,N
+
+        public float guide_coverage_amount { get; set; }
+        public float guide_coverage_premium { get; set; }
+        public float coverage_amount { get; set; } // a.coverage_amount
+        public float premium { get; set; } // a.premium
+    }
+
+
+    public class PrintProductCoverage
+    {
+        public string company_code { get; set; }
+        public string company_name { get; set; } // e.CD_NM
+        public string product_code { get; set; }
+        public string product_name { get; set; }
+
+        public float total_pemium { get; set; } = 0;// 합계보험료
+
+        public Dictionary<string,PrintCoveragePremium>? Coverages  { get; set; }  //key coverage_cd
+
+        public void calculateTotalPremium()
+        {
+            this.total_pemium = 0;
+            if (Coverages != null)
+            {
+                foreach (var coverage in Coverages.Values)
+                {
+                    total_pemium += coverage.plan_coverage_premium;
+                }
+            }
+        }
+    }
+
+    public class PrintCoveragePremium
+    {
+        public string coverage_cd { get; set; }
+        public string coverage_name { get; set; }
+        public int coverage_seq { get; set; }
+ 
+        public float plan_coverage_amount { get; set; }
+        public float plan_coverage_premium { get; set; }
+        public float coverage_amount { get; set; } // a.coverage_amount
+        public float premium { get; set; } // a.premium
+    }
+    public class PrintRawCoverageData
+    {
+        public string company_code { get; set; }
+        public string company_name { get; set; }
+        public string product_code { get; set; }
+        public string product_name { get; set; }
+        public string coverage_cd { get; set; }
+        public string coverage_name { get; set; }
+        public string coverage_seq { get; set; }
+        public float plan_coverage_amount { get; set; }
+        public float plan_coverage_premium { get; set; }
+        public float coverage_amount { get; set; }
+        public float premium { get; set; }
+    }
+
 }
