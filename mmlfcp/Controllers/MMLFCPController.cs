@@ -157,15 +157,17 @@ namespace mmlfcp.Controllers
                 }
 
                 // 데이터 조회
-                var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);
-                var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age);
-                var requiredPremiums = await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age);
+                var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);  //플랜별기준보장 데이터 - 화면 왼쪽
+                var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜  상품별 / 보장별 보험료
+                var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜 상품별/ 담보별 보험료
+                var requiredPremiums = await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age);//필수 보험료 조회
 
                 return Ok(new ProductPremiumsResponse
                 {
                     is_success = true,
                     error_message = "",
                     plan_coverages = guideCoverages.ToList(),
+                    coverage_premiums = coveragePremiums.ToList(),
                     product_insur_premiums = insurCDPremiums.ToList(),
                     required_premiums = requiredPremiums.ToList()
                 });

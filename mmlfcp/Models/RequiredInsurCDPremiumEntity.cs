@@ -3,6 +3,8 @@
     public class RequiredInsurCDPremiumEntity
     {
         public string company_code { get; set; } // a.compy_cd
+
+        public string company_name { get; set; } // f.company_name
         public string product_code { get; set; } // a.prdt_cd
         public string product_name { get; set; } // c.prdt_name
         public string product_detail_name { get; set; } // c.attr1

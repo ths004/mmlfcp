@@ -51,7 +51,7 @@
             max-width: 1300px;
             text-align: center;
             width: 50px;
-            hegith: 50px;
+            height: 50px;
             color: #fff;
             font-size: 40px;
             font-weight: bold;
@@ -348,7 +348,7 @@
                             </div>
                         </li>
                         <li>
-                            <span id="insur_age" style="font-size: 11px; color: #2f88ff;">생년월일 ( 보험나이 : 43세 )</span>
+                            <span id="insur_age" style="font-size: 11px; color: #2f88ff;">생년월일 ( 보험나이 : 46세 )</span>
                             <div class="input-area">
                                 <input type="number" id="birth_date" maxlength="8" value="19800101">
                             </div>
@@ -407,13 +407,13 @@
                         <!-- [2025-08-05 추가] 페이지 기능 -->
                         <div style="display: flex; align-items: center; margin-left: 20px;">
                             <span style="font-size: 12px; color: white; margin-right: 10px;">조회 결과:</span>
-                            <div style="display: flex; gap: 5px;">
-                                <button type="button" class="page-btn" data-page="1"
+                            <div id="div-page-btn" style="display: flex; gap: 5px;">
+                                <!-- <button type="button" class="page-btn" data-page="1"
                                     style="height: 30px; width: 30px; background-color: #2b579a; color: white; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">1</button>
                                 <button type="button" class="page-btn" data-page="2"
                                     style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">2</button>
                                 <button type="button" class="page-btn" data-page="3"
-                                    style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">3</button>
+                                    style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">3</button> -->
                             </div>
                         </div>
                     </div>
@@ -422,9 +422,50 @@
                 <section class="product-table-wrap">
                     <div class="company-area"
                         style="position:sticky; top:60px; background-color: #ffffff; z-index: 10; padding-left: 20px; box-shadow: 0px 10px 10px rgb(0, 0, 0, 0.2); height: 160px;">
+                        <div class="left">
+
+                            <button type="button" id="sort_total_premium" style="margin-top: 15px;">보험료 합계 정렬
+                                <img src="images/ico_sort.png" style="width: 13px; margin: 2px;" />
+                            </button>
+
+
+                            <div id="coverageFilters" class="checkbox-area"
+                                style="margin-bottom: 5px; margin-top: 15px;">
+
+                                <input type="checkbox" id="all" name="checked_list" checked>
+                                <label for="all" style="padding-left: 20px;">
+                                    <strong>모두보기</strong>
+                                </label>
+
+
+                                <input type="checkbox" id="assign" name="checked_list">
+                                <label for="assign" style="padding-left: 20px;">
+                                    <strong>가입</strong>
+                                </label>
+
+                                <input type="checkbox" id="not-assign" name="checked_list">
+                                <label for="not-assign" style="padding-left: 20px;">
+                                    <strong>미가입</strong>
+                                </label>
+                            </div>
+
+                            <div>
+                                <div class="product-name">
+                                    <div class="checkbox-area">
+                                        <input type="checkbox" id="all_checked" class="all">
+                                        <label for="all_checked"
+                                            style="padding-left: 29px;"><strong>전체선택</strong></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
                         <div id="companyInfo" class="right">
                         </div>
                     </div>
+                    <!--end company-area-->
+
 
                     <div class="table-area">
                         <!--보장명/가입금액-->
@@ -438,6 +479,7 @@
                             </ul>
                         </div>
                     </div>
+                    <!--end table-area-->
                 </section>
                 </section>
             </main>
@@ -477,12 +519,81 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <!-- Flatpickr Korean Locale -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
-    
+
     <!-- ExcelJS-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
-    <script type="module" src="../js/src/main.js?v=25.08.01.1"></script>   
+
+    <script type="module" src="./js/src/main.js?v=25.08.06.1"></script>
+
+    <script>
+        var detailModal = document.getElementById("detailmodal");
+        var span = detailModal.getElementsByClassName("detailclose")[0];
+        var detail_modal_iframe = document.getElementById("detail_modal_iframe");
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function () {
+            detailModal.style.display = "none";
+            detail_modal_iframe.removeAttribute("src");
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == detailModal) {
+                detailModal.style.display = "none";
+                detail_modal_iframe.removeAttribute("src");
+            }
+        }
+
+        // // [2025-08-11 추가] 페이지 기능 JavaScript
+        // document.addEventListener('DOMContentLoaded', function () {
+        //     const pageButtons = document.querySelectorAll('.page-btn');
+        //     let currentPage = 1;
+
+        //     // [추가] 페이지 버튼 클릭 이벤트
+        //     pageButtons.forEach(button => {
+        //         button.addEventListener('click', function () {
+        //             const pageNum = parseInt(this.getAttribute('data-page'));
+        //             changePage(pageNum);
+        //         });
+        //     });
+
+        //     // [추가] 페이지 변경 함수
+        //     function changePage(pageNum) {
+        //         // 모든 페이지 버튼 스타일 초기화
+        //         pageButtons.forEach(btn => {
+        //             btn.style.backgroundColor = '#f0f0f0';
+        //             btn.style.color = '#333';
+        //         });
+
+        //         // 선택된 페이지 버튼 스타일 변경
+        //         const selectedButton = document.querySelector(`[data-page="${pageNum}"]`);
+        //         if (selectedButton) {
+        //             selectedButton.style.backgroundColor = '#2b579a';
+        //             selectedButton.style.color = 'white';
+        //         }
+
+        //         currentPage = pageNum;
+
+        //         // 여기에 페이지별 데이터 로딩 로직을 추가할 수 있습니다
+        //         console.log(`페이지 ${pageNum}로 이동`);
+
+        //         // 예시: 페이지별 다른 내용 표시
+        //         // loadPageContent(pageNum);
+        //     }
+
+        //     // [추가] 페이지별 내용 로딩 함수 (필요시 구현)
+        //     function loadPageContent(pageNum) {
+        //         // 페이지별 데이터를 로드하는 로직
+        //         // 예: API 호출, 데이터 필터링 등
+        //         console.log(`페이지 ${pageNum}의 내용을 로드합니다.`);
+        //     }
+        // });
+    </script>
+
+
+
+
 </body>
 
 </html>

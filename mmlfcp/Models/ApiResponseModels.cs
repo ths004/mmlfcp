@@ -22,6 +22,9 @@ namespace mmlfcp.Models
         public bool is_success { get; set; }
         public string error_message { get; set; } = string.Empty;
         public List<PlanCoverageEntity> plan_coverages { get; set; } = new List<PlanCoverageEntity>();
+
+        public List<CoveragePremiumEntity> coverage_premiums { get; set; } = new List<CoveragePremiumEntity>();
+
         public List<InsurCDPremiumEntity> product_insur_premiums { get; set; } = new List<InsurCDPremiumEntity>();
         public List<RequiredInsurCDPremiumEntity> required_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
     }

@@ -73,7 +73,8 @@ namespace mmlfcp.Repository
                 on a.coverage_cd = b.coverage_cd
             where 
                 a.plan_id = @plan_id
-            order by a.coverage_seq";
+                and a.use_yn='Y'
+            order by  a.coverage_seq";
 
             using (var connection = _context.CreateConnection())
             {
@@ -120,7 +121,7 @@ namespace mmlfcp.Repository
             where 
 	            a.gender = @gender
 	            and a.age = @age
-            order by e.attr01 desc,a.company_code,c.coverage_seq";
+            order by a.company_code,c.coverage_seq ";
 
             using (var connection = _context.CreateConnection())
             {
@@ -250,7 +251,12 @@ namespace mmlfcp.Repository
             // SQL query as provided
             string sql = @"
             select a.compy_cd as company_code,
-                   a.prdt_cd as product_code,c.prdt_name as product_name,c.attr1 as product_detail_name,c.mb_conditions as product_conditions,c.pay_term,
+                   f.CD_NM as company_name,
+                   a.prdt_cd as product_code,
+                   c.prdt_name as product_name,
+                   c.attr1 as product_detail_name,
+                   c.mb_conditions as product_conditions,
+                   c.pay_term,
                    a.sex as gender,a.age,
                    a.insur_cd,d.insur_nm,d.insur_bojang,
                    e.min_insur_amount,
@@ -276,9 +282,14 @@ namespace mmlfcp.Repository
                     on a.compy_cd = e.company_code
                     and a.prdt_cd = e.product_code
                     and a.insur_cd = e.insur_cd
-            where 
+                join TB_COMM_CD f
+                on a.compy_cd = f.CD_ID
+                and f.UPP_CD_ID = 'COMPY'
+            
+                where 
                 a.sex = @gender
                 and a.age = @age
+                and a.use_yn='Y'
             order by a.compy_cd,a.prdt_cd,a.insur_cd";
 
             using (var connection = _context.CreateConnection())
