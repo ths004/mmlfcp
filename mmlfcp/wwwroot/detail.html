@@ -1,0 +1,168 @@
+<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01//ko' 'http://www.w3.org/TR/html4/strict.dtdViewer'>
+<html lang='ko'>
+
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>한장으로 보는 생손보플랜 보험료 비교</title>
+    <link rel="stylesheet" href="./css/common.css?v=25.08.28.1">
+    <link rel='stylesheet' href='./css/detail.css?v=25.08.28.1'>
+</head>
+
+<body>
+
+    <!--price 모달-->
+    <div class=" modal__layout modal02">
+        <div class="bg"></div>
+        <div class="area">
+            <div class="content_list">
+                <div id="priceList" class="inner_list">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--//end price 모달-->
+
+    <div class='insurance-wrap'>
+        <header class='tab-header'>
+            <!--탭-->
+            <ul class='tab-list'>
+                <li id="premium" class='active'>보험료 최저vs최대</li>
+                <!-- <li id="diease">3대질병 보험료 비교</li>
+                <li id="payment">만기 보험료 비교</li>
+                <li id="aging">연령대별 보험료 비교</li> -->
+            </ul>
+            <!--닫기-->
+            <!-- <div id="insurance_close" class='tab-close'>
+                <img src='./images/_close.svg' alt='닫기'>
+            </div> -->
+        </header>
+
+        <main>
+            <!--보험료 비교 화면 - 전체 보험료 최저최대-->
+            <section class='tab-content content01 show'>
+                <div id='min_max_product_info' class='tc-top'>
+                </div>
+
+                <div class='tc-middle'>
+                    <section>
+                        <table id='min_max_premium_info'>
+                        </table>
+                    </section>
+
+                    <!--최저/최대 보장 상세-->
+                    <section>
+                        <div class='title-header'>
+                            <strong>최저/최대 보장 상세</strong>
+                            <span>( 가입금액 : 만원 / 보험료 : 원 )</span>
+                        </div>
+
+                        <table id='min_max_bojang_info'>
+                        </table>
+                    </section>
+
+                    <div class='tc-bottom'>
+                        <strong>설계사 교육용 자료입니다!</strong>
+                        <ul>
+                            <li>
+                                <img src='./images/_list-ico.svg' alt=''>
+                                <span>
+                                    본자료는 판매자 교육용 자료의 일부로 내용의 일부 또는 전체의 무단전제 및 복사를 금하며
+                                    고객에게 판매를 위해 직접 제시하는 용도로는 사용할 수 없습니다.
+                                    또한 담보별 가입 한도와 스코어링이 적용되지 않은 단순 보험료 비교입니다.
+                                </span>
+
+                            </li>
+                            <li>
+                                <img src='./images/_list-ico.svg' alt=''>
+                                <span>
+                                    기본계약은 실제 가입설계시 달라질 수 있습니다.
+                                    상품설계를 위한 참고자료로 활용하세요.
+                                </span>
+
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </section>
+            <!--보험료 비교 화면 - 전체 보험료 최저최대 끝-->
+
+
+            <!--보험료 비교 화면 - 연령대별 보험료 비교-->
+            <section class='tab-content content04'>
+                <!-- <div id="aging_info" class='tc-top'>
+                    <ul>
+                        <li>
+                            <strong>홍길동</strong>
+                            <span>(43세, 남성, 상령일 : 1980.01.01),</span>
+                        </li>
+                        <li>
+                            <strong>20년/100세,</strong>
+                        </li>
+                        <li>
+                            <strong>종합(무해지형)</strong>
+                        </li>
+                    </ul>
+
+                    <form action=''>
+                        <select name=''>
+                            <option value='0'>
+                                DB손해보험 &nbsp;&nbsp; 무)참좋은훼밀리더블플러스종합보험2301
+                            </option>
+                            <option value='1'>
+                                DB손해보험 &nbsp;&nbsp; 무)참좋은훼밀리더블플러스종합보험2301
+                            </option>
+                        </select>
+                    </form>
+                </div> -->
+
+                <!-- <div class='tc-middle'>
+
+                    <section>
+                        <table id="aging_premium_info">
+                        </table>
+                    </section> -->
+
+                <!--연령별 보장 상세-->
+                <!-- <section>
+                        <div class='title-header'>
+                            <strong>연령별 보장 상세</strong>
+                            <span>( 가입금액 : 만원 / 보험료 : 원 )</span>
+                        </div>
+
+                        <table id="aging_bojang_info">
+                        </table>
+                    </section> -->
+
+                <!--설계자 교육용 자료-->
+                <div class='tc-bottom'>
+                    <strong>설계사 교육용 자료입니다!</strong>
+                    <ul>
+                        <li>
+                            <img src='./images/_list-ico.svg' alt=''>
+                            <span>
+                                본자료는 판매자 교육용 자료의 일부로 내용의 일부 또는 전체의 무단전제 및 복사를 금하며
+                                고객에게 판매를 위해 직접 제시하는 용도로는 사용할 수 없습니다.
+                                또한 담보별 가입 한도와 스코어링이 적용되지 않은 단순 보험료 비교입니다.
+                            </span>
+
+                        </li>
+                        <li>
+                            <img src='./images/_list-ico.svg' alt=''>
+                            <span>
+                                기본계약은 실제 가입설계시 달라질 수 있습니다.
+                                상품설계를 위한 참고자료로 활용하세요.
+                            </span>
+
+                        </li>
+                    </ul>
+                </div>
+
+    </div>
+    </section>
+    </main>
+    </div>
+    <script type="module" src="./js/src/detail_main.js?v=25.08.28.1"></script>
+</body>

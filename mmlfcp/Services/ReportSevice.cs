@@ -128,7 +128,7 @@ namespace mmlfcp.Services
             string virtualPath = _env.WebRootPath;
             if (virtualPath == "/") virtualPath = "";
 
-            return $"{virtualPath}/reportfiles/{fileName}";
+            return $"/reportfiles/{fileName}";
         }
 
         public Page MakePage1(int start_row_pos,int start_colum_pos, string title,string min_company_cd, string max_company_cd, List<string> company_codes, List<PrintCoverage> coverages, List<PrintProductCoverage> coverage_list)
@@ -173,7 +173,7 @@ namespace mmlfcp.Services
                 else { rgbColor = RgbColor.Black; }
 
                 x = 200; y = 539;
-                page.Elements.Add(new Label(product.total_pemium.ToString("#,###"), x + (cur_company_cnt * step_x), y, 56, 14, boldFont, 9, TextAlign.Right, rgbColor));
+                page.Elements.Add(new Label(product.total_premium.ToString("#,###"), x + (cur_company_cnt * step_x), y, 56, 14, boldFont, 9, TextAlign.Right, rgbColor));
 
                 cur_company_cnt += 1;
                 if (cur_company_cnt >= 11) { break; }
@@ -258,9 +258,9 @@ namespace mmlfcp.Services
 
             //최저 , 최대 월보험료
             x = 110;
-            y = 278; page.Elements.Add(new Label(minProduct.total_pemium.ToString("#,###") + " 원", x, y, 128, 12, regularFont, 16, TextAlign.Right));
-            y += 42; page.Elements.Add(new Label(maxProduct.total_pemium.ToString("#,###") + " 원", x, y, 128, 12, regularFont, 16, TextAlign.Right));
-            tmpPremium = maxProduct.total_pemium - minProduct.total_pemium;
+            y = 278; page.Elements.Add(new Label(minProduct.total_premium.ToString("#,###") + " 원", x, y, 128, 12, regularFont, 16, TextAlign.Right));
+            y += 42; page.Elements.Add(new Label(maxProduct.total_premium.ToString("#,###") + " 원", x, y, 128, 12, regularFont, 16, TextAlign.Right));
+            tmpPremium = maxProduct.total_premium - minProduct.total_premium;
             y += 42; page.Elements.Add(new Label(tmpPremium.ToString("#,###") + " 원", x, y - 5, 128, 20, regularFont, 20, TextAlign.Right, RgbColor.DeepPink));
             //합계 보험료 최저 , 최대 월보험료
             Regex rg = new Regex(@"\d+년");
@@ -277,9 +277,9 @@ namespace mmlfcp.Services
             //sTmp = String.Format("최저,최대 {0}년납 보험료비교", PaymentPriod);
             //x = 40; y = 403; page.Elements.Add(new Label(sTmp, x , y, 130, 14, regularFont, 12, TextAlign.Left,RgbColor.White));
             x = 110;
-            y = 440; page.Elements.Add(new Label((minProduct.total_pemium * PaymentPriod * 12).ToString("#,###") + " 원", x, y, 128, 14, regularFont, 16, TextAlign.Right));
-            y += 42; page.Elements.Add(new Label((maxProduct.total_pemium * PaymentPriod * 12).ToString("#,###") + " 원", x, y, 128, 14, regularFont, 16, TextAlign.Right));
-            tmpPremium = (maxProduct.total_pemium - minProduct.total_pemium) * PaymentPriod * 12;
+            y = 440; page.Elements.Add(new Label((minProduct.total_premium * PaymentPriod * 12).ToString("#,###") + " 원", x, y, 128, 14, regularFont, 16, TextAlign.Right));
+            y += 42; page.Elements.Add(new Label((maxProduct.total_premium * PaymentPriod * 12).ToString("#,###") + " 원", x, y, 128, 14, regularFont, 16, TextAlign.Right));
+            tmpPremium = (maxProduct.total_premium - minProduct.total_premium) * PaymentPriod * 12;
             y += 42; page.Elements.Add(new Label(tmpPremium.ToString("#,###") + " 원", x, y - 5, 128, 20, regularFont, 20, TextAlign.Right, RgbColor.DeepPink));
 
             //회사 / 상품명 / 합계보험료
@@ -293,7 +293,7 @@ namespace mmlfcp.Services
             tempTA.Y = (tempTA.HasOverflowText()) ? tempTA.Y - 5F : tempTA.Y;
             tempTA.FontSize = (tempTA.HasOverflowText()) ? tempTA.FontSize - 2F : tempTA.FontSize;
             page.Elements.Add(tempTA);
-            y = 117; page.Elements.Add(new Label(minProduct.total_pemium.ToString("#,###"), x , y, 155, 14, regularFont, 9, TextAlign.Center));
+            y = 117; page.Elements.Add(new Label(minProduct.total_premium.ToString("#,###"), x , y, 155, 14, regularFont, 9, TextAlign.Center));
 
             //최대 보험료 상품
             x = x + step_x;
@@ -303,7 +303,7 @@ namespace mmlfcp.Services
             tempTA.Y = (tempTA.HasOverflowText()) ? tempTA.Y - 5F : tempTA.Y;
             tempTA.FontSize = (tempTA.HasOverflowText()) ? tempTA.FontSize - 2F : tempTA.FontSize;
             page.Elements.Add(tempTA);
-            y = 117; page.Elements.Add(new Label(maxProduct.total_pemium.ToString("#,###"), x, y, 155, 14, regularFont, 9, TextAlign.Center));
+            y = 117; page.Elements.Add(new Label(maxProduct.total_premium.ToString("#,###"), x, y, 155, 14, regularFont, 9, TextAlign.Center));
 
 
             //대표담보
@@ -407,24 +407,24 @@ namespace mmlfcp.Services
             }
 
             var first = coverage_list[0];
-            float minPremium = first.total_pemium;
-            float maxPremium = first.total_pemium;
+            float minPremium = first.total_premium;
+            float maxPremium = first.total_premium;
             string minCompanyCode = first.company_code;
             string maxCompanyCode = first.company_code;
 
             for (int i = 1; i < coverage_list.Count; i++)
             {
                 var current = coverage_list[i];
-                if (current.total_pemium > 0)
+                if (current.total_premium > 0)
                 {
-                    if (current.total_pemium < minPremium)
+                    if (current.total_premium < minPremium)
                     {
-                        minPremium = current.total_pemium;
+                        minPremium = current.total_premium;
                         minCompanyCode = current.company_code;
                     }
-                    if (current.total_pemium > maxPremium)
+                    if (current.total_premium > maxPremium)
                     {
-                        maxPremium = current.total_pemium;
+                        maxPremium = current.total_premium;
                         maxCompanyCode = current.company_code;
                     }
                 }

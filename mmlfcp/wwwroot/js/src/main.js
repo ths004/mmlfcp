@@ -1,7 +1,7 @@
 import { app } from './utils/app.js';
 import { appConstants } from './constants/constants.js'
 import { apiService } from './services/apiService.js';
-import { mmlfcp_state } from './core/state.js';
+import { mmlfcp_state, _state } from './core/state.js';
 import { Controller } from './components/controller.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`인증 실패: ${authResult.error_message}`);
             return;
         }
-        // console.log('[Auth 성공] plans:', authResult.plans);
+
 
         // ✅ 4. plans를 상태에 저장
         mmlfcp_state.set('mmlfcp_plans', authResult.plans);

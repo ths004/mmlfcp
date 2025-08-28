@@ -51,18 +51,18 @@
         public string product_code { get; set; }
         public string product_name { get; set; }
 
-        public float total_pemium { get; set; } = 0;// 합계보험료
+        public float total_premium { get; set; } = 0;// 합계보험료
 
         public Dictionary<string,PrintCoveragePremium>? Coverages  { get; set; }  //key coverage_cd
 
         public void calculateTotalPremium()
         {
-            this.total_pemium = 0;
+            this.total_premium = 0;
             if (Coverages != null)
             {
                 foreach (var coverage in Coverages.Values)
                 {
-                    total_pemium += coverage.plan_coverage_premium;
+                    total_premium +=(float)Math.Floor(coverage.plan_coverage_premium);
                 }
             }
         }

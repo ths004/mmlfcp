@@ -1,9 +1,11 @@
 export const _state =
 {
+    cust_name: '홍길동',
     plan_id: '921081111041',
     gender: 'M',
     age: 46,
     birth_date: '19800101',
+    jwt: '',
 
     // ✅ 페이지 상태 추가
     current_page: 1,
@@ -12,12 +14,19 @@ export const _state =
 
 export const mmlfcp_state = {
     /**
-     * 상태 저장
-     * @param {string} key - 저장할 키 이름
-     * @param {*} value - 저장할 값
-     */
+    * 상태 저장
+    * @param {string} key - 저장할 키 이름
+    * @param {*} value - 저장할 값
+    */
     set(key, value) {
         _state[key] = value;
+
+        // ✅ localStorage에 자동 저장
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.warn("[mmlfcp_state] localStorage 저장 실패:", key, e);
+        }
     },
 
     /**
@@ -38,11 +47,15 @@ export const mmlfcp_state = {
     },
 
     /**
-     * 전체 상태 초기화
-     */
+    * 전체 상태 초기화
+    */
     clear() {
-        Object.keys(_state).forEach(key => delete _state[key]);
+        Object.keys(_state).forEach(key => {
+            delete _state[key];
+            localStorage.removeItem(key); // ✅ localStorage도 같이 초기화
+        });
     },
+
 
     /**
      * 현재 상태 콘솔 출력 (디버깅용)

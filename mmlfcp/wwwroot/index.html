@@ -8,8 +8,8 @@
     <meta name="viewport" content="
         device-width,
         user-scalable=yes" />
-    <title>한장으로 보는 보험료 비교</title>
-    <link rel="stylesheet" href="./css/common.css?v=1.0">
+    <title>한장으로 보는 생손보플랜 보험료 비교</title>
+    <link rel="stylesheet" href="./css/common.css?v=25.08.28.1">
 
     <style>
         /* The Modal (background) */
@@ -81,38 +81,7 @@
             justify-content: center;
             align-items: center;
         }
-
-        /* Container for the iframe and the close button */
-        #iframeContainer {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Close button */
-        #closeButton {
-            background: #ff4d4d;
-            border: none;
-            color: white;
-            padding: 10px;
-            cursor: pointer;
-            text-align: center;
-            font-size: 16px;
-        }
-
-        /* iframe styling to fit horizontally */
-        .niframe {
-            width: 100%;
-            flex: 1;
-            border: none;
-        }
     </style>
-
 </head>
 
 <body>
@@ -146,14 +115,15 @@
                                 </div>
                                 <div class="right">
                                     <div class="print-info-area">
-                                        <span class="comment">한장 비교 내역은 엑셀로도 다운받으실 수 있습니다.</span>
-                                        <button type="button" id="print-excel" class="btn-modal-download">엑셀로
-                                            다운받기</button>
+                                        <span class="comment">한장 비교 내역을 출력하실수 있습니다.</span>
+                                        <!-- <span class="comment">한장 비교 내역은 엑셀로도 다운받으실 수 있습니다.</span> -->
+                                        <!-- <button type="button" id="print-excel" class="btn-modal-download">엑셀로
+                                            다운받기</button> -->
                                     </div>
                                 </div>
                             </li>
 
-                            <li id="plan-title">
+                            <!-- <li id="plan-title">
                                 <div class="left">
                                     <div class="radio-area">
                                         <input type="radio" id="title02" name="plan_title" value="1">
@@ -260,12 +230,12 @@
                                     </div>
 
                                 </div>
-                            </li>
+                            </li> -->
                         </ul>
 
                         <div class="button-area">
                             <button type="button" id="btn_print" class="btn-modal-print">출력하기</button>
-                            <button type="button" class="btn-modal-cancel">취소</button>
+                            <button type="button" id="btn_print_close" class="btn-modal-cancel">취소</button>
                         </div>
                     </form>
 
@@ -324,7 +294,7 @@
                 <section class="top">
                     <h1>한장으로 보는 생손보플랜 보험료 비교</h1>
 
-                    <div id="uploadDate" class=""
+                    <div id="uploadDate"
                         style="color: #666; margin-left: 270px; font-size: 0.6rem; font-weight: 400; position: absolute;">
                     </div>
 
@@ -393,8 +363,8 @@
                     <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0px 15px 20px;">
                         <!-- [수정] 버튼 크기 조정: 높이 45px, 제목에 맞는 패딩 적용 -->
                         <button type="button" id="openDetailModalBtn"
-                            style="height: 45px; padding: 0 10px; background-color: rgb(161, 244, 255); color: #333333; border: none; border-radius: 5px; white-space: nowrap;">상세내용
-                            보기</button>
+                            style="height: 45px; padding: 0 10px; background-color: rgb(161, 244, 255); color: #333333; border: none; border-radius: 5px; white-space: nowrap;">
+                            상세내용 보기</button>
 
 
                         <button type="button" id="productList-print"
@@ -524,7 +494,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-    <script type="module" src="./js/src/main.js?v=25.08.06.1"></script>
+    <script type="module" src="./js/src/main.js?v=25.08.28.1"></script>
 
     <script>
         var detailModal = document.getElementById("detailmodal");
@@ -544,56 +514,7 @@
                 detail_modal_iframe.removeAttribute("src");
             }
         }
-
-        // // [2025-08-11 추가] 페이지 기능 JavaScript
-        // document.addEventListener('DOMContentLoaded', function () {
-        //     const pageButtons = document.querySelectorAll('.page-btn');
-        //     let currentPage = 1;
-
-        //     // [추가] 페이지 버튼 클릭 이벤트
-        //     pageButtons.forEach(button => {
-        //         button.addEventListener('click', function () {
-        //             const pageNum = parseInt(this.getAttribute('data-page'));
-        //             changePage(pageNum);
-        //         });
-        //     });
-
-        //     // [추가] 페이지 변경 함수
-        //     function changePage(pageNum) {
-        //         // 모든 페이지 버튼 스타일 초기화
-        //         pageButtons.forEach(btn => {
-        //             btn.style.backgroundColor = '#f0f0f0';
-        //             btn.style.color = '#333';
-        //         });
-
-        //         // 선택된 페이지 버튼 스타일 변경
-        //         const selectedButton = document.querySelector(`[data-page="${pageNum}"]`);
-        //         if (selectedButton) {
-        //             selectedButton.style.backgroundColor = '#2b579a';
-        //             selectedButton.style.color = 'white';
-        //         }
-
-        //         currentPage = pageNum;
-
-        //         // 여기에 페이지별 데이터 로딩 로직을 추가할 수 있습니다
-        //         console.log(`페이지 ${pageNum}로 이동`);
-
-        //         // 예시: 페이지별 다른 내용 표시
-        //         // loadPageContent(pageNum);
-        //     }
-
-        //     // [추가] 페이지별 내용 로딩 함수 (필요시 구현)
-        //     function loadPageContent(pageNum) {
-        //         // 페이지별 데이터를 로드하는 로직
-        //         // 예: API 호출, 데이터 필터링 등
-        //         console.log(`페이지 ${pageNum}의 내용을 로드합니다.`);
-        //     }
-        // });
     </script>
-
-
-
-
 </body>
 
 </html>

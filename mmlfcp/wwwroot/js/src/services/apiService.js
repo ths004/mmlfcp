@@ -15,7 +15,7 @@ const defaultHeaders = () => {
  */
 const handleResponse = async (res) => {
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.is_success === false) {
+    if (!res.ok || data?.is_success == false) {
         throw new Error(data?.error_message || `[API] ${res.status}`);
     }
     return data;
@@ -65,4 +65,39 @@ export const apiService = {
         });
         return handleResponse(res);
     },
+
+    /*
+    플랜별 기준보장, 상품별 담보별, 필수보험료 정보 한장출력
+*/
+    async PrintProducts({ cust_name, age, gender, birth_date, plan_id, plan_type_id, plan_type_name, plan_payment_expiration_cd, plan_payment_expiration_name, is_required_coverage, company_codes, coverages }) {
+        const body = {
+            cust_name: String(cust_name ?? ''),
+            age: Number(age ?? 0),
+            gender: String(gender ?? ''),
+            birth_date: String(birth_date ?? ''),
+
+            plan_id: String(plan_id ?? ''),
+            plan_type_id: String(plan_type_id ?? ''),
+            plan_type_name: String(plan_type_name ?? ''),
+
+            plan_payment_expiration_cd: String(plan_payment_expiration_cd ?? ''),
+            plan_payment_expiration_name: String(plan_payment_expiration_name ?? ''),
+            is_required_coverage: String(is_required_coverage ?? 'N'),
+            company_codes: company_codes || [],
+            coverages: coverages || []
+        };
+
+        const url = `${BASE_URL}${API_MMLFCP_URL.API_PRINT_PRODUCTS}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                ...defaultHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        return handleResponse(res);
+    }
+
 };
