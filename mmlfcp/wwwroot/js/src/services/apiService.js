@@ -66,6 +66,31 @@ export const apiService = {
         return handleResponse(res);
     },
 
+    /**
+    * 플랜 연령별 보험료 조회 (GET)
+    * /api/ProductPremiumsByAges?plan_id=...&age=...&gender=...
+    */
+    async getProductPremiumsByAges({ plan_id, age, gender }) {
+
+        // 디버깅용 (토큰 확인)
+        //console.log('[API] JWT exists?', !!appConstants.jwt);
+
+        const query = new URLSearchParams({
+            plan_id: String(plan_id ?? ''),
+            age: String(age ?? ''),
+            gender: String(gender ?? '')
+        }).toString();
+
+        const url = `${BASE_URL}${API_MMLFCP_URL.API_PRODUCT_PREMIUMS_BY_AGES}?${query}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: defaultHeaders()
+        });
+        return handleResponse(res);
+    },
+
+
+
     /*
     플랜별 기준보장, 상품별 담보별, 필수보험료 정보 한장출력
 */

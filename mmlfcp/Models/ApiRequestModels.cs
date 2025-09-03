@@ -35,6 +35,8 @@ namespace mmlfcp.Models
         public bool is_success { get; set; }
         public string error_message { get; set; } = string.Empty;
         public List<CoveragePremiumEntity> coverage_premiums_by_ages { get; set; } = new List<CoveragePremiumEntity>();
+
+        public List<RequiredInsurCDPremiumEntity> coverage_required_premiums_by_ages { get; set; } = new List<RequiredInsurCDPremiumEntity>();
     }
 
     public class PrintProductsResponse

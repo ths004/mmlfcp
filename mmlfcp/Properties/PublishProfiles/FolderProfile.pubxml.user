@@ -3,7 +3,7 @@
 <Project>
   <PropertyGroup>
     <_PublishTargetUrl>D:\mmlfcp\mmlfcp\bin\Release\net8.0\publish\</_PublishTargetUrl>
-    <History>True|2025-08-27T08:41:32.4013001Z||;True|2025-08-27T17:41:12.7040511+09:00||;True|2025-08-27T17:40:39.9328098+09:00||;True|2025-08-27T17:38:58.7979026+09:00||;</History>
+    <History>True|2025-09-02T07:51:24.9031459Z||;True|2025-08-27T17:41:32.4013001+09:00||;True|2025-08-27T17:41:12.7040511+09:00||;True|2025-08-27T17:40:39.9328098+09:00||;True|2025-08-27T17:38:58.7979026+09:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
 </Project>

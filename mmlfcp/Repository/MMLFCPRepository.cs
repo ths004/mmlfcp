@@ -20,6 +20,7 @@ namespace mmlfcp.Repository
         //플랜 상품별담보별 보험료 
         public Task<IEnumerable<InsurCDPremiumEntity>> GetProductInsurCDPremiumsAsync(
                string planId, string gender, int age);
+
         //플랜 연령별 보장별 보험료
         public Task<IEnumerable<CoveragePremiumEntity>> GetCoveragePremiumsByAgesAsync(
                     string planId, string gender, int baseAge
@@ -28,8 +29,15 @@ namespace mmlfcp.Repository
         public Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsAsync(
                        string planId, string gender, int age);
 
+        //플랜 연령별 필수 보험료 조회
+        //GetRequiredInsurCDPremiumsByAgesAsync
+        public Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsByAgesAsync(
+                   string planId, string gender, int age
+           );
+
+
         public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
-               PrintProductsRequest request);                       
+               PrintProductsRequest request);
     }
 
     public class MMLFCPRepository : IMMLFCPRepository
@@ -305,13 +313,82 @@ namespace mmlfcp.Repository
             }
         }
 
+        //연령별 필수 보험료 조회
+        public async Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsByAgesAsync(
+                string planId, string gender, int age)
+        {
+            // SQL query as provided
+            string sql = @"
+            select a.compy_cd as company_code,
+                    f.CD_NM as company_name,
+                    a.prdt_cd as product_code,
+                    c.prdt_name as product_name,
+                    c.attr1 as product_detail_name,
+                    c.mb_conditions as product_conditions,
+                    c.pay_term,
+                    a.sex as gender,a.age,
+                    a.insur_cd,d.insur_nm,d.insur_bojang,
+                    e.min_insur_amount,
+                    case when a.std_contract_amt > 0 then 
+                    (e.min_insur_amount * a.premium) / a.std_contract_amt  else 0 end as min_premium,
+                    a.std_contract_amt as contract_amount,
+                    a.premium
+            from 
+                TB_TIC_PRDT_PRICE a
+                join TB_MMLFCP_PLAN_PRODUCT b
+                    on a.compy_cd = b.company_code
+                    and a.prdt_cd = b.product_code
+                    and b.plan_id = @plan_id
+                join TB_TIC_PRDT c
+                    on a.compy_cd = c.compy_cd
+                    and a.prdt_cd = c.prdt_cd
+                join TB_TIC_PRDT_D d
+                    on a.compy_cd = d.compy_cd
+                    and a.prdt_cd = d.prdt_cd
+                    and a.insur_cd = d.insur_cd
+                join TB_MMLFCP_PRODUCT_REQUIRED_RULES e
+                    on a.compy_cd = e.company_code
+                    and a.prdt_cd = e.product_code
+                    and a.insur_cd = e.insur_cd
+                join TB_COMM_CD f
+                on a.compy_cd = f.CD_ID
+                and f.UPP_CD_ID = 'COMPY'
+            
+                where 
+                a.sex = @gender
+                and a.age in @ages_in_clause -- Dapper가 컬렉션을 IN 절로 자동 확장
+                and a.use_yn='Y'
+            order by a.compy_cd,a.prdt_cd,a.age,a.insur_cd";
+
+            using (var connection = _context.CreateConnection())
+            {
+            // IN 절에 사용할 연령 리스트 생성
+            var agesToQuery = new List<int>
+            {
+                age,
+                age + 1,
+                age + 2,
+                age + 5,
+                age + 10
+            };
+
+                // Dapper의 QueryAsync를 사용하여 비동기적으로 데이터 조회
+                // 파라미터를 익명 객체로 전달합니다. @ages_in_clause는 agesToQuery 리스트로 매핑됩니다.
+                var premiums = await connection.QueryAsync<RequiredInsurCDPremiumEntity>(
+                    sql,
+                    new { plan_id = planId, gender = gender, ages_in_clause = agesToQuery }
+                );
+                return premiums;
+            }
+        }
+
         public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
                PrintProductsRequest request)
         {
             // DataTable 생성
             var coverageDataTable = request.CoverageToDataTable();
             var companyDataTable = request.CompanyToDataTable();
-        
+
             using (var connection = _context.CreateConnection())
             {
                 var rawResults = await connection.QueryAsync<PrintRawCoverageData>(

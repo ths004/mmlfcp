@@ -25,11 +25,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // 4. plans 같은 기본 데이터 저장
+        // ✅ 4. plans를 상태에 저장
         mmlfcp_state.set("mmlfcp_plans", authResult.plans);
-      
+
         // 5. 상세 컨트롤러 초기화
         detailController.init();
+
+        //detailController.onPremiumsByAges();
+
 
     } catch (err) {
         console.error("[Detail Init 오류]", err);

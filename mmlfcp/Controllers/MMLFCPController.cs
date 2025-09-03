@@ -230,12 +230,16 @@ namespace mmlfcp.Controllers
 
                 // 연령별 보험료 데이터 조회
                 var coveragePremiums = await _repository.GetCoveragePremiumsByAgesAsync(plan_id, gender, age);
+                var coverage_required_premiums_by_ages = await _repository.GetRequiredInsurCDPremiumsByAgesAsync(plan_id, gender, age);
+
+                //GetRequiredInsurCDPremiumsAsync
 
                 return Ok(new ProductPremiumsByAgesResponse
                 {
                     is_success = true,
                     error_message = "",
-                    coverage_premiums_by_ages = coveragePremiums.ToList()
+                    coverage_premiums_by_ages = coveragePremiums.ToList(),
+                    coverage_required_premiums_by_ages = coverage_required_premiums_by_ages.ToList()
                 });
             }
             catch (Exception ex)

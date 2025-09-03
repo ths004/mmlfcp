@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         mmlfcp_state.set('mmlfcp_plans', authResult.plans);
 
         // 디버깅용 확인
-        mmlfcp_state.debug();
+        // mmlfcp_state.debug();
 
         // 5. ✅ 컨트롤러 초기화 호출
         Controller.init();
