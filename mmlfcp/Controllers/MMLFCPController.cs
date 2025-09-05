@@ -1,3 +1,4 @@
+using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using mmlfcp.Common;
@@ -74,50 +75,61 @@ namespace mmlfcp.Controllers
         /// 사용자 인증 및 플랜 목록 조회
         /// </summary>
         /// <param name="token">인증 토큰</param>
-        /// <param name="access_path">접근 경로</param>
         /// <returns>인증 결과 및 플랜 목록</returns>
         [HttpGet]
         [Route("api/Auth")]
         public async Task<ActionResult<AuthResponse>> AuthenticateUser(
-            [FromQuery] string token, 
-            [FromQuery] string access_path)
+            [FromQuery] string token)
         {
+            AuthResponse response = new AuthResponse();
+            string event_id = "LOGINWEB"; //접근경로
             try
             {
-                _logger.LogInformation("사용자 인증 요청 - Token: {Token}, AccessPath: {AccessPath}", 
-                    token, access_path);
+                _logger.LogInformation($"사용자 인증 요청 - AccessPath:{event_id}");
+
+                response.is_success = true;
+                response.error_message = "";
+                response.plans = new List<PlanEntity>();
 
                 // TODO: 실제 토큰 검증 로직 구현 필요
                 // 현재는 임시로 토큰이 존재하면 인증 성공으로 처리
                 if (string.IsNullOrEmpty(token))
                 {
-                    return Ok(new AuthResponse
-                    {
-                        is_success = false,
-                        error_message = "토큰이 필요합니다.",
-                        plans = new List<PlanEntity>()
-                    });
+                    response.is_success = false;
+                    response.error_message = "토큰이 필요합니다.";
+                    return Ok(response);
+                }
+                string remoteip = Utility.GetIPAddress(HttpContext);
+                AuthEntity AuthEntity = Utility.JWTVerifying(token, remoteip);
+
+                if (AuthEntity.ErrorCode != 0)
+                {
+                    response.is_success = false;
+                    response.error_message = AuthEntity.ErrorMessage;
+                    return Ok(response);
+                }
+                if (String.IsNullOrEmpty(AuthEntity.ConsultantID) == true || String.IsNullOrEmpty(AuthEntity.AgencyCompanyCD) == true)
+                {
+                    response.is_success = false;
+                    response.error_message = "인증 중 오류가 발생하였습니다.(앱을 종료후 다시 실행하세요)";
+                    return Ok(response);
                 }
 
                 // 플랜 목록 조회
                 var plans = await _repository.GetPlansAsync();
+                response.plans = plans.ToList();
 
-                return Ok(new AuthResponse
-                {
-                    is_success = true,
-                    error_message = "",
-                    plans = plans.ToList()
-                });
+                await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id);
+
+                return Ok(response);
+
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "사용자 인증 중 오류 발생");
-                return Ok(new AuthResponse
-                {
-                    is_success = false,
-                    error_message = "인증 처리 중 오류가 발생했습니다.",
-                    plans = new List<PlanEntity>()
-                });
+                response.is_success = false;
+                response.error_message = "인증 중 오류가 발생하였습니다.";
+                return Ok(response);
             }
         }
 
@@ -160,12 +172,20 @@ namespace mmlfcp.Controllers
                         error_message = "필수 파라미터가 누락되었습니다."
                     });
                 }
+                string remoteip = Utility.GetIPAddress(HttpContext);
 
                 // 데이터 조회
                 var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);  //플랜별기준보장 데이터 - 화면 왼쪽
                 var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜  상품별 / 보장별 보험료
                 var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜 상품별/ 담보별 보험료
                 var requiredPremiums = await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age);//필수 보험료 조회
+                
+                await _repository.SaveAccesslog(
+                    authResult.AgencyCompanyCD,
+                    authResult.ConsultantID,
+                    remoteip,
+                    plan_id, gender, age);
+
 
                 return Ok(new ProductPremiumsResponse
                 {
@@ -265,6 +285,7 @@ namespace mmlfcp.Controllers
         {
             PrintProductsResponse response = new PrintProductsResponse();
             response.is_success = false;
+            string event_id = "PRINT";
             // JWT 토큰 검증
             var authResult = ValidateJwtToken();
             if (authResult.ErrorCode != 0)
@@ -293,6 +314,8 @@ namespace mmlfcp.Controllers
 
 
             response.pdf_uri = _reportService.MakePDFReport(authResult.AgencyCompanyCD, authResult.ConsultantID, request, coverage_list);
+
+            await _repository.SaveEventlog(authResult.AgencyCompanyCD, authResult.ConsultantID, event_id);
 
             response.is_success = true;
             return Ok(response);

@@ -38,6 +38,10 @@ namespace mmlfcp.Repository
 
         public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
                PrintProductsRequest request);
+
+        public  Task<Boolean> SaveAccesslog(String agency_company_cd, String consultant_id, string ipaddr, string plan_id, string gender, int age);
+
+        public  Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id);
     }
 
     public class MMLFCPRepository : IMMLFCPRepository
@@ -62,7 +66,8 @@ namespace mmlfcp.Repository
                    (select cd_nm from TB_COMM_CD where cd_id = a.plan_payterm_type and upp_cd_id = 'MMLFCP_B') as plan_payterm_type_name,
                    a.plan_min_m_age,a.plan_max_m_age,a.plan_min_f_age,a.plan_max_f_age
             from TB_MMLFCP_PLAN a
-            where use_yn = 'Y'";
+            where use_yn = 'Y'
+            order by a.plan_type";
 
             using (var connection = _context.CreateConnection())
             {
@@ -432,6 +437,73 @@ namespace mmlfcp.Repository
 
                 return groupedResults;
             }
+        }
+
+        public async Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id)
+        {
+            try
+            {
+                String qry = @"
+                     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+                     SET NOCOUNT ON
+                        insert into tb_mmlfcp_event_log(consultant_id,ga_id,event_id)   
+                                       values (@consultant_id,@ga_id,@event_id) 
+                ";
+                using (var connection = _context.CreateConnection())
+                {
+                    await connection.ExecuteAsync(qry,
+                            new
+                            {
+                                consultant_id = consultant_id,
+                                ga_id = agency_company_cd,
+                                event_id = event_id
+                            });
+                }
+
+
+            }
+            catch //(Exception e)
+            {
+                return false;
+                //throw new BoKetDataException("3011", "DB 등록 및 수정 중 오류(sm_cust)", "고객 등록 중 오류가 발생하였습니다.");
+            }
+
+            return true;
+        }
+
+        public async Task<Boolean> SaveAccesslog(String agency_company_cd, String consultant_id, string ipaddr, string plan_id, string gender, int age)
+        {
+            try
+            {
+                String qry = @"
+                     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+                     SET NOCOUNT ON
+                        insert into tb_mmlfcp_accesslog(ga_id,consultant_id,ipaddr,plan_id,gender,age)   
+                                       values (@ga_id,@consultant_id,@ipaddr,@plan_id,@gender,@age) 
+                ";
+                using (var connection = _context.CreateConnection())
+                {
+                    await connection.ExecuteAsync(qry,
+                            new
+                            {
+                                ga_id = agency_company_cd,
+                                consultant_id = consultant_id,
+                                ipaddr = ipaddr,
+                                plan_id = plan_id,
+                                gender = gender,
+                                age = age
+                            });
+                }
+
+
+            }
+            catch //(Exception e)
+            {
+                return false;
+                //throw new BoKetDataException("3011", "DB 등록 및 수정 중 오류(sm_cust)", "고객 등록 중 오류가 발생하였습니다.");
+            }
+
+            return true;
         }
 
     }
