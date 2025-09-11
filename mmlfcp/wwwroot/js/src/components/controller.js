@@ -1664,7 +1664,13 @@ export const Controller = {
                 const target = e.target.closest('input[type="text"][id^="input_"]');
                 if (!target) return;
                 const coverage_cd = target.dataset.cd;
-                const change_coverage_amount = Number(target.value.replace(/,/g, '') || 0);
+                const rawValue = target.value.replace(/,/g, '');
+                let change_coverage_amount = Number(rawValue);
+
+                // 숫자가 아니면 안전하게 0으로 처리
+                if (isNaN(change_coverage_amount)) {
+                    change_coverage_amount = 0;
+                }
 
                 // 1) 상태 업데이트
                 this.updatePlanCoverageAmount(coverage_cd, change_coverage_amount);
