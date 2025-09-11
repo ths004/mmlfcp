@@ -155,12 +155,21 @@ namespace mmlfcp.Repository
             // SQL 쿼리
             string sql = @"
             select a.compy_cd as company_code,
-                   a.prdt_cd as product_code,c.prdt_name as product_name,c.attr1 as product_detail_name,c.mb_conditions as product_conditions,c.pay_term,
+                   a.prdt_cd as product_code,
+                   c.prdt_name as product_name,
+                   c.attr1 as product_detail_name,
+                   c.mb_conditions as product_conditions,
+                   d.pay_term,
                    e.coverage_cd,
-                   a.sex as gender,a.age,
-                   a.insur_cd,d.insur_nm,d.insur_bojang,
-                   a.std_contract_amt as contract_amount,
-                   a.premium
+                   a.sex as gender,
+                   a.age,
+                   a.insur_cd,
+                   d.insur_nm,d.
+                   insur_bojang,
+                   e.contract_amount as guide_contract_amount,
+                   case when a.std_contract_amt <= 0 then 0 else (e.contract_amount * a.premium) / a.std_contract_amt end as guide_premium,
+                   e.contract_amount,
+                  case when a.std_contract_amt <= 0 then 0 else (e.contract_amount * a.premium) / a.std_contract_amt end as premium
             from 
                 TB_TIC_PRDT_PRICE a
                 join TB_MMLFCP_PLAN_PRODUCT b
@@ -175,7 +184,7 @@ namespace mmlfcp.Repository
                     and a.prdt_cd = d.prdt_cd
                     and a.insur_cd = d.insur_cd
                 join (
-                    select a.coverage_cd, b.insur_cd
+                    select a.coverage_cd, b.insur_cd, b.guide_insur_amount as contract_amount
                     from TB_MMLFCP_PLAN_COVERAGE a
                     join TB_MMLFCP_COVERAGE_INSUR_MAPPING b
                         on a.coverage_cd = b.coverage_cd
@@ -271,7 +280,7 @@ namespace mmlfcp.Repository
                    c.prdt_name as product_name,
                    c.attr1 as product_detail_name,
                    c.mb_conditions as product_conditions,
-                   c.pay_term,
+                   d.pay_term,
                    a.sex as gender,a.age,
                    a.insur_cd,d.insur_nm,d.insur_bojang,
                    e.min_insur_amount,
@@ -334,8 +343,7 @@ namespace mmlfcp.Repository
                     a.sex as gender,a.age,
                     a.insur_cd,d.insur_nm,d.insur_bojang,
                     e.min_insur_amount,
-                    case when a.std_contract_amt > 0 then 
-                    (e.min_insur_amount * a.premium) / a.std_contract_amt  else 0 end as min_premium,
+                    case when a.std_contract_amt <= 0 then 0 else  (e.min_insur_amount * a.premium) / a.std_contract_amt end as min_premium,
                     a.std_contract_amt as contract_amount,
                     a.premium
             from 

@@ -80,7 +80,7 @@ export const Controller = {
 
         // 첫 번째 값을 설정
         const firstCoverage = {
-            plan_id: "921081111041",
+            plan_id: planCoverages[0].plan_id,
             coverage_cd: "aa00",
             coverage_name: "필수담보",
             guide_coverage_amount: 0,
@@ -105,6 +105,7 @@ export const Controller = {
         // 새로운 리스트를 mmlfcp.set('plan_coverages')에 설정
         mmlfcp_state.set('original_plan_coverages', updatedCoverages);
         mmlfcp_state.set("plan_coverages", updatedCoverages);
+        //console.log('updatedCoverages', updatedCoverages);
     },
 
 
@@ -134,8 +135,6 @@ export const Controller = {
                 };
             }
 
-            // required는 무조건 포함 → total_premium에 합산
-            groupedByCompany[required.company_code].total_premium += Math.round(parseInt(required.min_premium));
 
             groupedByCompany[required.company_code].DetailList.push({
                 coverage_cd: "aa00",
@@ -165,7 +164,7 @@ export const Controller = {
                     guide_coverage_premium: parseInt(coverage.guide_coverage_premium),
                     coverage_amount: parseInt(coverage.coverage_amount),
                     premium: parseInt(coverage.premium),
-                    coverage_amount_ratio: 1,
+                    coverage_amount_ratio: coverage.coverage_amount_ratio,
                     cover_selected: coverage.is_selected_coverage == "Y" ? "checked" : ""
                 });
             }
@@ -187,13 +186,13 @@ export const Controller = {
 
                 // total_premium 갱신
                 product.total_premium = Object.values(premiumByCoverage).reduce((sum, v) => sum + v, 0);
-
                 coverageProductList.push(product);
             }
         }
 
         mmlfcp_state.set('original_coverage_product_lists', coverageProductList);
         mmlfcp_state.set("coverage_product_lists", coverageProductList);
+        // console.log('coverageProductList', coverageProductList);
     },
 
     setCoverageProductDetailList() {
@@ -213,7 +212,6 @@ export const Controller = {
                     product_name: required.product_name,
                     product_detail_name: required.product_detail_name,
                     product_conditions: required.product_conditions,
-                    pay_term: required.pay_term,
                     gender: required.gender,
                     age: required.age,
                     DispValue: true,
@@ -226,6 +224,7 @@ export const Controller = {
                 coverage_cd: "aa00",
                 insur_cd: required.insur_cd,
                 insur_nm: required.insur_nm,
+                pay_term: required.pay_term,
                 insur_bojang: required.insur_bojang,
                 guide_contract_amount: parseInt(required.min_insur_amount),
                 contract_amount: parseInt(required.min_insur_amount),// min_insur_amount 그대로 할당
@@ -241,11 +240,12 @@ export const Controller = {
                     coverage_cd: item.coverage_cd,
                     insur_cd: item.insur_cd,
                     insur_nm: item.insur_nm,
+                    pay_term: item.pay_term,
                     insur_bojang: item.insur_bojang,
                     guide_contract_amount: parseInt(item.contract_amount),
                     contract_amount: parseInt(item.contract_amount),
-                    guide_premium: parseInt(item.premium),
-                    premium: parseInt(item.premium)
+                    guide_premium: item.premium,
+                    premium: item.premium
                 });
             }
         });
@@ -259,101 +259,44 @@ export const Controller = {
 
         mmlfcp_state.set("original_product_insur_premiums_lists", coverageProductDetailList);
         mmlfcp_state.set("product_insur_premiums_lists", coverageProductDetailList);
+        // console.log('coverageProductDetailList', coverageProductDetailList);
     },
 
     adjustProductInsurPremiums() {
-        const originalcoverageProductLists = mmlfcp_state.get('original_coverage_product_lists') || [];
-        const originalproductInsurPremiumsLists = mmlfcp_state.get('original_product_insur_premiums_lists') || [];
-        const targetByCoverage = {};
+        const coverageProductList = mmlfcp_state.get('original_coverage_product_lists') || [];
+        const coverageProductDetailList = mmlfcp_state.get('original_product_insur_premiums_lists') || [];
 
-        // 회사별 coverage_cd 목표 맵
-        originalcoverageProductLists.forEach(product => {
-            const companyCode = product.company_code;
-            (product.DetailList || []).forEach(cov => {
-                const key = `${companyCode}_${cov.coverage_cd}`;
-                targetByCoverage[key] = {
-                    amount: parseInt(cov.coverage_amount),
-                    premium: parseInt(cov.premium)
-                };
+        // company_code + product_code 기준으로 matching
+        coverageProductList.forEach(product => {
+            const detailProducts = coverageProductDetailList.filter(d => d.company_code == product.company_code && d.product_code == product.product_code);
+            // if (product.company_code == 'LDB') { console.log('detailProducts', detailProducts); }
+
+            // detailProducts 여러 개 있을 수 있음
+            detailProducts.forEach(detailProduct => {
+                // coverage_cd 기준으로 DetailList 매칭 (여러 개 처리)
+                product.DetailList.forEach(detail => {
+                    const matchedDetails = detailProduct.DetailList.filter(d => d.coverage_cd == detail.coverage_cd);
+
+                    matchedDetails.forEach(matchedDetail => {
+                        if (detail.coverage_amount_ratio > 0) {
+                            matchedDetail.guide_premium = Math.round(matchedDetail.guide_premium / detail.coverage_amount_ratio);
+                            matchedDetail.premium = matchedDetail.guide_premium;
+                        }
+                    });
+                });
             });
         });
 
-        //보정작업
-        originalproductInsurPremiumsLists.forEach(company => {
-            const companyCode = company.company_code;
 
-            // coverage_cd별 그룹핑
-            const grouped = {};
-            company.DetailList.forEach(detail => {
-                if (detail.coverage_cd == 'aa00') return; // 'aa00'을 제외한 것만 처리
-                if (!grouped[detail.coverage_cd]) grouped[detail.coverage_cd] = [];
-                grouped[detail.coverage_cd].push(detail);
-            });
+        // console.log(8.49 / 0.001);                  // 8490
+        // console.log(Math.round(8.49 / 0.001));      // 8490
+        // console.log((8.49 / 0.001).toFixed(0));     // "8490" (문자열)
+        // console.log(parseFloat((8.49 / 0.001).toFixed(0))); // 8490 (숫자)
 
-
-            Object.keys(grouped).forEach(coverage_cd => {
-                const details = grouped[coverage_cd];
-                const key = `${companyCode}_${coverage_cd}`;
-                const target = targetByCoverage[key];
-                if (!target) return;
-
-
-                if (coverage_cd == 'bb11') {
-                    // 1️⃣ 특수 케이스: bb11 → 최대 guide_contract_amount 기준
-                    const maxDetail = details.reduce((max, d) => d.guide_contract_amount > max.guide_contract_amount ? d : max, details[0]);
-
-                    const baseAmount = maxDetail.guide_contract_amount || 1;
-                    const amountRatio = target.amount / baseAmount;
-
-                    // 🔥 premiumRatio는 guide_premium이 아니라 현재 premium 합계 기준
-                    const totalPremium = details.reduce((sum, d) => sum + d.premium, 0);
-                    const premiumRatio = totalPremium > 0 ? (target.premium / totalPremium) : 1;
-
-                    details.forEach(d => {
-                        const guideAmount = d.guide_contract_amount;
-                        d.guide_contract_amount = Math.round(guideAmount * amountRatio);
-                        d.contract_amount = Math.round(guideAmount * amountRatio);
-
-                        const oldPremium = d.premium;
-                        d.guide_premium = Math.round(oldPremium * premiumRatio);
-                        d.premium = Math.round(oldPremium * premiumRatio);
-                    });
-
-                    // ✅ 마지막 오차 보정
-                    const sumPremium = details.reduce((sum, d) => sum + d.premium, 0);
-                    const last = details[details.length - 1];
-                    if (last) {
-                        last.premium += (target.premium - sumPremium);
-                    }
-                }
-
-                else {
-                    // 2️⃣ 일반 케이스 → 합계 기준
-                    const totalGuidePremium = details.reduce((sum, d) => sum + (d.guide_premium), 0);
-                    const premiumRatio = totalGuidePremium > 0 ? (target.premium / totalGuidePremium) : 1;
-
-                    details.forEach(d => {
-                        // contract_amount는 target.amount 그대로
-                        d.guide_contract_amount = target.amount;
-                        d.contract_amount = target.amount;
-
-                        // premium은 guide_premium 기준으로 분배
-                        const guidePremium = d.guide_premium;
-                        d.guide_premium = Math.round(guidePremium * premiumRatio);
-                        d.premium = Math.round(guidePremium * premiumRatio);
-                    });
-
-                    // 3️⃣ 오차 보정 → 마지막 detail에 적용
-                    const sumPremium = details.reduce((sum, d) => sum + d.premium, 0);
-                    const last = details[details.length - 1];
-                    if (last) {
-                        last.premium += (target.premium - sumPremium);
-                    }
-                }
-            });
-        });
-        mmlfcp_state.set("original_product_insur_premiums_lists", originalproductInsurPremiumsLists);
-        mmlfcp_state.set('product_insur_premiums_lists', originalproductInsurPremiumsLists);
+        // state 반영
+        mmlfcp_state.set("original_product_insur_premiums_lists", coverageProductDetailList);
+        mmlfcp_state.set("product_insur_premiums_lists", coverageProductDetailList);
+        //console.log("✅ 갱신된 coverageProductDetailList:", coverageProductDetailList);
     },
 
 
@@ -873,7 +816,7 @@ export const Controller = {
 
                 const is_disabled = coverage_cd == 'aa00' ? 'disabled' : '';
                 const is_checked = plan_coverage_selected ? 'checked' : '';
-                const displayVal = coverage_cd == 'aa00' ? '-' : app.formatNumber(guide_coverage_amount);
+                const displayVal = coverage_cd == 'aa00' ? '-' : plan_coverage_selected ? app.formatNumber(guide_coverage_amount) : 0;
                 return `
                 <li>
                     <div class="left">
@@ -1069,6 +1012,7 @@ export const Controller = {
         if (!container) return;
 
         const product_insur_premiums_lists = mmlfcp_state.get('product_insur_premiums_lists') || [];
+        //console.log('product_insur_premiums_lists', product_insur_premiums_lists);
 
         let targetList = [];
         let product_name = '';
@@ -1090,7 +1034,7 @@ export const Controller = {
                                 <td style="font-size: 1.0rem; padding: 25px 0px 10px 0px;">
                                     <h3 id="${company_code}_${detail.coverage_cd}" style="color: #2f88ff;">
                                         ${detail.insur_nm} : ${app.formatNumber(detail.contract_amount)}만원
-                                        (${app.formatNumber(detail.premium)}원)
+                                        (${app.formatNumber(detail.premium)}원)(${detail.pay_term})
                                     </h3>
                                     <br />
                                     ${(detail.insur_bojang || "").replace(/(?:\r\n|\r|\n)/g, '<br />')}
@@ -1258,7 +1202,7 @@ export const Controller = {
         const coverageProductList = mmlfcp_state.get('coverage_product_lists') || [];
 
         // ✅ 전체 기준 min/max 계산
-        const premiumsAll = coverageProductList.filter(item => item.DispValue && item.total_premium > 0).map(item => item.total_premium);
+        const premiumsAll = coverageProductList.filter(item => item.DispValue).map(item => item.total_premium);
         if (premiumsAll.length == 0) { return; } // fallback
 
         const maxPremium = Math.max(...premiumsAll);
@@ -1337,13 +1281,12 @@ export const Controller = {
 
         coverageProductList.forEach(product => {
             let total = 0;
-
             if (product.DispValue) {
                 planCoverages.forEach(cov => {
                     if (cov.plan_coverage_selected == "checked") {
                         // 이 회사(product)의 DetailList에서 해당 coverage_cd 모두 합산
                         product.DetailList.forEach(detail => {
-                            if (detail.coverage_cd == cov.coverage_cd) {
+                            if ((detail.coverage_cd == cov.coverage_cd) && detail.cover_selected == "checked") {
                                 total += detail.premium;
                             }
                         });
@@ -1517,7 +1460,7 @@ export const Controller = {
 
 
         // ✅ 공통 debounce 유틸
-        const debounce = (fn, delay = 300) => {
+        const debounce = (fn, delay = 100) => {
             let timer;
             return (...args) => {
                 clearTimeout(timer);
@@ -1682,7 +1625,6 @@ export const Controller = {
 
 
         if (bojangList) {
-
             //플랜별 기준보장 change 이벤트
             bojangList.onchange = (e) => {
                 const cb = e.target.closest('input[type="checkbox"][id^="chk_"]');
