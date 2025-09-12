@@ -60,6 +60,8 @@ namespace mmlfcp.Repository
         {
             // SQL 쿼리 (제공해주신 쿼리)
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select a.plan_id,a.plan_name,a.plan_type,
                    (select cd_nm from TB_COMM_CD where cd_id = a.plan_type and upp_cd_id = 'MMLFCP_A') as plan_type_name,
                    a.plan_payterm_type,
@@ -81,6 +83,8 @@ namespace mmlfcp.Repository
         {
             // SQL 쿼리
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select 
                 a.plan_id, a.coverage_cd, b.coverage_name, a.guide_coverage_amount, a.is_selected_coverage, a.coverage_seq
             from TB_MMLFCP_PLAN_COVERAGE a
@@ -105,6 +109,8 @@ namespace mmlfcp.Repository
         {
             // SQL 쿼리
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select a.company_code,e.CD_NM as company_name,
                     a.product_code,d.prdt_name as product_name,d.attr1 as product_detail_name,d.mb_conditions as product_conditions,
 	                a.coverage_cd,f.coverage_name,c.is_selected_coverage,c.coverage_seq,
@@ -154,6 +160,8 @@ namespace mmlfcp.Repository
         {
             // SQL 쿼리
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select a.compy_cd as company_code,
                    a.prdt_cd as product_code,
                    c.prdt_name as product_name,
@@ -214,6 +222,8 @@ namespace mmlfcp.Repository
             // IN 절에 파라미터를 동적으로 바인딩하기 위해 Dapper의 Multi-parameter IN을 활용합니다.
             // @ages_in_clause 라는 플레이스홀더를 사용하고 실제 값은 컬렉션으로 전달합니다.
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select a.company_code,e.CD_NM as company_name,
                    a.product_code,d.prdt_name as product_name,d.attr1 as product_detail_name,d.mb_conditions as product_conditions,
                    a.coverage_cd,f.coverage_name,c.is_selected_coverage,c.coverage_seq,
@@ -274,6 +284,8 @@ namespace mmlfcp.Repository
         {
             // SQL query as provided
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select a.compy_cd as company_code,
                    f.CD_NM as company_name,
                    a.prdt_cd as product_code,
@@ -333,6 +345,8 @@ namespace mmlfcp.Repository
         {
             // SQL query as provided
             string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
             select a.compy_cd as company_code,
                     f.CD_NM as company_name,
                     a.prdt_cd as product_code,
