@@ -82,7 +82,7 @@ export const Controller = {
         const firstCoverage = {
             plan_id: planCoverages[0].plan_id,
             coverage_cd: "aa00",
-            coverage_name: "필수담보",
+            coverage_name: "최저기본계약조건",
             guide_coverage_amount: 0,
             is_selected_coverage: "Y",
             DispValue: true, // 모두보기,가입,미가입일때 plan_coverage_selected 값을 기준으로 true 또는 false
@@ -429,7 +429,7 @@ export const Controller = {
                     pay_term: item.pay_term,
                     gender: item.gender,
                     coverage_cd: "aa00", // 통일된 coverage_cd
-                    coverage_name: "필수담보",
+                    coverage_name: "최저기본계약조건",
                     cover_selected: "",  // ✅ 기본값 추가
                     DetailByAge: {},
                     DispValue: false      // ✅ 기본값
@@ -521,11 +521,11 @@ export const Controller = {
                 const coverage_name = cb.getAttribute("coverage_name") || "";
                 const coverage_amount = coverage_cd == 'aa00' ? 0 : parseInt(cb.getAttribute("guide_coverage_amount"));
 
-                if (coverage_name == "필수담보") {
+                if (coverage_name == "최저기본계약조건") {
                     is_required_coverage = "Y";
                 }
 
-                if (coverage_name != '필수담보') {
+                if (coverage_name != '최저기본계약조건') {
                     coverages.push({
                         coverage_cd: coverage_cd,
                         coverage_name: coverage_name,
@@ -802,6 +802,8 @@ export const Controller = {
 
         const plan_coverages = mmlfcp_state.get('plan_coverages') || [];
 
+        console.log('plan_coverages', plan_coverages);
+
         const html = plan_coverages.map(c => {
             const is_disp = c.DispValue;
             //일반 담보 : 체크박스 + 금액 입력
@@ -817,12 +819,21 @@ export const Controller = {
                 const is_disabled = coverage_cd == 'aa00' ? 'disabled' : '';
                 const is_checked = plan_coverage_selected ? 'checked' : '';
                 const displayVal = coverage_cd == 'aa00' ? '-' : plan_coverage_selected ? app.formatNumber(guide_coverage_amount) : 0;
+
+                // ✅ coverage_name이 "최저기본계약조건"일 때만 툴팁 span 추가
+                const tooltip = coverage_name == "최저기본계약조건" ? `<span class="tooltip-icon" data-tooltip="최저기본계약조건 설명
+
+• '최저 기본계약 조건'은 보험에 가입하기 위해 반드시 포함해야 하는 필수 의무가입 담보입니다.
+• 실제 보험 상품을 설계할 때는 조건 및 금액이 변경될 수 있으니 비교를 위한 단순 참고용으로 사용하시기 바랍니다.">?</span>` : '';
+
+
                 return `
                 <li>
                     <div class="left">
                     <div class="checkbox-area">
                         <input type="checkbox" id="${checkId}" data-cd="${coverage_cd}" coverage_name="${coverage_name}" guide_coverage_amount="${guide_coverage_amount}"${is_checked}>
                         <label for="${checkId}">${coverage_name}</label>
+                        ${tooltip}
                     </div>
                     </div>
                     <div class="right">

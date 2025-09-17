@@ -237,7 +237,7 @@ export const detailController = {
 
             const compResult = result.get(compKey).totals;
 
-            // ✅ 필수담보도 cover_selected == "checked" 조건 적용
+            // ✅ 최저기본계약조건도 cover_selected == "checked" 조건 적용
             if (company.cover_selected == "checked") {
                 Object.entries(company.DetailByAge).forEach(([age, value]) => {
                     if (!compResult[age]) compResult[age] = 0;
@@ -687,7 +687,7 @@ export const detailController = {
             agesKeys.forEach(age => {
                 const td = document.createElement("td");
                 const required_premium = requiredRow.DetailByAge[age];
-                td.textContent = required_premium != undefined ? app.formatNumber(required_premium) : 0; //필수담보 보험료
+                td.textContent = required_premium != undefined ? app.formatNumber(required_premium) : 0; //최저기본계약조건 보험료
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
