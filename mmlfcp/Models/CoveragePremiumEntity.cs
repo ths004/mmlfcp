@@ -43,6 +43,12 @@
         public float premium { get; set; } // a.premium
     }
 
+    public class ExceptionCompanyEntity
+    {
+        public string ga_id { get; set; }
+        public string company_code { get; set; } 
+
+    }
 
     public class PrintProductCoverage
     {

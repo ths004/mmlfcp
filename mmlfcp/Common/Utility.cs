@@ -58,21 +58,21 @@ namespace mmlfcp.Common
                 authEntity.AgencyCompanyName = jwtValues.ContainsKey("client_name") == true ? jwtValues["client_name"].ToString() : "";
 
                 // IP 주소 검증
-                if (jwtValues.ContainsKey("client_ip"))
-                {
-                    string tokenClientIP = jwtValues["client_ip"].ToString();
+                //if (jwtValues.ContainsKey("client_ip"))
+                //{
+                //    string tokenClientIP = jwtValues["client_ip"].ToString();
 
-                    // IP 주소 비교
-                    if (!string.IsNullOrEmpty(tokenClientIP) && !string.IsNullOrEmpty(currentClientIP))
-                    {
-                        if (tokenClientIP != currentClientIP)
-                        {
-                            authEntity.ErrorCode = 400;
-                            authEntity.ErrorMessage = "IP 주소가 일치하지 않습니다.";
-                            return authEntity;
-                        }
-                    }
-                }
+                //    // IP 주소 비교
+                //    if (!string.IsNullOrEmpty(tokenClientIP) && !string.IsNullOrEmpty(currentClientIP))
+                //    {
+                //        if (tokenClientIP != currentClientIP)
+                //        {
+                //            authEntity.ErrorCode = 400;
+                //            authEntity.ErrorMessage = "IP 주소가 일치하지 않습니다.";
+                //            return authEntity;
+                //        }
+                //    }
+                //}
             }
             catch (TokenExpiredException)
             {
