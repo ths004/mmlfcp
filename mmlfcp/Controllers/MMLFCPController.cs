@@ -174,18 +174,38 @@ namespace mmlfcp.Controllers
                 }
                 string remoteip = Utility.GetIPAddress(HttpContext);
 
+
+                //exception company
+                List<ExceptionCompanyEntity> exceptionCompanies = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).ToList();
                 // 데이터 조회
                 var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);  //플랜별기준보장 데이터 - 화면 왼쪽
                 var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜  상품별 / 보장별 보험료
                 var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜 상품별/ 담보별 보험료
                 var requiredPremiums = await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age);//필수 보험료 조회
-                
+
                 await _repository.SaveAccesslog(
                     authResult.AgencyCompanyCD,
                     authResult.ConsultantID,
                     remoteip,
                     plan_id, gender, age);
 
+                if (exceptionCompanies != null && exceptionCompanies.Any())
+                {
+                    var exceptionCompanyCodes = exceptionCompanies
+                    .Select(e => e.company_code)
+                    .ToHashSet();
+
+                    coveragePremiums = coveragePremiums
+                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
+                                    .ToList();
+                    insurCDPremiums = insurCDPremiums
+                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
+                                    .ToList();
+
+                    requiredPremiums = requiredPremiums
+                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
+                                    .ToList();
+                }
 
                 return Ok(new ProductPremiumsResponse
                 {
@@ -196,6 +216,7 @@ namespace mmlfcp.Controllers
                     product_insur_premiums = insurCDPremiums.ToList(),
                     required_premiums = requiredPremiums.ToList()
                 });
+
             }
             catch (Exception ex)
             {
@@ -248,11 +269,29 @@ namespace mmlfcp.Controllers
                     });
                 }
 
+                //exception company
+                List<ExceptionCompanyEntity> exceptionCompanies = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).ToList();
+
+
                 // 연령별 보험료 데이터 조회
                 var coveragePremiums = await _repository.GetCoveragePremiumsByAgesAsync(plan_id, gender, age);
                 var coverage_required_premiums_by_ages = await _repository.GetRequiredInsurCDPremiumsByAgesAsync(plan_id, gender, age);
 
-                //GetRequiredInsurCDPremiumsAsync
+
+                if (exceptionCompanies != null && exceptionCompanies.Any())
+                {
+                    var exceptionCompanyCodes = exceptionCompanies
+                    .Select(e => e.company_code)
+                    .ToHashSet();
+
+                    coveragePremiums = coveragePremiums
+                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
+                                    .ToList();
+                    coverage_required_premiums_by_ages = coverage_required_premiums_by_ages
+                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
+                                    .ToList();
+                }
+
 
                 return Ok(new ProductPremiumsByAgesResponse
                 {

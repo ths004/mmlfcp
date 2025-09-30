@@ -68,13 +68,21 @@ builder.Services.AddSwaggerGen(c =>
 
 //Dapper 
 builder.Services.AddSingleton<DapperContext>();
+builder.Services.AddSingleton<IMMLFCPRepository, MMLFCPRepository>();
 
 builder.Services.AddSingleton<ReportContext>();
 
-
-builder.Services.AddScoped<IMMLFCPRepository, MMLFCPRepository>();
-
 builder.Services.AddScoped<ReportSevice>();
+
+// MemoryCache 설정 (메모리 제한)
+//builder.Services.AddMemoryCache(options =>
+//{
+//    options.SizeLimit = 1024; // 항목 수 제한
+//    options.CompactionPercentage = 0.25; // 메모리 부족 시 25% 제거
+//});
+
+// 캐시 서비스 등록
+builder.Services.AddMemoryCache();
 
 
 var app = builder.Build();
