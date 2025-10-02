@@ -11,32 +11,32 @@ namespace mmlfcp.Repository
     {
 
         
-        public Task<IEnumerable<ExceptionCompanyEntity>> GetExcpCompanysAsync(string ga_id);
+        public Task<List<ExceptionCompanyEntity>> GetExcpCompanysAsync(string ga_id);
 
         //플랜조회
-        public Task<IEnumerable<PlanEntity>> GetPlansAsync();
+        public Task<List<PlanEntity>> GetPlansAsync();
 
         //플랜별기준보장 데이터 - 화면 왼쪽
-        public Task<IEnumerable<PlanCoverageEntity>> GetGuideCoveragesByPlanIdAsync(string planId);
+        public Task<List<PlanCoverageEntity>> GetGuideCoveragesByPlanIdAsync(string planId);
 
         //플랜 상품별보장별 보험료
-        public Task<IEnumerable<CoveragePremiumEntity>> GetProductCoveragePremiumsAsync(
+        public Task<List<CoveragePremiumEntity>> GetProductCoveragePremiumsAsync(
                string planId, string gender, int age);
         //플랜 상품별담보별 보험료 
-        public Task<IEnumerable<InsurCDPremiumEntity>> GetProductInsurCDPremiumsAsync(
+        public Task<List<InsurCDPremiumEntity>> GetProductInsurCDPremiumsAsync(
                string planId, string gender, int age);
 
         //플랜 연령별 보장별 보험료
-        public Task<IEnumerable<CoveragePremiumEntity>> GetCoveragePremiumsByAgesAsync(
+        public Task<List<CoveragePremiumEntity>> GetCoveragePremiumsByAgesAsync(
                     string planId, string gender, int baseAge
             );
         //필수 보험료 조회
-        public Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsAsync(
+        public Task<List<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsAsync(
                        string planId, string gender, int age);
 
         //플랜 연령별 필수 보험료 조회
         //GetRequiredInsurCDPremiumsByAgesAsync
-        public Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsByAgesAsync(
+        public Task<List<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsByAgesAsync(
                    string planId, string gender, int age
            );
 
@@ -55,16 +55,16 @@ namespace mmlfcp.Repository
         private readonly ILogger<MMLFCPRepository> _logger;
 
         // 캐시 필드
-        private IEnumerable<PlanEntity>? _cachedPlans;
-        private Dictionary<string, IEnumerable<PlanCoverageEntity>>? _cachedCoverages;
-        private Dictionary<string, IEnumerable<ExceptionCompanyEntity>>? _cachedExpCompanys;
+        private List<PlanEntity>? _cachedPlans;
+        private Dictionary<string, List<PlanCoverageEntity>>? _cachedCoverages;
+        private Dictionary<string, List<ExceptionCompanyEntity>>? _cachedExpCompanys;
 
         // 복합 키로 캐싱
-        private Dictionary<PremiumCacheKey, IEnumerable<CoveragePremiumEntity>>? _cachedProductCoveragePremiums;
-        private Dictionary<PremiumCacheKey, IEnumerable<InsurCDPremiumEntity>>? _cachedProductInsurCDPremiums;
-        private Dictionary<PremiumCacheKey, IEnumerable<RequiredInsurCDPremiumEntity>>? _cachedRequiredInsurCDPremiums;
-        private Dictionary<AgePremiumCacheKey, IEnumerable<CoveragePremiumEntity>>? _cachedCoveragePremiumsByAges;
-        private Dictionary<AgePremiumCacheKey, IEnumerable<RequiredInsurCDPremiumEntity>>? _cachedRequiredInsurCDPremiumsByAges;
+        private Dictionary<PremiumCacheKey, List<CoveragePremiumEntity>>? _cachedProductCoveragePremiums;
+        private Dictionary<PremiumCacheKey, List<InsurCDPremiumEntity>>? _cachedProductInsurCDPremiums;
+        private Dictionary<PremiumCacheKey, List<RequiredInsurCDPremiumEntity>>? _cachedRequiredInsurCDPremiums;
+        private Dictionary<AgePremiumCacheKey, List<CoveragePremiumEntity>>? _cachedCoveragePremiumsByAges;
+        private Dictionary<AgePremiumCacheKey, List<RequiredInsurCDPremiumEntity>>? _cachedRequiredInsurCDPremiumsByAges;
 
         // 락 객체
         private readonly SemaphoreSlim _planLock = new SemaphoreSlim(1, 1);
@@ -84,11 +84,11 @@ namespace mmlfcp.Repository
             _logger = logger;
 
             // Dictionary 초기화
-            _cachedProductCoveragePremiums = new Dictionary<PremiumCacheKey, IEnumerable<CoveragePremiumEntity>>();
-            _cachedProductInsurCDPremiums = new Dictionary<PremiumCacheKey, IEnumerable<InsurCDPremiumEntity>>();
-            _cachedRequiredInsurCDPremiums = new Dictionary<PremiumCacheKey, IEnumerable<RequiredInsurCDPremiumEntity>>();
-            _cachedCoveragePremiumsByAges = new Dictionary<AgePremiumCacheKey, IEnumerable<CoveragePremiumEntity>>();
-            _cachedRequiredInsurCDPremiumsByAges = new Dictionary<AgePremiumCacheKey, IEnumerable<RequiredInsurCDPremiumEntity>>();
+            _cachedProductCoveragePremiums = new Dictionary<PremiumCacheKey, List<CoveragePremiumEntity>>();
+            _cachedProductInsurCDPremiums = new Dictionary<PremiumCacheKey, List<InsurCDPremiumEntity>>();
+            _cachedRequiredInsurCDPremiums = new Dictionary<PremiumCacheKey, List<RequiredInsurCDPremiumEntity>>();
+            _cachedCoveragePremiumsByAges = new Dictionary<AgePremiumCacheKey, List<CoveragePremiumEntity>>();
+            _cachedRequiredInsurCDPremiumsByAges = new Dictionary<AgePremiumCacheKey, List<RequiredInsurCDPremiumEntity>>();
 
         }
 
@@ -153,7 +153,7 @@ namespace mmlfcp.Repository
             }
         }
 
-        public async Task<IEnumerable<PlanEntity>> GetPlansAsync()
+        public async Task<List<PlanEntity>> GetPlansAsync()
         {
             if (_cachedPlans != null)
             {
@@ -214,7 +214,7 @@ namespace mmlfcp.Repository
             //}
         }
 
-        public async Task<IEnumerable<PlanCoverageEntity>> GetGuideCoveragesByPlanIdAsync(string planId)
+        public async Task<List<PlanCoverageEntity>> GetGuideCoveragesByPlanIdAsync(string planId)
         {
             if (_cachedCoverages == null)
             {
@@ -234,7 +234,7 @@ namespace mmlfcp.Repository
 
             return _cachedCoverages.TryGetValue(planId, out var coverages)
                 ? coverages
-                : Enumerable.Empty<PlanCoverageEntity>();
+                :  new List<PlanCoverageEntity>();
 
             // SQL 쿼리
             //string sql = @"
@@ -278,14 +278,14 @@ namespace mmlfcp.Repository
 
                 _cachedCoverages = allCoverages
                     .GroupBy(c => c.plan_id)
-                    .ToDictionary(g => g.Key, g => g.AsEnumerable());
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
                 _logger.LogInformation("Coverages loaded and cached: {Count} plans", _cachedCoverages.Count);
             }
         }
 
 
-        public async Task<IEnumerable<ExceptionCompanyEntity>> GetExcpCompanysAsync(string ga_id)
+        public async Task<List<ExceptionCompanyEntity>> GetExcpCompanysAsync(string ga_id)
         {
             if (_cachedExpCompanys == null)
             {
@@ -305,7 +305,7 @@ namespace mmlfcp.Repository
 
             return _cachedExpCompanys.TryGetValue(ga_id, out var companys)
                 ? companys
-                : Enumerable.Empty<ExceptionCompanyEntity>();
+                :new List<ExceptionCompanyEntity>();
    
         }
         private async Task LoadAllExpCompanysAsync()
@@ -321,14 +321,14 @@ namespace mmlfcp.Repository
 
                 _cachedExpCompanys = allExpCompanys
                     .GroupBy(c => c.ga_id)
-                    .ToDictionary(g => g.Key, g => g.AsEnumerable());
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
                 _logger.LogInformation("Exception Companys loaded and cached: {Count} companys", _cachedExpCompanys.Count);
             }
         }
 
 
-        public async Task<IEnumerable<CoveragePremiumEntity>> GetProductCoveragePremiumsAsync(
+        public async Task<List<CoveragePremiumEntity>> GetProductCoveragePremiumsAsync(
                string planId, string gender, int age)
         {
 
@@ -404,7 +404,7 @@ namespace mmlfcp.Repository
         }
 
 
-        public async Task<IEnumerable<InsurCDPremiumEntity>> GetProductInsurCDPremiumsAsync(
+        public async Task<List<InsurCDPremiumEntity>> GetProductInsurCDPremiumsAsync(
                string planId, string gender, int age)
         {
 
@@ -490,7 +490,7 @@ namespace mmlfcp.Repository
 
         }
 
-        public async Task<IEnumerable<CoveragePremiumEntity>> GetCoveragePremiumsByAgesAsync(
+        public async Task<List<CoveragePremiumEntity>> GetCoveragePremiumsByAgesAsync(
             string planId, string gender, int baseAge)
         {
             var cacheKey = new AgePremiumCacheKey(planId, gender, baseAge);
@@ -574,7 +574,7 @@ namespace mmlfcp.Repository
             }
         }
 
-        public async Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsAsync(
+        public async Task<List<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsAsync(
                string planId, string gender, int age)
         {
             var cacheKey = new PremiumCacheKey(planId, gender, age);
@@ -656,7 +656,7 @@ namespace mmlfcp.Repository
         }
 
         //연령별 필수 보험료 조회
-        public async Task<IEnumerable<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsByAgesAsync(
+        public async Task<List<RequiredInsurCDPremiumEntity>> GetRequiredInsurCDPremiumsByAgesAsync(
                 string planId, string gender, int age)
         {
             var cacheKey = new AgePremiumCacheKey(planId, gender, age);

@@ -176,7 +176,8 @@ namespace mmlfcp.Controllers
 
 
                 //exception company
-                List<ExceptionCompanyEntity> exceptionCompanies = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).ToList();
+                var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code)
+                    .ToHashSet();
                 // 데이터 조회
                 var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);  //플랜별기준보장 데이터 - 화면 왼쪽
                 var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜  상품별 / 보장별 보험료
@@ -189,18 +190,15 @@ namespace mmlfcp.Controllers
                     remoteip,
                     plan_id, gender, age);
 
-                if (exceptionCompanies != null && exceptionCompanies.Any())
+                if (exceptionCompanyCodes.Count > 0)
                 {
-                    var exceptionCompanyCodes = exceptionCompanies
-                    .Select(e => e.company_code)
-                    .ToHashSet();
 
                     coveragePremiums = coveragePremiums
                                     .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
                                     .ToList();
                     insurCDPremiums = insurCDPremiums
                                     .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
-                                    .ToList();
+                                    .ToList(); 
 
                     requiredPremiums = requiredPremiums
                                     .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
@@ -211,10 +209,10 @@ namespace mmlfcp.Controllers
                 {
                     is_success = true,
                     error_message = "",
-                    plan_coverages = guideCoverages.ToList(),
-                    coverage_premiums = coveragePremiums.ToList(),
-                    product_insur_premiums = insurCDPremiums.ToList(),
-                    required_premiums = requiredPremiums.ToList()
+                    plan_coverages = guideCoverages,
+                    coverage_premiums = coveragePremiums,
+                    product_insur_premiums = insurCDPremiums,
+                    required_premiums = requiredPremiums
                 });
 
             }
