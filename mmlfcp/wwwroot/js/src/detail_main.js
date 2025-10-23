@@ -31,8 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         // 5. 상세 컨트롤러 초기화
         detailController.init();
 
-        //detailController.onPremiumsByAges();
-
 
     } catch (err) {
         console.error("[Detail Init 오류]", err);

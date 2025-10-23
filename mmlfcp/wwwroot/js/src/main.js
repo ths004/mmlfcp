@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 3. 인증 요청
         const authResult = await apiService.auth();
-
+        
         if (!authResult.is_success) {
             console.log(`인증 실패: ${authResult.error_message}`);
             return;
@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // ✅ 4. plans를 상태에 저장
         mmlfcp_state.set('mmlfcp_plans', authResult.plans);
+        mmlfcp_state.set('consultant_id', authResult.consultant_id);
+        mmlfcp_state.set('ga_id', authResult.ga_id);
 
         // 디버깅용 확인
         // mmlfcp_state.debug();

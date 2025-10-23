@@ -44,6 +44,16 @@ namespace mmlfcp.Repository
         public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
                PrintProductsRequest request);
 
+        //사용자 플랜 등록
+        public Task<UserCoverage> AddUserCoverageAsync(string ga_id, string consultant_id, UserCoverage user_bojang);
+
+        //사용자 플랜 수정
+        public Task<UserCoverage> UpdateUserCoverageAsync(string consultant_id, string user_plan_id);
+
+        //사용자 플랜 조회
+        public Task<List<UserCoverage>> GetUserCoverageAsync(String ga_id, String consultant_id);
+
+
         public  Task<Boolean> SaveAccesslog(String agency_company_cd, String consultant_id, string ipaddr, string plan_id, string gender, int age);
 
         public  Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id);
@@ -865,8 +875,147 @@ namespace mmlfcp.Repository
             return true;
         }
 
+        //사용자 플랜 등록
+        public async Task<UserCoverage> AddUserCoverageAsync(string ga_id, string consultant_id, UserCoverage userCoverage)
+        {
+            //1) DataTable 생성
+            var usercoverageDetails = new DataTable();
+            usercoverageDetails.Columns.Add("coverage_cd", typeof(string));
+            usercoverageDetails.Columns.Add("coverage_amount", typeof(float));
+
+            foreach (var detail in userCoverage.details)
+            {
+                usercoverageDetails.Rows.Add(detail.coverage_cd, detail.coverage_amount);
+            }
+
+            using (var connection = _context.CreateConnection())
+            {
+                //2) 프로시저 호출
+                var parameters = new DynamicParameters();
+                parameters.Add("@user_plan_id", userCoverage.user_plan_id == "" ? Guid.NewGuid().ToString() : userCoverage.user_plan_id);
+                parameters.Add("@user_plan_name", userCoverage.user_plan_name);
+                parameters.Add("@plan_type", userCoverage.plan_type);
+                parameters.Add("@ga_id", ga_id);
+                parameters.Add("@consultant_id", consultant_id);
+                parameters.Add("@user_plan_detail", usercoverageDetails.AsTableValuedParameter("t_mmlfcp_user_plan_detail"));
+
+                // 3) proc 실행 → 결과 매핑
+                var result = await connection.QueryFirstOrDefaultAsync<dynamic>("proc_add_user_plan", parameters, commandType: CommandType.StoredProcedure);
+
+                if (result != null)
+                {
+                    userCoverage.user_plan_id = result.cur_user_plan_id.ToString();
+                    userCoverage.in_date = result.in_date;
+                    userCoverage.up_date = result.up_date;
+                }
+            }
+            return userCoverage;
+        }
+
+        //사용자 플랜 수정
+        public async Task<UserCoverage> UpdateUserCoverageAsync(string consultant_id, string user_plan_id)
+        {
+            //1) 쿼리
+            string qry = @"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+                             SET NOCOUNT ON; 
+        
+                            DELETE FROM TB_MMLFCP_USER_PLAN
+                                WHERE user_plan_id = @user_plan_id
+                                    AND consultant_id = @consultant_id;
+
+                            DELETE FROM TB_MMLFCP_USER_PLAN_DETAIL
+                                    WHERE user_plan_id = @user_plan_id;
+                            ";
+            try
+            {
+                using (var connection = _context.CreateConnection())
+                {
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@consultant_id", consultant_id);
+                    parameters.Add("@user_plan_id", user_plan_id);
+                    await connection.ExecuteAsync(qry, parameters, commandType: CommandType.Text);
+                }
+                _logger.LogInformation("사용자 플랜 삭제 완료 - consultant_id: {consultant_id}, user_plan_id: {user_plan_id}", consultant_id, user_plan_id);
+
+                // 반환용 객체 구성 (삭제 후 확인용)
+                return new UserCoverage
+                {
+                    consultant_id = consultant_id,
+                    user_plan_id = user_plan_id,
+                    user_plan_name = string.Empty,
+                    in_date = DateTime.Now,
+                    up_date = DateTime.Now,
+                    details = new List<UserCoverageDetail>()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 플랜 삭제 중 오류 발생 - consultant_id: {consultant_id}, user_plan_id: {user_plan_id}", consultant_id, user_plan_id);
+                throw new Exception("사용자 플랜 삭제 중 오류가 발생했습니다. " + ex.Message);
+            }
+        }
+
+        //사용자 플랜 리스트 조회
+        public async Task<List<UserCoverage>> GetUserCoverageAsync(String ga_id, String consultant_id)
+        {
+            try
+            {
+                //1) 쿼리
+                string sql = @"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+                             SET NOCOUNT ON; 
+                            SELECT 
+                            CONVERT(varchar(36), a.user_plan_id) AS user_plan_id,
+                            a.user_plan_name,
+                            a.plan_type,
+                            a.ga_id,
+                            a.consultant_id,
+                            a.in_date,
+                            a.up_date,
+                            b.coverage_cd,
+                            b.coverage_amount
+                           
+                            FROM TB_MMLFCP_USER_PLAN a
+                            JOIN TB_MMLFCP_USER_PLAN_DETAIL b 
+                                ON a.user_plan_id = b.user_plan_id
+                                AND a.ga_id = @ga_id
+                                AND a.consultant_id = @consultant_id
+                            ORDER BY a.in_date desc, b.coverage_cd
+                            ";
+                using (var connection = _context.CreateConnection())
+                {
+                    var lookup = new Dictionary<String, UserCoverage>();
+
+                    // 2️) Dapper의 multi-mapping 활용
+                    var list = await connection.QueryAsync<UserCoverage, UserCoverageDetail, UserCoverage>(
+                        sql,
+                        (parent, detail) =>
+                        {
+                            if (!lookup.TryGetValue(parent.user_plan_id, out var userCoverage))
+                            {
+                                userCoverage = parent;
+                                userCoverage.details = new List<UserCoverageDetail>();
+                                lookup.Add(userCoverage.user_plan_id, userCoverage);
+                            }
+
+                            if (detail != null)
+                            {
+                                userCoverage.details.Add(detail);
+                            }
+                            return userCoverage;
+                        },
+                        new { ga_id, consultant_id },
+                        splitOn: "coverage_cd" // coverage_cd 기준으로 detail 구분
+                    );
+                    var result = lookup.Values.ToList();
+                    _logger.LogInformation("userCoverage cached for ga_id={ga_id}, consultant_id={consultant_id}", ga_id, consultant_id);
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 플랜 조회 중 오류 발생 - ga_id: {ga_id}, consultant_id:{consultant_id}", ga_id, consultant_id);
+                throw new Exception("사용자 플랜 조회 중 오류가 발생했습니다. " + ex.Message);
+            }
+        }
     }
-
-
-
 }

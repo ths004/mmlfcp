@@ -13,6 +13,10 @@ namespace mmlfcp.Models
     {
         public bool is_success { get; set; }
         public string error_message { get; set; } = string.Empty;
+
+        public String ga_id { get; set; }
+        public String consultant_id { get; set; }
+
         public List<PlanEntity> plans { get; set; } = new List<PlanEntity>();
     }
 
@@ -27,6 +31,8 @@ namespace mmlfcp.Models
 
         public List<InsurCDPremiumEntity> product_insur_premiums { get; set; } = new List<InsurCDPremiumEntity>();
         public List<RequiredInsurCDPremiumEntity> required_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
+
+        public List<UserCoverage> user_coverages { get; set; } = new List<UserCoverage>();
     }
 
     // 플랜 연령별 보험료 조회 응답 모델

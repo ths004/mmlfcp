@@ -115,6 +115,11 @@ namespace mmlfcp.Controllers
                     return Ok(response);
                 }
 
+                //consultant_id, ga_id 추가
+                response.consultant_id = AuthEntity.ConsultantID;
+                response.ga_id = AuthEntity.AgencyCompanyCD;
+
+
                 // 플랜 목록 조회
                 var plans = await _repository.GetPlansAsync();
                 response.plans = plans.ToList();
@@ -184,6 +189,10 @@ namespace mmlfcp.Controllers
                 var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜 상품별/ 담보별 보험료
                 var requiredPremiums = await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age);//필수 보험료 조회
 
+                //string plan_id, String ga_id, String consultant_id
+                var userCoverages = await _repository.GetUserCoverageAsync(authResult.AgencyCompanyCD, authResult.ConsultantID); //사용자 플랜 조회
+
+
                 await _repository.SaveAccesslog(
                     authResult.AgencyCompanyCD,
                     authResult.ConsultantID,
@@ -212,7 +221,8 @@ namespace mmlfcp.Controllers
                     plan_coverages = guideCoverages,
                     coverage_premiums = coveragePremiums,
                     product_insur_premiums = insurCDPremiums,
-                    required_premiums = requiredPremiums
+                    required_premiums = requiredPremiums,
+                    user_coverages = userCoverages
                 });
 
             }
@@ -357,5 +367,116 @@ namespace mmlfcp.Controllers
             response.is_success = true;
             return Ok(response);
         }
+
+        //사용자 플랜 등록
+        [HttpPost]
+        [Route("api/AddUserCoverages")]
+        public async Task<ActionResult<UserCoverageResponse>> AddUserCoverages([FromBody] UserCoverage request)
+        {
+            UserCoverageResponse response = new UserCoverageResponse();
+            response.is_success = false;
+
+            try
+            {
+                // JWT 토큰 검증
+                var authResult = ValidateJwtToken();
+                if (authResult.ErrorCode != 0)
+                {
+                    return Ok(new UserCoverageResponse
+                    {
+                        is_success = false,
+                        error_message = authResult.ErrorMessage,
+                    });
+                }
+
+                _logger.LogInformation("사용자 플랜 등록 요청  - ga_id: {ga_id}, consultant_id: {consultant_id}, user_plan_name: {user_plan_name}", request.ga_id, request.consultant_id, request.user_plan_name);
+
+                // 입력값 검증
+                if (string.IsNullOrEmpty(request.ga_id) || string.IsNullOrEmpty(request.consultant_id) || string.IsNullOrEmpty(request.user_plan_name))
+                {
+                    return Ok(new UserCoverageResponse
+                    {
+                        is_success = false,
+                        error_message = "필수 파라미터가 누락되었습니다."
+                    });
+                }
+
+                var userCoverage = await _repository.AddUserCoverageAsync(request.ga_id, request.consultant_id, request);
+                return Ok(new UserCoverageResponse
+                {
+                    is_success = true,
+                    error_message = "",
+                    userCoverage = userCoverage
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 플랜 등록 중 오류 발생");
+                return Ok(new UserCoverageResponse
+                {
+                    is_success = false,
+                    error_message = "사용자 플랜 등록 중 오류가 발생했습니다."
+                });
+            }
+        }
+
+        //사용자 플랜 삭제
+        [HttpPost]
+        [Route("api/UpdateUserCoverages")]
+        public async Task<ActionResult<UserCoverageResponse>> UpdateUserCoverages([FromBody] UserCoverage request)
+        {
+            UserCoverageResponse response = new UserCoverageResponse();
+            response.is_success = false;
+
+            try
+            {
+                var authResult = ValidateJwtToken();
+                if (authResult.ErrorCode != 0)
+                {
+                    // JWT 파싱된 ID 주입
+                    request.ga_id = authResult.AgencyCompanyCD;
+                    request.consultant_id = authResult.ConsultantID;
+
+                    return Ok(new UserCoverageResponse
+                    {
+                        is_success = false,
+                        error_message = authResult.ErrorMessage
+                    });
+                }
+
+                _logger.LogInformation("사용자 플랜 삭제 요청  - ga_id: {ga_id}, consultant_id: {consultant_id}, user_plan_name: {user_plan_name}", request.ga_id, request.consultant_id, request.user_plan_name);
+
+                // 입력값 검증
+                if (string.IsNullOrEmpty(request.consultant_id) || string.IsNullOrEmpty(request.user_plan_id.ToString()))
+                {
+                    return Ok(new UserCoverageResponse
+                    {
+                        is_success = false,
+                        error_message = "필수 파라미터가 누락되었습니다."
+                    });
+                }
+
+                var userCoverage = await _repository.UpdateUserCoverageAsync(request.consultant_id, request.user_plan_id);
+                return Ok(new UserCoverageResponse
+                {
+                    is_success = true,
+                    error_message = "",
+                    userCoverage = userCoverage
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 플랜 삭제 중 오류 발생");
+                return Ok(new UserCoverageResponse
+                {
+                    is_success = false,
+                    error_message = "사용자 플랜 삭제 중 오류가 발생했습니다."
+                });
+            }
+        }
+
+
     }
 }

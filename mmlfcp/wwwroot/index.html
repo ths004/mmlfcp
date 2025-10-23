@@ -94,6 +94,32 @@
         </div>
     </div>
 
+    <!-- My 플랜저장 모달-->
+    <div class="modal__layout modal03">
+        <div class="bg"></div>
+        <div class="area">
+            <div class="content">
+                <div class="inner">
+                    <button type="button" id="btn_user_cancel">
+                        <img src="./images/Close_remove.png"></button>
+                    <div class="modal-title">현재 보고 있는 화면을 플랜으로 만들어보세요</div>
+                    <br />
+                    <form action="">
+                        <input type="text" id="user_plan_name" maxlength="20"
+                            placeholder="플랜명을 입력해주세요. 예시 :생손보건강 손보종합무해지, 20년-100세" required />
+                        <button type="button" id="btn_share_user_add">플랜저장</button>
+                    </form>
+
+
+                    <div id="coverage_plans_list"
+                        style="margin-left: 10px; margin-top: 20px; overflow:scroll; width:685px; height:340px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!--출력 모달-->
     <div id="modal-layout" class="modal__layout modal01">
         <div class="bg"></div>
@@ -122,115 +148,6 @@
                                     </div>
                                 </div>
                             </li>
-
-                            <!-- <li id="plan-title">
-                                <div class="left">
-                                    <div class="radio-area">
-                                        <input type="radio" id="title02" name="plan_title" value="1">
-                                        <label for="title02">플랜별로 비교 출력</label>
-                                    </div>
-                                </div>
-                                <div class="right">
-                                    <div id="planInfo" class="print-info-area">
-                                        <ol>
-                                            <li>
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="plan01" name="planContents" value="0">
-                                                    <label for="plan01">암</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="plan02" name="planContents" value="1">
-                                                    <label for="plan02">뇌질환</label>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="plan03" name="planContents" value="2">
-                                                    <label for="plan03">심장질환</label>
-                                                </div>
-                                            </li>
-
-                                        </ol>
-                                    </div>
-                                </div>
-                            </li>
-
-
-                            <li id="product-title">
-                                <div class="left">
-                                    <div class="radio-area">
-                                        <input type="radio" id="title03" name="plan_title" value="2">
-                                        <label for="title03">만기 / 연령대별 보험료 비교출력</label>
-                                    </div>
-                                </div>
-                                <div class="right">
-
-                                    <div id="pay_term_info" class="print-info-area">
-                                        <ol>
-                                            <li id="payeterm01">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail01" name="paytermList" value="1">
-                                                    <label for="detail01">20년/80세 만기</label>
-                                                </div>
-                                            </li>
-                                            <li id="payeterm02">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail02" name="paytermList" value="2">
-                                                    <label for="detail02">20년/90세 만기</label>
-                                                </div>
-                                            </li>
-
-                                            <li id="payeterm03">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail03" name="paytermList" value="3">
-                                                    <label for="detail03">20년/95세 만기</label>
-                                                </div>
-                                            </li>
-
-                                            <li id="payeterm04">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail04" name="paytermList" value="4">
-                                                    <label for="detail04">20년/100세 만기</label>
-                                                </div>
-                                            </li>
-
-                                            <li id="payeterm05">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail05" name="paytermList" value="B">
-                                                    <label for="detail05">30년/80세 만기</label>
-                                                </div>
-                                            </li>
-
-                                            <li id="payeterm06">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail06" name="paytermList" value="C">
-                                                    <label for="detail06">30년/90세 만기</label>
-                                                </div>
-                                            </li>
-
-                                            <li id="payeterm07">
-                                                <div class="checkbox-area">
-                                                    <input type="checkbox" id="detail07" name="paytermList" value="E">
-                                                    <label for="detail07">30년/100세 만기</label>
-                                                </div>
-                                            </li>
-                                        </ol>
-                                    </div>
-
-
-                                    <div id="print_companyInfo" class="print-info-area-v2">
-                                        <div class="checkbox-area">
-                                            <input type="checkbox" id="companyAll" name="companyAll">
-                                            <label for="companyAll">보험사 모두 선택</label>
-                                        </div>
-                                        <ol id="selected_company">
-                                        </ol>
-                                    </div>
-
-                                </div>
-                            </li> -->
                         </ul>
 
                         <div class="button-area">
@@ -378,12 +295,6 @@
                         <div style="display: flex; align-items: center; margin-left: 20px;">
                             <span style="font-size: 12px; color: white; margin-right: 10px;">조회 결과:</span>
                             <div id="div-page-btn" style="display: flex; gap: 5px;">
-                                <!-- <button type="button" class="page-btn" data-page="1"
-                                    style="height: 30px; width: 30px; background-color: #2b579a; color: white; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">1</button>
-                                <button type="button" class="page-btn" data-page="2"
-                                    style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">2</button>
-                                <button type="button" class="page-btn" data-page="3"
-                                    style="height: 30px; width: 30px; background-color: #f0f0f0; color: #333; border: none; border-radius: 3px; font-size: 11px; cursor: pointer;">3</button> -->
                             </div>
                         </div>
                     </div>
@@ -393,6 +304,13 @@
                     <div class="company-area"
                         style="position:sticky; top:60px; background-color: #ffffff; z-index: 10; padding-left: 20px; box-shadow: 0px 10px 10px rgb(0, 0, 0, 0.2); height: 160px;">
                         <div class="left">
+
+                            <div style="font-size: 11px; color: #2f88ff; font-weight: 600;">플랜선택</div>
+                            <div>
+                                <select id="user_coverages"></select>
+                                <button type="button" id="btn_user_coverages_setting">플랜 설정</button>
+                            </div>
+
 
                             <button type="button" id="sort_total_premium" style="margin-top: 15px;">보험료 합계 정렬
                                 <img src="images/ico_sort.png" style="width: 13px; margin: 2px;" />

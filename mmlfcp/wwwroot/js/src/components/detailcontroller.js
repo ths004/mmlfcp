@@ -159,7 +159,6 @@ export const detailController = {
 
         // 최종 결과를 detail_coverage에 저장
         detail_coverage.coverage_premiums_by_ages = source;
-        // console.log('✅ 최종 coverage_premiums_by_ages', source);
     },
 
     setCoverageRequiredByAgeDetail() {

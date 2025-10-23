@@ -755,8 +755,6 @@ body .modal__layout .content_list {
   background: #D3D3D3;
 }
 
-
-
 #sort_total_premium {
   float: right;
   border-color: #aaaaaa;
@@ -770,7 +768,21 @@ body .modal__layout .content_list {
   flex: none;
 }
 
-#user_bojang_name {
+#user_coverages {
+  width: 280px;
+  padding: 10px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: normal;
+  line-height: 10px;
+  color: #000000;
+  cursor: pointer;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: 100px;
+}
+
+#user_plan_name {
   width: 460px;
   padding: 10px 30px;
   font-size: 14px;
@@ -787,21 +799,7 @@ body .modal__layout .content_list {
   border-radius: 100px;
 }
 
-#user_bojang {
-  width: 280px;
-  padding: 10px 10px;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: normal;
-  line-height: 10px;
-  color: #000000;
-  cursor: pointer;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  border-radius: 100px;
-}
-
-#btn_user_setting {
+#btn_user_coverages_setting {
   text-align: center;
   font-weight: 500;
   width: 75px;
@@ -810,6 +808,8 @@ body .modal__layout .content_list {
   background-color: #2f88ff;
   border-radius: 100px;
 }
+
+
 
 #btn_share_user_add {
   text-align: center;
@@ -830,7 +830,7 @@ body .modal__layout .content_list {
   float: right;
 }
 
-#user_del {
+#coverage_del {
   font-weight: 300;
   font-size: 11px;
   background-color: tomato;
@@ -838,6 +838,7 @@ body .modal__layout .content_list {
   padding: 5px 10px;
   border-radius: 53px;
 }
+
 
 .modal03 .content {
   width: 731px;

@@ -123,6 +123,51 @@ export const apiService = {
         });
 
         return handleResponse(res);
+    },
+
+    /**
+     * 사용자 플랜 등록 (POST)
+     * @param {Object} userCoverage 
+     * 예시: {
+     *   user_plan_id: '',
+     *   user_plan_name: '내 플랜 이름',
+     *   details: [{ coverage_cd: 'C01', coverage_amount: 100000 }]
+     * }
+     */
+
+    async AddUserCoverages(userCoverage) {
+        const url = `${BASE_URL}${API_MMLFCP_URL.API_ADD_USER_COVERAGES}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                ...defaultHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userCoverage)
+        });
+        return handleResponse(res);
+    },
+
+    /**
+     * 사용자 플랜 수정/삭제 (POST)
+     * @param {Object} userCoverage 
+     * 예시: {
+     *   user_plan_id: 'GUID',
+     *   user_plan_name: '삭제할 플랜 이름'
+     * }
+     */
+    async UpdateUserCoverages(userCoverage) {
+        const url = `${BASE_URL}${API_MMLFCP_URL.API_UPDATE_USER_COVERAGES}`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                ...defaultHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userCoverage)
+        });
+        return handleResponse(res);
     }
+
 
 };
