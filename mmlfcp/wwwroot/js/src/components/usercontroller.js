@@ -23,8 +23,8 @@ export const userController = {
         mmlfcp_state.set('user_coverage', updatedList[0]);
         mmlfcp_state.set('user_coverages', updatedList);
 
-        //  console.log('✅ 사용자 플랜 갱신 완료!');
-        //  console.log('🧩 기존 → 갱신 후 리스트:', updatedList);
+        console.log('✅ 사용자 플랜 갱신 완료!');
+        console.log('🧩 기존 → 갱신 후 리스트:', updatedList);
 
         //페이지 초기화
         _state.current_page = 1;
@@ -100,7 +100,7 @@ export const userController = {
                 const option = document.createElement('option');
                 option.value = coverage.user_plan_id;
                 option.textContent = coverage.user_plan_name;
-              
+
                 // 선택 상태 설정
                 if (coverage.user_plan_id == user_coverage.user_plan_id) {
                     option.selected = true;
@@ -146,9 +146,10 @@ export const userController = {
         // ✅ 기본플랜 복원
         if (!selected_user_plan_id || selected_user_plan_id == '') {
             this.restoreDefaultPlanState();
-            //console.log('🔁 기본플랜으로 복원되었습니다.');
+            console.log('🔁 기본플랜으로 복원되었습니다.');
             return;
         }
+
         //console.log('selected_user_plan_id', selected_user_plan_id);
 
         // ✅ 사용자 플랜 적용
