@@ -51,12 +51,12 @@ export const detailController = {
 
 
 
-        const plan_coverages = JSON.parse(localStorage.getItem("plan_coverages") || []);
-        const coverage_products = JSON.parse(localStorage.getItem("coverage_products") || []);
-        const coverage_insur_premiums_lists = JSON.parse(localStorage.getItem("coverage_insur_premiums_lists") || []);
+        const plan_coverages = JSON.parse(localStorage.getItem("plan_coverages") || "[]");
+        const coverage_products = JSON.parse(localStorage.getItem("coverage_products") || "[]");
+        const coverage_insur_premiums_lists = JSON.parse(localStorage.getItem("coverage_insur_premiums_lists") || "[]");
 
-        const coverage_premiums_by_ages = JSON.parse(localStorage.getItem('coverage_premiums_by_ages') || []);
-        const coverage_required_premiums_by_ages = JSON.parse(localStorage.getItem('coverage_required_premiums_by_ages') || []);
+        const coverage_premiums_by_ages = JSON.parse(localStorage.getItem('coverage_premiums_by_ages') || "[]");
+        const coverage_required_premiums_by_ages = JSON.parse(localStorage.getItem('coverage_required_premiums_by_ages') || "[]");
 
         detail_coverage.cust_name = cust_name;
         detail_coverage.birth_date = birth_date;
@@ -96,8 +96,7 @@ export const detailController = {
 
     setcoverageDetailMap() {
         // 변수 선언
-        const coverage_products = detail_coverage.coverage_products;
-
+        const coverage_products = detail_coverage.coverage_products || [];
         //초기화
         detail_coverage.guide_coverage_detail_item = new Map();
 
@@ -339,7 +338,7 @@ export const detailController = {
     //최대,최소 보험료 정보
     renderMinMaxPremium() {
         const plan_coverages = detail_coverage.plan_coverages;
-        const coverage_products = detail_coverage.coverage_products;
+        const coverage_products = detail_coverage.coverage_products || [];
         const plan_payment_expiration_name = detail_coverage.plan_payment_expiration_name;
 
         const stats = this.calculatePremiumStats(coverage_products, plan_payment_expiration_name);
@@ -445,6 +444,10 @@ export const detailController = {
             const min_product = coverage_products[stats.minPos];
             const max_product = coverage_products[stats.maxPos];
 
+            console.log(min_product);
+            console.log(max_product);
+            console.log('detail_coverage.guide_coverage_detail_item', detail_coverage.guide_coverage_detail_item);
+
             plan_coverages.forEach(bj => {
                 if (bj.plan_coverage_selected == "checked") {
                     let min_premium = 0;
@@ -460,25 +463,35 @@ export const detailController = {
                         const min_detailIdx = detail_coverage.guide_coverage_detail_item.get(min_product.company_code + bj.coverage_cd);
                         const max_detailIdx = detail_coverage.guide_coverage_detail_item.get(max_product.company_code + bj.coverage_cd);
 
-                        const min_detail = min_detailIdx != null ? min_product.DetailList[min_detailIdx] : null;
-                        const max_detail = max_detailIdx != null ? max_product.DetailList[max_detailIdx] : null;
-                        min_premium = min_detail != null ? min_detail.premium : 0;
-                        max_premium = max_detail != null ? max_detail.premium : 0;
+                        const min_detail = min_detailIdx ? min_product.DetailList[min_detailIdx] : null;
+                        const max_detail = max_detailIdx ? max_product.DetailList[max_detailIdx] : null;
+                        min_premium = min_detail ? min_detail.premium : 0;
+                        max_premium = max_detail ? max_detail.premium : 0;
+
+                        if (min_product.company_code == "DB") {
+
+                            console.log(bj.coverage_cd + "," + min_premium + "," + max_premium);
+                        }
+
                     }
                     // tr 추가
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                    <td>${bj.coverage_name}</td>
-                    <td>${bj.coverage_cd == 'aa00' ? '-' : app.formatNumber(bj.guide_coverage_amount)}</td>
-                    <td>${app.formatNumber(min_premium)}</td>
-                    <td>${app.formatNumber(max_premium)}</td>`;
+                        <td>${bj.coverage_name}</td>
+                        <td>${bj.coverage_cd == 'aa00' ? '-' : app.formatNumber(bj.guide_coverage_amount)}</td>
+                        <td>${app.formatNumber(min_premium)}</td>
+                        <td>${app.formatNumber(max_premium)}</td>`;
                     tbody2.appendChild(tr);
                 }
             });
 
             // ✅ tbody를 table에 붙여야 렌더링됨
             bojangTable.appendChild(tbody2);
+
         }
+
+
+
     },
 
     //연령대별 보험료 비교 랜더링
@@ -509,6 +522,7 @@ export const detailController = {
 
         // ✅ company_code와 선택된 값이 일치하는 객체 찾기
         const selectedCompany = coverage_premiums_by_ages_totals.find(item => item.company_code == selectedValue);
+        if (!selectedCompany) return;
 
 
         const agingPremiumTable = document.getElementById("aging_premium_info");
