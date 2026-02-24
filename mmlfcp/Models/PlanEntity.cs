@@ -12,5 +12,7 @@
         public int plan_max_m_age { get; set; }
         public int plan_min_f_age { get; set; }
         public int plan_max_f_age { get; set; }
+        public string insurance_type { get; set; }
+
     }
 }

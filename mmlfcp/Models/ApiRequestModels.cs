@@ -27,23 +27,37 @@ namespace mmlfcp.Models
         public string error_message { get; set; } = string.Empty;
         public List<PlanCoverageEntity> plan_coverages { get; set; } = new List<PlanCoverageEntity>();
 
-        public List<CoveragePremiumEntity> coverage_premiums { get; set; } = new List<CoveragePremiumEntity>();
+        public List<CoverageProductDto> coverage_premiums { get; set; } = new List<CoverageProductDto>();
 
-        public List<InsurCDPremiumEntity> product_insur_premiums { get; set; } = new List<InsurCDPremiumEntity>();
+        public List<InsurProductDto> product_insur_premiums { get; set; } = new List<InsurProductDto>();
         public List<RequiredInsurCDPremiumEntity> required_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
 
         public List<UserCoverage> user_coverages { get; set; } = new List<UserCoverage>();
     }
+
+
 
     // 플랜 연령별 보험료 조회 응답 모델
     public class ProductPremiumsByAgesResponse
     {
         public bool is_success { get; set; }
         public string error_message { get; set; } = string.Empty;
-        public List<CoveragePremiumEntity> coverage_premiums_by_ages { get; set; } = new List<CoveragePremiumEntity>();
+        public List<CoverageProductDto> coverage_premiums_by_ages { get; set; } = new List<CoverageProductDto>();
 
-        public List<RequiredInsurCDPremiumEntity> coverage_required_premiums_by_ages { get; set; } = new List<RequiredInsurCDPremiumEntity>();
+        public List<RequiredInsurGrouped> coverage_required_premiums_by_ages { get; set; } = new List<RequiredInsurGrouped>();
     }
+
+    //플랜 만기별 보혐료 조회 응답 모델
+    public class ProductPaytermPremiumsByAgesResponse
+    {
+        public bool is_success { get; set; }
+        public string error_message { get; set; } = string.Empty;
+
+        public List<RequiredInsurCDPremiumEntity> payterm_required_coverage_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
+        public List<PaytermCoveragePremiumGroup> payterm_coverage_premiums { get; set; } = new List<PaytermCoveragePremiumGroup>();
+    }
+
+
 
     public class PrintProductsResponse
     {

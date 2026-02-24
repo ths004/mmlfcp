@@ -131,7 +131,6 @@
 
                     <form action="">
                         <ul class="print-table-area">
-
                             <li id="one-title">
                                 <div class="left">
                                     <div class="radio-area">
@@ -148,6 +147,67 @@
                                     </div>
                                 </div>
                             </li>
+
+                            <li id="product-title">
+                                <div class="left">
+                                    <div class="radio-area">
+                                        <input type="radio" id="title02" name="plan_title" value="1">
+                                        <label for="title03">만기 / 연령대별 보험료 비교출력</label>
+                                    </div>
+                                </div>
+                                <div class="right">
+                                    <div id="paytermInfo" class="print-info-area">
+                                        <ol>
+                                            <li id="term_item_03">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_03" name="policy_terms" value="03">
+                                                    <label for="term_03">20년/80세 만기</label>
+                                                </div>
+                                            </li>
+                                            <li id="term_item_04">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_04" name="policy_terms" value="04">
+                                                    <label for="term_04">20년/90세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="term_item_05">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_05" name="policy_terms" value="05">
+                                                    <label for="term_05">20년/95세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="term_item_01">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_01" name="policy_terms" value="01">
+                                                    <label for="term_01">20년/100세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="term_item_07">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_07" name="policy_terms" value="07">
+                                                    <label for="term_07">30년/80세 만기</label>
+                                                </div>
+                                            </li>
+
+                                            <li id="term_item_08">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_08" name="policy_terms" value="08">
+                                                    <label for="term_08">30년/90세 만기</label>
+                                                </div>
+                                            </li>
+                                            <li id="term_item_09">
+                                                <div class="checkbox-area">
+                                                    <input type="checkbox" id="term_09" name="policy_terms" value="09">
+                                                    <label for="term_09">30년/100세 만기</label>
+                                                </div>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </li>
                         </ul>
 
                         <div class="button-area">
@@ -161,7 +221,7 @@
             </div>
         </div>
     </div>
-    <!--//출력 모달-->
+    <!--출력 모달 끝-->
 
 
     <!--price 모달-->
@@ -231,7 +291,7 @@
                         <li>
                             <span style="font-size: 11px; color: #2f88ff;">이름</span>
                             <div class="input-area">
-                                <input id="cust_name" type="text" value="홍길동">
+                                <input type="text" id="cust_name" value="홍길동">
                             </div>
                         </li>
                         <li>
@@ -242,19 +302,29 @@
                         </li>
                         <li>
                             <span style="font-size: 11px; color: #2f88ff;">성별</span>
-                            <select name="gender" id="gender">
+                            <select id="gender">
                                 <option value="M">남성</option>
                                 <option value="F">여성</option>
                             </select>
                         </li>
+
+                        <li>
+                            <span style="font-size: 11px; color: #2f88ff;">생손보 유형</span>
+                            <select id="selInsuranceType">
+                                <option value="LF">생손보</option>
+                                <option value="F">손보</option>
+                                <option value="L">생보</option>
+                            </select>
+
+
                         <li>
                             <span style="font-size: 11px; color: #2f88ff;">상품 유형</span>
-                            <select name="selProductsGroupCD" id="selProductsGroupCD">
+                            <select id="selProductsGroupCD">
                             </select>
                         </li>
                         <li>
                             <span style="font-size: 11px; color: #2f88ff;">만기</span>
-                            <select name="selPaymentExpirationCD" id="selPaymentExpirationCD">
+                            <select id="selPaymentExpirationCD">
                             </select>
                         </li>
 
@@ -284,7 +354,7 @@
                             상세내용 보기</button>
 
 
-                        <button type="button" id="productList-print"
+                        <button type="button" id="product_list_print"
                             style="height: 45px; padding: 0 10px; background-color: rgb(161, 244, 255); color: #333333; border: none; border-radius: 5px; white-space: nowrap;">
                             <img src="./images/ico__print.png" alt=""
                                 style="width: 14px; height: 14px; margin-right: 5px;">
@@ -414,7 +484,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-    <script type="module" src="./js/src/main.js?v=25.09.16.1"></script>
+    <script type="module" src="./js/src/main.js?v=26.02.02.1"></script>
 
     <script>
         var detailModal = document.getElementById("detailmodal");
@@ -436,5 +506,4 @@
         }
     </script>
 </body>
-
 </html>

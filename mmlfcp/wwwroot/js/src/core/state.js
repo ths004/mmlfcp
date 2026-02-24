@@ -10,7 +10,9 @@ export const _state =
     // ✅ 페이지 상태 추가
     current_page: 1,
     guide_coverage_item: new Map(),
-};
+    premiumBaseMap: new Map(),
+    coverageIndexMap: new Map()
+}
 
 export const mmlfcp_state = {
     /**
