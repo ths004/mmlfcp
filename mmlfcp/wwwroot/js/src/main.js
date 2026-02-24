@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 3. 인증 요청
         const authResult = await apiService.auth();
-        
+
         if (!authResult.is_success) {
             console.log(`인증 실패: ${authResult.error_message}`);
             return;
@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 디버깅용 확인
         // mmlfcp_state.debug();
+
+        //localstorage 일부 제거
+        Controller.resetBeforeSearch();
 
         // 5. ✅ 컨트롤러 초기화 호출
         Controller.init();

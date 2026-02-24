@@ -952,11 +952,11 @@ body .modal__layout .content {
 }
 
 .top-header section.bottom ul li select option {
-    color: #000
+    color: #000;
 }
 
 .top-header section.bottom ul li:nth-child(1) {
-    width: 198px;
+    width: 148px;
 }
 
 .top-header section.bottom ul li:nth-child(2) {
@@ -968,20 +968,19 @@ body .modal__layout .content {
 }
 
 .top-header section.bottom ul li:nth-child(4) {
-    width: 247px;
+    width: 113px;
 }
 
 .top-header section.bottom ul li:nth-child(5) {
-    width: 204px;
+    width: 230px;
 }
 
 .top-header section.bottom ul li:nth-child(6) {
-    width: 144px;
+    width: 150px;
 }
 
-
 .top-header section.bottom button {
-    background: #2f88ff
+    background: #2f88ff;
 }
 
 .content__fixed {

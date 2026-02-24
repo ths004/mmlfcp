@@ -20,4 +20,34 @@
         public float contract_amount { get; set; } // a.std_contract_amt
         public float premium { get; set; } // a.premium
     }
+
+    public class RequiredInsurGrouped
+    {
+        public string company_code { get; set; }
+        public string company_name { get; set; }
+        public string product_code { get; set; }
+        public string product_name { get; set; }
+        public string product_detail_name { get; set; }
+        public string product_conditions { get; set; }
+        public string pay_term { get; set; }
+
+        public List<RequiredInsurDetail> DetailList { get; set; } = new();
+    }
+
+    public class RequiredInsurDetail
+    {
+        public string gender { get; set; }
+        public int age { get; set; }
+
+        public string insur_cd { get; set; }
+        public string insur_nm { get; set; }
+        public string insur_bojang { get; set; }
+
+        public float min_insur_amount { get; set; }
+        public float min_premium { get; set; }
+        public float contract_amount { get; set; }
+        public float premium { get; set; }
+    }
+
+
 }
