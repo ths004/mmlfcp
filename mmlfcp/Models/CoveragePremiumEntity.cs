@@ -98,6 +98,11 @@
 
     public class PrintProductCoverage
     {
+        public string plan_type { get; set; }
+        public string plan_type_name { get; set; }
+        public string plan_payterm_type { get; set; }
+        public string plan_payterm_type_name { get; set; }
+
         public string company_code { get; set; }
         public string company_name { get; set; } // e.CD_NM
         public string product_code { get; set; }
@@ -106,6 +111,10 @@
         public float total_premium { get; set; } = 0;// 합계보험료
 
         public Dictionary<string,PrintCoveragePremium>? Coverages  { get; set; }  //key coverage_cd
+
+
+        public List<PrintProductByInAge> printProductByInAges { get; set; } = new List<PrintProductByInAge>();
+
 
         public void calculateTotalPremium()
         {
@@ -131,8 +140,23 @@
         public float coverage_amount { get; set; } // a.coverage_amount
         public float premium { get; set; } // a.premium
     }
+
+    public class PrintProductByInAge
+    {
+        public String company_code { get; set; }
+        public String product_code { get; set; }
+        public String product_name { get; set; }
+        public int insu_age { get; set; }
+        public long premium { get; set; }
+    }
+
     public class PrintRawCoverageData
     {
+        public string plan_type { get; set; }
+        public string plan_type_name { get; set; }
+        public string plan_payterm_type { get; set; }
+        public string plan_payterm_type_name { get; set; }
+
         public string company_code { get; set; }
         public string company_name { get; set; }
         public string product_code { get; set; }
