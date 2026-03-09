@@ -11,11 +11,17 @@ namespace mmlfcp.Middleware
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
 
-
         private OpenTypeFont _regularFont;
         private OpenTypeFont _boldFont;
-        private ImportedPageData _templatePage1;
-        private ImportedPageData _templatePage2;
+        private ImportedPageData _templatePage1;     //1
+        private ImportedPageData _templatePage2;     //4
+
+
+        private ImportedPageData _templateAgesPage;      //5
+        private ImportedPageData _templatePaytermsPage;  //2
+
+        private ImportedPageData _templatePlantypsPage;
+
         private string _reportSavePath;
 
         public ReportContext(IConfiguration config, IWebHostEnvironment env)
@@ -34,11 +40,18 @@ namespace mmlfcp.Middleware
             _regularFont = new OpenTypeFont(regularFontPath);
             _boldFont = new OpenTypeFont(boldFontPath);
 
-            // 템플릿 파일 로드
-            var templatePath = GetPhysicalPath(_config.GetValue<string>("ReportTemplatePath"));
-            _templatePage1 = new ImportedPageData(templatePath, 1);
-            _templatePage2 = new ImportedPageData(templatePath, 4);
             _reportSavePath = GetPhysicalPath(_config.GetValue<string>("ReportSavePath"));
+
+            // 템플릿 파일 로드
+            var Reporttemplate = GetPhysicalPath(_config.GetValue<string>("ReportTemplate"));
+            _templatePage1 = new ImportedPageData(Reporttemplate, 1);  //한장보험료
+            _templatePage2 = new ImportedPageData(Reporttemplate, 4);  //최저최대
+            _templatePaytermsPage = new ImportedPageData(Reporttemplate, 2);
+            _templateAgesPage = new ImportedPageData(Reporttemplate, 5);  
+
+            var ReportPlantypeTemplate = GetPhysicalPath(_config.GetValue<string>("ReportPlantypeTemplate"));
+            _templatePlantypsPage = new ImportedPageData(ReportPlantypeTemplate, 1);
+
         }
 
         private string GetPhysicalPath(string relativePath)
@@ -57,7 +70,12 @@ namespace mmlfcp.Middleware
         public OpenTypeFont GetRegularFont() => _regularFont;
         public OpenTypeFont GetBoldFont() => _boldFont;
         public ImportedPageData GetTemplatePage1() => _templatePage1;
-        public ImportedPageData GetTemplatePage2() => _templatePage2;  
+        public ImportedPageData GetTemplatePage2() => _templatePage2;
+        public ImportedPageData GetTemplateAgesPage() => _templateAgesPage;
+        public ImportedPageData GetTemplatePaytermsPage() => _templatePaytermsPage;
+
+        public ImportedPageData GetTemplatePlantypsPage() => _templatePlantypsPage;
+
 
         public string GetReportSavePath() => _reportSavePath;
 

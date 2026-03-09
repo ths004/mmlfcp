@@ -43,6 +43,16 @@ namespace mmlfcp.Repository
         public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
                PrintProductsRequest request);
 
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPaymentsAsync(
+               PrintProductsRequest request);
+
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByAgeAsync(
+       PrintProductsRequest request);
+
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPlanTypeAsync(
+               PrintProductsRequest request);
+
+
         //사용자 플랜 등록
         public Task<UserCoverage> AddUserCoverageAsync(string ga_id, string consultant_id, UserCoverage user_bojang);
 
@@ -1232,12 +1242,13 @@ namespace mmlfcp.Repository
             }
         }
 
+        //출력 한장보험료조회
         public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(
                PrintProductsRequest request)
         {
             // DataTable 생성
-            var coverageDataTable = request.CoverageToDataTable();
-            var companyDataTable = request.CompanyToDataTable();
+            var coverageDataTable = request.CoveragesToDataTable();
+            var companyDataTable = request.CompanysToDataTable();
 
             using (var connection = _context.CreateConnection())
             {
@@ -1257,13 +1268,18 @@ namespace mmlfcp.Repository
                 );
 
                 var groupedResults = rawResults
-                        .GroupBy(r => new { r.company_code, r.company_name, r.product_code, r.product_name })
+                        .GroupBy(r => new { r.company_code, r.product_code, r.plan_type, r.plan_payterm_type })
                         .Select(g => new PrintProductCoverage
                         {
                             company_code = g.Key.company_code,
-                            company_name = g.Key.company_name,
+                            company_name = g.First().company_name,
                             product_code = g.Key.product_code,
-                            product_name = g.Key.product_name,
+                            product_name = g.First().product_name,
+                            plan_type = g.Key.plan_type,
+                            plan_type_name = g.First().plan_type_name,
+                            plan_payterm_type = g.Key.plan_payterm_type,
+                            plan_payterm_type_name = g.First().plan_payterm_type_name,
+
                             Coverages = g.ToDictionary(
                                 item => item.coverage_cd,
                                 item => new PrintCoveragePremium
@@ -1283,6 +1299,204 @@ namespace mmlfcp.Repository
                 return groupedResults;
             }
         }
+
+        //출력 만기별 보험료 조회
+        public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPaymentsAsync(
+               PrintProductsRequest request)
+        {
+            // DataTable 생성
+            var coverageDataTable = request.CoveragesToDataTable();
+            var companyDataTable = request.CompanysToDataTable();
+            //var planPaymentExpirationTable = request.PlanPaymentExpirationsToDataTable();
+            
+            using (var connection = _context.CreateConnection())
+            {
+                var rawResults = await connection.QueryAsync<PrintRawCoverageData>(
+                    "mmlfcp_get_printdata_detail",
+                    new
+                    {
+                        plan_id = request.plan_id,
+                        gender = request.gender,
+                        age = request.age,
+                        coverage_table = coverageDataTable,
+                        company_table = companyDataTable
+                     //   payterm_type_table = planPaymentExpirationTable,
+                    }
+                );
+
+                var groupedResults = rawResults
+                        .GroupBy(r => new { r.company_code,  r.product_code, r.plan_type,r.plan_payterm_type })
+                        .Select(g => new PrintProductCoverage
+                        {
+                            company_code = g.Key.company_code,
+                            company_name = g.First().company_name,
+                            product_code = g.Key.product_code,
+                            product_name = g.First().product_name,
+                            plan_type = g.Key.plan_type,
+                            plan_type_name = g.First().plan_type_name,
+                            plan_payterm_type = g.Key.plan_payterm_type,
+                            plan_payterm_type_name = g.First().plan_payterm_type_name,
+
+                            Coverages = g.ToDictionary(
+                                item => item.coverage_cd,
+                                item => new PrintCoveragePremium
+                                {
+                                    coverage_cd = item.coverage_cd,
+                                    coverage_name = item.coverage_name,
+                                    coverage_seq = int.TryParse(item.coverage_seq, out int seq) ? seq : 0,
+                                    plan_coverage_amount = item.plan_coverage_amount,
+                                    plan_coverage_premium = (float)item.plan_coverage_premium,
+                                    coverage_amount = item.coverage_amount,
+                                    premium = (float)item.premium
+                                }
+                            )
+                        })
+                        .ToList();
+
+                return groupedResults;
+            }
+        }
+
+        //출력 연령별 보험료 조회
+        public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByAgeAsync(
+       PrintProductsRequest request)
+        {
+            // DataTable 생성
+            var coverageDataTable = request.CoveragesToDataTable();
+            var companyDataTable = request.CompanysToDataTable();
+
+            List<PrintProductCoverage> rtn = new List<PrintProductCoverage>();
+
+            List<PrintRawCoverageData> printRawCoverageDatas = new List<PrintRawCoverageData>();
+             List<PrintProductByInAge> printProductByInAges = new List<PrintProductByInAge>();  
+
+            using (var connection = _context.CreateConnection())
+            {
+
+                using (var multi = await connection.QueryMultipleAsync(
+                    "mmlfcp_get_printdata_detail_age",
+                    new
+                    {
+                        plan_id = request.plan_id,
+                        gender = request.gender,
+                        age = request.age,
+                        coverage_table = coverageDataTable,
+                        company_table = companyDataTable
+                    },
+                    commandType: CommandType.StoredProcedure)) 
+                {
+                    //첫번째 결과셋
+                    printRawCoverageDatas = multi.Read<PrintRawCoverageData>().ToList();
+                    //두번째 결과셋
+                    printProductByInAges = multi.Read<PrintProductByInAge>().ToList();
+
+                    //나이별 보험료 데이터와 연동해서 최종 결과 생성
+                   rtn =              printRawCoverageDatas
+                                     .GroupBy(r => new { r.company_code, r.product_code, r.plan_type, r.plan_payterm_type })
+                                     .Select(g => new PrintProductCoverage
+                                     {
+                                         company_code = g.Key.company_code,
+                                         company_name = g.First().company_name,
+                                         product_code = g.Key.product_code,
+                                         product_name = g.First().product_name,
+                                         plan_type = g.Key.plan_type,
+                                         plan_type_name = g.First().plan_type_name,
+                                         plan_payterm_type = g.Key.plan_payterm_type,
+                                         plan_payterm_type_name = g.First().plan_payterm_type_name,
+
+                                         Coverages = g.ToDictionary(
+                                             item => item.coverage_cd,
+                                             item => new PrintCoveragePremium
+                                             {
+                                                 coverage_cd = item.coverage_cd,
+                                                 coverage_name = item.coverage_name,
+                                                 coverage_seq = int.TryParse(item.coverage_seq, out int seq) ? seq : 0,
+                                                 plan_coverage_amount = item.plan_coverage_amount,
+                                                 plan_coverage_premium = (float)item.plan_coverage_premium,
+                                                 coverage_amount = item.coverage_amount,
+                                                 premium = (float)item.premium
+                                             }
+                                         ),
+
+                                         printProductByInAges = printProductByInAges.Where(p => p.company_code == g.Key.company_code && p.product_code == g.Key.product_code)
+                                                             .Select(p => new PrintProductByInAge
+                                                             {
+                                                                 company_code = p.company_code,
+                                                                 product_code = p.product_code,
+                                                                 product_name = p.product_name,
+                                                                 insu_age = p.insu_age,
+                                                                 premium = p.premium
+                                                             })
+                                                             .OrderBy(x => x.insu_age)
+                                                             .ToList()
+                                     })
+                                     .ToList();
+
+                }
+
+
+
+
+                return rtn;
+            }
+        }
+
+        //출력 플랜(상품)유형별 보험료 조회
+        public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPlanTypeAsync(
+               PrintProductsRequest request)
+        {
+            // DataTable 생성
+            var coverageDataTable = request.CoveragesToDataTable();
+            var companyDataTable = request.CompanysToDataTable();
+            var planPaymentExpirationTable = request.PlanPaymentExpirationsToDataTable();
+
+            using (var connection = _context.CreateConnection())
+            {
+                var rawResults = await connection.QueryAsync<PrintRawCoverageData>(
+                    "mmlfcp_get_printdata_detail_producttype",
+                    new
+                    {
+                        plan_id = request.plan_id,
+                        gender = request.gender,
+                        age = request.age,
+                        coverage_table = coverageDataTable,
+                        company_table = companyDataTable
+                    }
+                );
+
+                var groupedResults = rawResults
+                        .GroupBy(r => new { r.company_code, r.product_code, r.plan_type, r.plan_payterm_type })
+                        .Select(g => new PrintProductCoverage
+                        {
+                            company_code = g.Key.company_code,
+                            company_name = g.First().company_name,
+                            product_code = g.Key.product_code,
+                            product_name = g.First().product_name,
+                            plan_type = g.Key.plan_type,
+                            plan_type_name = g.First().plan_type_name,
+                            plan_payterm_type = g.Key.plan_payterm_type,
+                            plan_payterm_type_name = g.First().plan_payterm_type_name,
+
+                            Coverages = g.ToDictionary(
+                                item => item.coverage_cd,
+                                item => new PrintCoveragePremium
+                                {
+                                    coverage_cd = item.coverage_cd,
+                                    coverage_name = item.coverage_name,
+                                    coverage_seq = int.TryParse(item.coverage_seq, out int seq) ? seq : 0,
+                                    plan_coverage_amount = item.plan_coverage_amount,
+                                    plan_coverage_premium = (float)item.plan_coverage_premium,
+                                    coverage_amount = item.coverage_amount,
+                                    premium = (float)item.premium
+                                }
+                            )
+                        })
+                        .ToList();
+
+                return groupedResults;
+            }
+        }
+
 
         public async Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id)
         {
