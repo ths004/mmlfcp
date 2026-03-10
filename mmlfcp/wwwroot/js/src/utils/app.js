@@ -46,16 +46,20 @@ export const app = {
     },
 
     // 날짜 형식을 'YYYY-MM-DD'로 변환하는 함수
-    formatDate(date) {
-        const d = new Date(date);
-        let month = '' + (d.getMonth() + 1);
-        let day = '' + d.getDate();
-        const year = d.getFullYear();
+    formatDate(dateString) {
+        // 1. 숫자로 들어올 경우를 대비해 문자열로 변환하고, 데이터가 없으면 빈 문자열 반환
+        const str = String(dateString || "");
 
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
+        // 2. 8자리가 아닐 경우 원본을 반환하거나 예외 처리 (방어 코드)
+        if (str.length !== 8) return str;
 
-        return [year, month, day].join('-');
+        // 3. slice를 이용해 깔끔하게 분리 (죠르디러버님의 아이디어!)
+        const year = str.slice(0, 4);
+        const month = str.slice(4, 6);
+        const day = str.slice(6, 8);
+
+        // 4. 점(.)이나 대시(-) 등 원하는 구분자로 결합
+        return `${year}.${month}.${day}`;
     },
     convertDateFormat(date) {
         if (!(date instanceof Date) || isNaN(date)) {

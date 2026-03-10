@@ -88,6 +88,27 @@ export const apiService = {
     },
 
     /**
+    * 무해지 및 간편보험료 조회 (GET)
+    * /api/PlanCoveragePremiumComparison?plan_id=...&age=...&gender=...
+    */
+    async getPlanCoveragePremiumsComparison({ plan_id, plan_type, plan_payterm_type, age, gender }) {
+        const query = new URLSearchParams({
+            plan_id: String(plan_id ?? ''),
+            plan_type: String(plan_type ?? ''),
+            plan_payterm_type: String(plan_payterm_type ?? ''),
+            age: String(age ?? ''),
+            gender: String(gender ?? '')
+        }).toString();
+
+        const url = `${BASE_URL}${API_MMLFCP_URL.API_PLAN_COVERAGE_COMPARISON}?${query}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: defaultHeaders()
+        });
+        return handleResponse(res);
+    },
+
+    /**
     * 플랜 연령별 보험료 조회 (GET)
     * /api/ProductPremiumsByAges?plan_id=...&age=...&gender=...
     */

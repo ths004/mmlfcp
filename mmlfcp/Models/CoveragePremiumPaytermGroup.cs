@@ -9,6 +9,10 @@
         public string company_code { get; set; }
         public string company_name { get; set; }
 
+        public string plan_type { get; set; }
+
+        public string plan_name { get; set; }
+
         public string product_code { get; set; }
         public string product_name { get; set; }
         public string product_detail_name { get; set; }
@@ -41,6 +45,10 @@
         public string company_code { get; set; }
         public string company_name { get; set; }
 
+        public string plan_type { get; set; }
+
+        public string plan_name { get; set; }
+
         public string product_code { get; set; }
         public string product_name { get; set; }
         public string product_detail_name { get; set; }
@@ -51,8 +59,7 @@
         public string gender { get; set; }
         public int age { get; set; }
 
-        public List<PaytermCoveragePremiumDetail> DetailList { get; set; }
-            = new();
+        public List<PaytermCoveragePremiumDetail> DetailList { get; set; } = new();
     }
 
 

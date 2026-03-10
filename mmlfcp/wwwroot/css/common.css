@@ -2118,3 +2118,30 @@ a {
 }
 
 /* 중요 공지 말풍선 스타일 끝 */
+
+.bottom-content .tab-btn-common {
+  height: 28px !important;
+  /* 높이를 더 줄임 */
+  padding: 0 8px !important;
+  /* 좌우 여백 살짝 축소 */
+  background-color: #a1f4ff !important;
+  color: #333 !important;
+  border: 1px solid #b2f2ff !important;
+  border-radius: 4px !important;
+  /* 둥근 느낌 유지 */
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.bottom-content .tab-btn-common:hover {
+  background-color: #7ceeff !important;
+  border-color: #5edceb !important;
+}
+
+

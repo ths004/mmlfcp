@@ -117,7 +117,6 @@ export const userController = {
         mmlfcp_state.set('plan_coverages', structuredClone(snapshot.plan_coverages));
         mmlfcp_state.set('required_premiums', structuredClone(snapshot.required_premiums));
         mmlfcp_state.set('coverage_premiums', structuredClone(snapshot.coverage_premiums));
-        mmlfcp_state.set('payterm_coverage_premiums', structuredClone(snapshot.payterm_coverage_premiums));
         mmlfcp_state.set('product_insur_premiums', structuredClone(snapshot.product_insur_premiums));
 
 
@@ -157,10 +156,7 @@ export const userController = {
         //2. coverage_premiums 업데이트 + ratioMap 생성
         const ratioMap = this.updateStateFromSelectedUserCoveragePremium(userDetailMap);
 
-        //3. coverage_payterm_premiums 업데이트
-        this.updateStateFromSelectedUserPaytermCoveragePremium(userDetailMap);
-
-        //4. product_insur_premiums 업데이트
+        //3. product_insur_premiums 업데이트
         this.updateStateFromSelectedUserInsurPremium(ratioMap);
 
     },
@@ -211,13 +207,20 @@ export const userController = {
                     };
                 }
 
-                //3. 담보 계산
-                const newAmount = Number(userDetailMap.get(coverage_cd)) || 0;
-                const baseAmount = Number(detail.guide_coverage_amount) || 1;
-                const basePremium = Number(detail.guide_coverage_premium) || 0;
+                // base_premium 원본 보존
+                if (detail.base_premium === undefined || detail.base_premium === null) {
+                    detail.base_premium = Number(detail.premium) || 0;
+                }
 
+                const newAmount = Number(userDetailMap.get(coverage_cd)) || 0;
+                const baseAmount = Number(detail.guide_coverage_amount) || 0;
+                const basePremium = Number(detail.base_premium) || 0;
+
+                //3. 담보 계산
                 const ratio = newAmount / baseAmount;
-                const newPremium = Math.round(basePremium * ratio);
+                const coverage_amount = Math.round(ratio * baseAmount);
+                const premium = Math.round(ratio * basePremium);
+
 
                 //4. ratioMap setting
                 if (!ratioMap[product.company_code]) {
@@ -227,8 +230,8 @@ export const userController = {
 
                 return {
                     ...detail,
-                    coverage_amount: newAmount,
-                    premium: newPremium,
+                    coverage_amount: coverage_amount,
+                    premium: premium,
                     cover_selected: 'checked'
                 };
             });
@@ -243,63 +246,9 @@ export const userController = {
         });
 
         mmlfcp_state.set('coverage_premiums', updatedProducts);
+        //console.log('userConotroller에서 coverage_premiums,', updatedProducts);
         return ratioMap;
     },
-
-    updateStateFromSelectedUserPaytermCoveragePremium(userDetailMap) {
-
-        const paytermProducts = mmlfcp_state.get('payterm_coverage_premiums') || [];
-
-        const updatedProducts = paytermProducts.map(product => {
-            const updatedDetails = product.detailList.map(detail => {
-                const coverage_cd = detail.coverage_cd;
-
-                // 1️⃣ 사용자 플랜에 없는 담보 → 미선택
-                if (!userDetailMap.has(coverage_cd)) {
-                    return { ...detail, cover_selected: '' };
-                }
-
-                // 2️⃣ aa00 (최저기본계약조건) 일 경우 계산 x
-                if (coverage_cd === 'aa00') {
-                    return {
-                        ...detail,
-                        guide_coverage_amount: detail.guide_coverage_amount,
-                        guide_coverage_premium: detail.guide_coverage_premium,
-                        cover_selected: 'checked'
-                    };
-                }
-
-                // 3️⃣ 일반 담보 계산
-                const newAmount = Number(userDetailMap.get(coverage_cd)) || 0;
-                const baseAmount = Number(detail.guide_coverage_amount) || 1;
-                const basePremium = Number(detail.guide_coverage_premium) || 0;
-
-                const ratio = newAmount / baseAmount;
-                const newPremium = Math.round(basePremium * ratio);
-
-                return {
-                    ...detail,
-                    coverage_amount: newAmount,
-                    premium: newPremium,
-                    cover_selected: 'checked'
-                };
-            });
-
-            // 4️⃣ 합계 계산
-            const totalPremium = updatedDetails.filter(d => d.cover_selected === 'checked').reduce((sum, d) => sum + (Number(d.premium) || 0), 0);
-
-            return {
-                ...product,
-                detailList: updatedDetails,
-                total_premium: totalPremium,
-                DispValue: true
-            };
-        });
-        mmlfcp_state.set('payterm_coverage_premiums', updatedProducts);
-    },
-
-
-
 
     //product_insur_premiums
     updateStateFromSelectedUserInsurPremium(ratioMap) {
@@ -323,8 +272,6 @@ export const userController = {
         });
         mmlfcp_state.set('product_insur_premiums', updated);
     },
-
-
 
 
     renderuserCoverageSetting() {

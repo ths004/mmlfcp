@@ -6,8 +6,8 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>한장으로 보는 생손보플랜 보험료 비교</title>
-    <link rel="stylesheet" href="./css/common.css?v=25.08.28.1">
-    <link rel='stylesheet' href='./css/detail.css?v=25.08.28.1'>
+    <link rel="stylesheet" href="./css/common.css?v=26.02.25.1">
+    <link rel='stylesheet' href='./css/detail.css?v=26.02.25.1'>
 </head>
 
 <body>
@@ -187,5 +187,32 @@
             <!--보험료 비교 화면 - 연령대별 보험료 비교 태그 끝-->
         </main>
     </div>
-    <script type="module" src="./js/src/detail_main.js?v=26.02.02.1"></script>
+    <script type="module" src="./js/src/detail_main.js?v=26.02.25.1"></script>
+
+    <script>
+        // 1. 상세 페이지(iframe)가 로드되자마자 가짜 히스토리를 심어 브라우저 뒤로가기를 가로챕니다.
+        history.pushState({ page: "detail" }, null, "");
+
+        // 2. 사용자가 뒤로 가기를 눌렀을 때 실행될 이벤트
+        window.onpopstate = function (event) {
+            if (window.parent) {
+                // [방법 1] 부모 창에 리팩토링된 'closeModal' 함수가 직접 정의되어 있다면 실행
+                if (typeof window.parent.closeModal === "function") {
+                    window.parent.closeModal();
+                }
+                // [방법 2] 함수가 없다면 기존처럼 닫기 버튼을 찾아서 강제로 클릭
+                else {
+                    // 통합 모달 버튼(#unifiedCloseBtn) 또는 기존 버튼(.detailclose) 모두 대응
+                    const parentCloseBtn =
+                        window.parent.document.getElementById('unifiedCloseBtn') ||
+                        window.parent.document.querySelector('.detailclose') ||
+                        window.parent.document.querySelector('.detailPlanclose');
+
+                    if (parentCloseBtn) {
+                        parentCloseBtn.click();
+                    }
+                }
+            }
+        };
+    </script>
 </body>

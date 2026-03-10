@@ -53,8 +53,23 @@ namespace mmlfcp.Models
         public bool is_success { get; set; }
         public string error_message { get; set; } = string.Empty;
 
-        public List<RequiredInsurCDPremiumEntity> payterm_required_coverage_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
         public List<PaytermCoveragePremiumGroup> payterm_coverage_premiums { get; set; } = new List<PaytermCoveragePremiumGroup>();
+        public List<RequiredInsurCDPremiumEntity> payterm_required_coverage_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
+        
+    }
+
+
+    //무해지 및 간편보험료 조회 응답 모델
+    public class SimplifiedPremiumResponse
+    {
+        public bool is_success { get; set; }
+        public string error_message { get; set; } = string.Empty;
+
+        public List<PaytermCoveragePremiumGroup> simplified_coverage_premiums { get; set; } = new List<PaytermCoveragePremiumGroup>();
+
+        public List<InsurProductDto> simplified_coverage_insur_premiums { get; set; } = new List<InsurProductDto>();
+
+        public List<RequiredInsurCDPremiumEntity> simplified_required_coverage_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
     }
 
 

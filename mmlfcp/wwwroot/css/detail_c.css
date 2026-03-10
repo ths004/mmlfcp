@@ -1,10 +1,10 @@
 body {
     width: 100%;
-    background-color: #fff
+    background-color: #fff;
 }
 
 .modal__layout {
-    display: none
+    display: none;
 }
 
 .modal__layout .modal-bg {
@@ -13,8 +13,8 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, .9);
-    z-index: 9998
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 9998;
 }
 
 .modal__layout .area {
@@ -31,57 +31,89 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0
+    bottom: 0;
 }
 
-.modal__layout .plan_content_list {
+.modal__layout .coverage_insur_detail_main {
     position: relative;
     width: 692px;
     padding: 40px 20px 40px;
     border-radius: 15px;
     background-color: #fff;
-    z-index: 9999 !important
+    z-index: 9999 !important;
 }
+
+.modal__layout .coverage_insur_detail {
+    margin: 0 22px;
+}
+
+.modal__layout .coverage_insur_detail .button-area {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.modal__layout .coverage_insur_detail .button-area button {
+    width: 105px;
+    height: 35px;
+    border-radius: 17.25px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.modal__layout .coverage_insur_detail .button-area .btn__close {
+    margin-left: 27px;
+    color: #2F2F2F;
+    background: #D3D3D3;
+}
+
 
 /* .modal__layout .content h2 {
     font-weight: 700;
     font-size: 20px;
-    line-height: 25px
-}
-
-.modal__layout .content strong {
+    line-height: 25px;
+  }
+  
+  .modal__layout .content strong {
     display: block;
     margin-top: 23px;
     font-weight: 700;
     font-size: 15px;
-    line-height: 19px
-}
-
-.modal__layout .content span {
+    line-height: 19px;
+  }
+  
+  .modal__layout .content span {
     display: block;
     margin-top: 15px;
     font-weight: 500;
     font-size: 12px;
-    line-height: 15px
-}
-
-.modal__layout .content button {
+    line-height: 15px;
+  }
+  
+  .modal__layout .content button {
     display: block;
     width: 105px;
     height: 33px;
     margin: 136px auto 0;
-    background: #c9c9c9;
+    background: #C9C9C9;
     border-radius: 38px;
     font-weight: 700;
     font-size: 13px;
     line-height: 16px;
-    text-align: center
-} */
+    text-align: center;
+  } */
 
 .insurance-wrap header,
 .insurance-wrap main {
     width: 1440px;
-    margin: 0 auto
+    margin: 0 auto;
 }
 
 .insurance-wrap .tab-header {
@@ -95,12 +127,12 @@ body {
     -ms-flex-pack: justify;
     justify-content: space-between;
     height: 89px;
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .tab-close {
     margin-right: 29px;
-    cursor: pointer
+    cursor: pointer;
 }
 
 .insurance-wrap .tab-list {
@@ -110,16 +142,16 @@ body {
     -webkit-box-align: center;
     -ms-flex-align: center;
     align-items: center;
-    margin: 17px 0 0 19px
+    margin: 17px 0 0 19px;
 }
 
 .insurance-wrap .tab-list li:first-child {
-    margin-left: 0
+    margin-left: 0;
 }
 
 .insurance-wrap .tab-list li.active {
     height: 83px;
-    background-color: #fff
+    background-color: rgb(255, 255, 255);
 }
 
 .insurance-wrap .tab-list li {
@@ -135,23 +167,24 @@ body {
     width: 278px;
     height: 71px;
     margin-left: 2px;
-    background: #fff;
+    background: #FFFFFF;
     border-radius: 20px 20px 0px 0px;
     font-weight: 700;
     font-size: 24px;
     cursor: pointer;
     text-align: center;
-    color: #595f69;
-    background-color: rgba(255, 255, 255, .5);
+    color: #595F69;
+    background-color: rgba(255, 255, 255, 0.5);
 
     /* 1. 기본적으로 투명도를 조절해서 자연스럽게 보이게 함 */
     opacity: 1;
     transition: opacity 0.3s ease, transform 0.3s ease;
+
 }
 
 .insurance-wrap .tab-content {
     display: none;
-    background: #fff
+    background: #fff;
 }
 
 .insurance-wrap .tab-content .tc-top ul {
@@ -164,30 +197,30 @@ body {
     -webkit-box-align: center;
     -ms-flex-align: center;
     align-items: center;
-    padding-top: 72px
+    padding-top: 72px;
 }
 
 .insurance-wrap .tab-content .tc-top ul li:first-child {
-    margin-right: 0
+    margin-right: 0;
 }
 
 .insurance-wrap .tab-content .tc-top ul li {
     margin-left: 35px;
     font-size: 32px;
     line-height: 47px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .tab-content .tc-top ul li strong {
-    font-weight: 700
+    font-weight: 700;
 }
 
 .insurance-wrap .tab-content .tc-top ul li span {
-    font-weight: 400
+    font-weight: 400;
 }
 
 .insurance-wrap .tab-content .tc-middle {
-    margin: 0 19px
+    margin: 0 19px;
 }
 
 .insurance-wrap .tab-content .tc-middle table th {
@@ -197,38 +230,38 @@ body {
     font-size: 24px;
     line-height: 36px;
     text-align: center;
-    color: #fff
+    color: #fff;
 }
 
 .insurance-wrap .tab-content .tc-middle table td {
     height: 85px;
     padding: 0 39px;
-    border-bottom: 1px solid #000;
+    border-bottom: 1px solid #000000;
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #595f69;
-    background: #fff
+    color: #595F69;
+    background: #fff;
 }
 
 .insurance-wrap .tab-content .tc-middle table td strong {
     font-size: 32px;
-    line-height: 47px
+    line-height: 47px;
 }
 
 .insurance-wrap .tab-content .tc-middle table td strong.plus {
-    color: #e60f0f
+    color: #E60F0F;
 }
 
 .insurance-wrap .tab-content .tc-middle table td strong.minus {
-    color: #0463fc
+    color: #0463FC;
 }
 
 .insurance-wrap .tab-content .tc-middle table td:nth-child(2),
 .insurance-wrap .tab-content .tc-middle table td:nth-child(3),
 .insurance-wrap .tab-content .tc-middle table td:nth-child(4),
 .insurance-wrap .tab-content .tc-middle table td:nth-child(5) {
-    text-align: center
+    text-align: center;
 }
 
 .insurance-wrap .tab-content .tc-middle .title-header {
@@ -240,7 +273,7 @@ body {
     align-items: center;
     -webkit-box-pack: justify;
     -ms-flex-pack: justify;
-    justify-content: space-between
+    justify-content: space-between;
 }
 
 .insurance-wrap .tab-content .tc-middle .title-header strong {
@@ -250,7 +283,7 @@ body {
     font-weight: 700;
     font-size: 32px;
     line-height: 47px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .tab-content .tc-middle .title-header span {
@@ -258,11 +291,11 @@ body {
     font-weight: 400;
     font-size: 12px;
     line-height: 18px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .tab-content .tc-bottom {
-    padding: 87px 0 47px
+    padding: 87px 0 47px;
 }
 
 .insurance-wrap .tab-content .tc-bottom>strong {
@@ -271,11 +304,11 @@ body {
     font-weight: 700;
     font-size: 32px;
     line-height: 47px;
-    color: #e60f0f
+    color: #E60F0F;
 }
 
 .insurance-wrap .tab-content .tc-bottom ul {
-    margin: 20px 15px 0
+    margin: 20px 15px 0;
 }
 
 .insurance-wrap .tab-content .tc-bottom ul li {
@@ -284,7 +317,7 @@ body {
     display: flex;
     -webkit-box-align: center;
     -ms-flex-align: center;
-    align-items: center
+    align-items: center;
 }
 
 .insurance-wrap .tab-content .tc-bottom ul li span {
@@ -292,62 +325,62 @@ body {
     margin-left: 14px;
     font-weight: 400;
     font-size: 13px;
-    color: #8a8a8a
+    color: #8A8A8A;
 }
 
 .insurance-wrap .gray-bg td {
-    background: #f8f8f8 !important
+    background: #F8F8F8 !important;
 }
 
 .insurance-wrap .content01 .tc-middle,
 .insurance-wrap .content03 .tc-middle,
 .insurance-wrap .content04 .tc-middle {
-    background: #fcfcfc
+    background: #FCFCFC;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(1) {
-    margin-top: 72px
+    margin-top: 72px;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(1) {
     text-align: left;
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(2) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(3) {
-    background: #e60f0f
+    background: #E60F0F;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(2) {
     margin-top: 82px;
-    border-bottom: 3px solid #000
+    border-bottom: 3px solid #000;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(1) {
     text-align: left;
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(2) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(3) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(4) {
-    background: #e60f0f
+    background: #E60F0F;
 }
 
 .insurance-wrap .content01 .tc-middle section:nth-child(2) td {
     font-weight: 700;
     font-size: 24px;
-    line-height: 36px
+    line-height: 36px;
 }
 
 .insurance-wrap .content02 .tc-fixed {
@@ -355,20 +388,20 @@ body {
     top: 0;
     height: 189px;
     background: #fff;
-    z-index: 10
+    z-index: 10;
 }
 
 .insurance-wrap .content02 .insurance-wrap .content02 .bottom-content .company-area {
-    background: #fff
+    background: #fff;
 }
 
 .insurance-wrap .content02 .bottom-content .product-table-wrap .table-area {
-    overflow: visible
+    overflow: visible;
 }
 
 .insurance-wrap .content02 .product02,
 .insurance-wrap .content02 .product03 {
-    margin-top: 46px
+    margin-top: 46px;
 }
 
 .insurance-wrap .content02 .total-amount {
@@ -379,38 +412,38 @@ body {
     -ms-flex-align: center;
     align-items: center;
     height: 80px;
-    background: #f8f8f8;
+    background: #F8F8F8;
     border-top: 2px solid #979797;
-    border-bottom: 2px solid #000
+    border-bottom: 2px solid #000000;
 }
 
 .insurance-wrap .content02 .total-amount .left {
     width: 389px;
-    text-align: center
+    text-align: center;
 }
 
 .insurance-wrap .content02 .total-amount .left p {
     font-weight: 700;
     font-size: 18px;
     line-height: 27px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .content02 .total-amount .left p span {
-    font-weight: 400 !important
+    font-weight: 400 !important;
 }
 
 .insurance-wrap .content02 .total-amount .left .text__red {
     font-weight: 700;
-    color: #e60f0f
+    color: #E60F0F;
 }
 
 .insurance-wrap .content02 .total-amount .right {
-    width: 1013px
+    width: 1013px;
 }
 
 .insurance-wrap .content02 .total-amount .right ul {
-    width: 100%
+    width: 100%;
 }
 
 .insurance-wrap .content02 .total-amount .right ul li {
@@ -423,7 +456,7 @@ body {
     -ms-flex-pack: distribute;
     justify-content: space-around;
     width: 100%;
-    height: 60px
+    height: 60px;
 }
 
 .insurance-wrap .content02 .total-amount .right ul li span {
@@ -432,28 +465,21 @@ body {
     width: 75px;
     text-align: center;
     cursor: pointer;
-    font-weight: 400;
+    font-weight: 700;
     font-size: 18px;
-    line-height: 27px
+    line-height: 27px;
 }
 
-.insurance-wrap .content02 .company-area .company__green {
-    color: #20a144 !important
-}
-
-.insurance-wrap .content02 .company-area .company__red {
-    color: #f05c54 !important
-}
 
 .insurance-wrap .content02 .bottom-content .company-area .right ul li .inner .price-area span {
     font-weight: 700;
     font-size: 16px;
     line-height: 24px;
-    color: #3f434a
+    color: #3F434A;
 }
 
 .insurance-wrap .content02 .bottom-content .company-area .right ul li .inner .btn__product-info {
-    border-radius: 0
+    border-radius: 0;
 }
 
 .insurance-wrap .content02 .company-area .size {
@@ -468,15 +494,15 @@ body {
     font-weight: 700;
     font-size: 10px;
     line-height: 22px;
-    cursor: pointer
+    cursor: pointer;
 }
 
 .insurance-wrap .content02 .company-area .size.least {
-    background: #0463fc
+    background: #0463FC;
 }
 
 .insurance-wrap .content02 .company-area .size.maximum {
-    background: #e60f0f
+    background: #E60F0F;
 }
 
 .insurance-wrap .content02 .product-table-wrap .title-header {
@@ -486,33 +512,29 @@ body {
     height: 47px;
     margin-top: 0;
     padding-bottom: 20px;
-    border-bottom: 2px solid #000
+    border-bottom: 2px solid #000;
 }
 
 .insurance-wrap .content02 .product-table-wrap .title-header strong {
     font-weight: 700;
     font-size: 32px;
-    line-height: 47px
+    line-height: 47px;
 }
 
 .insurance-wrap .content02 .bottom-content .bottom {
     -webkit-box-shadow: none;
     box-shadow: none;
-    border-radius: 0px 0px 20px 20px
+    border-radius: 0px 0px 20px 20px;
 }
 
 .insurance-wrap .content02 .bottom-content .company-area {
-    border-bottom: 0
-}
-
-.insurance-wrap .content02 .company__blue {
-    color: #0463fc
+    border-bottom: 0;
 }
 
 .insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-info__list ul.info__price>li span em {
     font-weight: 400;
     font-size: 18px;
-    line-height: 27px
+    line-height: 27px;
 }
 
 .insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li {
@@ -528,7 +550,7 @@ body {
     padding: 0 24px 0 15px;
     background: #f8f9f9;
     border-right: 1px solid #e6e6e6;
-    border-bottom: 1px solid #e6e6e6
+    border-bottom: 1px solid #e6e6e6;
 }
 
 .insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li .right {
@@ -536,7 +558,21 @@ body {
     height: 29px;
     background: #fff;
     border: 1px solid #979797;
-    border-radius: 0
+    border-radius: 0;
+}
+
+.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li .rightn {
+    background: #fff;
+    border: 0px solid #979797;
+
+    width: 65px;
+    height: 29px;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 27px;
+    margin-right: 15px;
+    color: #202020;
+    text-align: right;
 }
 
 .insurance-wrap .content02 .product-name__list .checkbox-area input+label {
@@ -554,7 +590,7 @@ body {
     width: 65px;
     height: 29px;
     font-weight: 400;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 27px;
     margin-right: 15px;
     color: #202020;
@@ -563,7 +599,7 @@ body {
 
 .insurance-wrap .content02 .bottom-content .company-area {
     height: auto;
-    padding: 16px 0 0 19px
+    padding: 16px 0 0 19px;
 }
 
 .insurance-wrap .content02 .title-header {
@@ -576,7 +612,7 @@ body {
     -webkit-box-pack: end;
     -ms-flex-pack: end;
     justify-content: end;
-    margin-top: 23px
+    margin-top: 23px;
 }
 
 .insurance-wrap .content02 .title-header span {
@@ -585,11 +621,11 @@ body {
     font-weight: 400;
     font-size: 12px;
     line-height: 18px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .content02 .tc-middle {
-    background: #fff
+    background: #fff;
 }
 
 .insurance-wrap .content03 select,
@@ -602,9 +638,9 @@ body {
     margin: 38px auto 0;
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
-    border: 3px solid #304ffd;
+    border: 3px solid #304FFD;
     border-radius: 42px;
-    color: #304ffd;
+    color: #304FFD;
     font-weight: 700;
     font-size: 30px;
     line-height: 47px;
@@ -614,128 +650,128 @@ body {
     -moz-appearance: none;
     appearance: none;
     cursor: pointer;
-    background: #f8f8f8 url("../images/_select-arrow.svg") no-repeat 96% center
+    background: #F8F8F8 url("../images/_select-arrow.svg") no-repeat 96% center;
 }
 
 .insurance-wrap .content03 section:nth-child(2) .title-text,
 .insurance-wrap .content04 section:nth-child(2) .title-text {
     font-weight: 700;
     font-size: 20px;
-    line-height: 30px
+    line-height: 30px;
 }
 
 .insurance-wrap .content03 section:nth-child(1) {
-    margin-top: 51px
+    margin-top: 51px;
 }
 
 .insurance-wrap .content03 section:nth-child(1) th:nth-child(1) {
     text-align: left;
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content03 section:nth-child(1) th:nth-child(2) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content03 section:nth-child(1) th:nth-child(3) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content03 section:nth-child(1) th:nth-child(4) {
-    background: #61a0ff;
-    opacity: .7
+    background: #61A0FF;
+    opacity: 0.7;
 }
 
 .insurance-wrap .content03 section:nth-child(1) td {
     font-weight: 700;
     font-size: 24px;
     line-height: 36px;
-    text-align: right !important
+    text-align: right !important;
 }
 
 .insurance-wrap .content03 section:nth-child(1) td strong,
 .insurance-wrap .content03 section:nth-child(1) td span {
-    display: block
+    display: block;
 }
 
 .insurance-wrap .content03 section:nth-child(1) td strong {
     font-weight: 700;
     font-size: 32px;
-    line-height: 47px
+    line-height: 47px;
 }
 
 .insurance-wrap .content03 section:nth-child(1) td span {
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .content03 section:nth-child(1) td.none {
-    text-align: center !important
+    text-align: center !important;
 }
 
 .insurance-wrap .content03 section:nth-child(2) {
     margin-top: 83px;
-    border-bottom: 3px solid #000
+    border-bottom: 3px solid #000;
 }
 
 .insurance-wrap .content03 section:nth-child(2) th:nth-child(1) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content03 section:nth-child(2) th:nth-child(2) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content03 section:nth-child(2) th:nth-child(3) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content03 section:nth-child(2) th:nth-child(4) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content03 section:nth-child(2) th:nth-child(5) {
-    background: #61a0ff;
-    opacity: .7
+    background: #61A0FF;
+    opacity: 0.7;
 }
 
 .insurance-wrap .content03 section:nth-child(2) td {
     font-weight: 700;
     font-size: 28px;
-    line-height: 41px
+    line-height: 41px;
 }
 
 .insurance-wrap .content04 section:nth-child(1) {
-    margin-top: 51px
+    margin-top: 51px;
 }
 
 .insurance-wrap .content04 section:nth-child(1) th:nth-child(1) {
     text-align: left;
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content04 section:nth-child(1) th:nth-child(2) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content04 section:nth-child(1) th:nth-child(3) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content04 section:nth-child(1) th:nth-child(4) {
-    background: #61a0ff;
-    opacity: .7
+    background: #61A0FF;
+    opacity: 0.7;
 }
 
 .insurance-wrap .content04 section:nth-child(1) th:nth-child(5) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content04 section:nth-child(1) th:nth-child(6) {
-    background: #61a0ff;
-    opacity: .7
+    background: #61A0FF;
+    opacity: 0.7;
 }
 
 .insurance-wrap .content04 section:nth-child(1) td.row {
@@ -743,82 +779,179 @@ body {
     font-weight: 700;
     font-size: 24px;
     line-height: 36px;
-    text-align: center !important
+    text-align: center !important;
 }
 
 .insurance-wrap .content04 section:nth-child(1) td {
     font-weight: 700;
     font-size: 28px;
     line-height: 41px;
-    text-align: right !important
+    text-align: right !important;
 }
 
 .insurance-wrap .content04 section:nth-child(1) td strong,
 .insurance-wrap .content04 section:nth-child(1) td span {
-    display: block
+    display: block;
 }
 
 .insurance-wrap .content04 section:nth-child(1) td strong {
     font-weight: 700;
     font-size: 28px;
-    line-height: 41px
+    line-height: 41px;
 }
 
 .insurance-wrap .content04 section:nth-child(1) td span {
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #595f69
+    color: #595F69;
 }
 
 .insurance-wrap .content04 section:nth-child(1) td.none02 {
-    color: #e60f0f;
-    text-align: center !important
+    color: #E60F0F;
+    text-align: center !important;
 }
 
 .insurance-wrap .content04 section:nth-child(2) {
     margin-top: 83px;
-    border-bottom: 3px solid #000
+    border-bottom: 3px solid #000;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(1) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(2) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(3) {
-    background: #2b579a
+    background: #2B579A;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(4) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(5) {
-    background: #61a0ff;
-    opacity: .7
+    background: #61A0FF;
+    opacity: 0.7;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(6) {
-    background: #61a0ff
+    background: #61A0FF;
 }
 
 .insurance-wrap .content04 section:nth-child(2) th:nth-child(7) {
-    background: #61a0ff;
-    opacity: .7
+    background: #61A0FF;
+    opacity: 0.7;
 }
 
 .insurance-wrap .content04 section:nth-child(2) td {
     font-weight: 700;
     font-size: 30px;
-    line-height: 44px
+    line-height: 44px;
 }
 
 .insurance-wrap .tab-content.show {
-    display: block
+    display: block;
 }
 
-/*# sourceMappingURL=tab.min.css.map */
+.company__blue {
+    font-weight: 700;
+    color: #2879fb;
+}
+
+.company__red {
+    font-weight: 700;
+    color: #E60F0F;
+}
+
+.company__black {
+    font-weight: 700;
+    color: #0f0000;
+}
+
+
+body .modal__layout .simplifi_main {
+    position: relative;
+    background-color: #fff !important;
+    z-index: 999;
+}
+
+.modal__layout .simplifi_main {
+    position: relative;
+    width: 692px;
+    padding: 40px 20px 40px;
+    border-radius: 15px;
+    background-color: #fff;
+    z-index: 9999 !important;
+}
+
+.modal__layout .simplifi_inner .button-area {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.modal__layout .simplifi_inner .button-area button {
+    width: 105px;
+    height: 35px;
+    border-radius: 17.25px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.modal__layout .simplifi_inner .button-area .btn__close {
+    margin-left: 27px;
+    color: #2F2F2F;
+    background: #D3D3D3;
+}
+
+.bottom-content .company-area .right ul li .innerc {
+    position: relative;
+    width: 100px;
+}
+
+.bottom-content .company-area .right ul li .innerc .checkbox-area {
+    margin-left: 35%;
+}
+
+.bottom-content .company-area .right ul li .innerc .price-area {
+    margin-top: 5px;
+}
+
+.bottom-content .company-area .right ul li .innerc .price-area span {
+    display: block;
+    text-align: center;
+}
+
+.bottom-content .company-area .right ul li .innerc .img-area {
+    padding-top: 26px;
+    height: 50px;
+    font-weight: 500;
+    text-align: center;
+    font-size: 14px;
+}
+
+.bottom-content .company-area .right ul li .innerc .btn__product-info {
+    width: 100px;
+    height: 24px;
+    margin-top: 10px;
+    line-height: 19px;
+    background: #22CCE2;
+    border-radius: 3px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 10px;
+}
+
+
+/*# sourceMappingURL=tab.css.map */
