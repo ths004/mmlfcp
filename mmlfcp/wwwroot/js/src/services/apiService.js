@@ -136,8 +136,8 @@ export const apiService = {
     /*
     플랜별 기준보장, 상품별 담보별, 필수보험료 정보 한장출력
 */
-    async PrintProducts({ cust_name, age, gender, birth_date, plan_id, plan_type_id, plan_type_name, plan_payment_expiration_cd, plan_payment_expiration_name, is_required_coverage, company_codes, coverages }) {
-        const body = {
+    async PrintProducts({ print_gubun,cust_name, age, gender, birth_date, plan_id, plan_type_id, plan_type_name, plan_payment_expiration_cd, plan_payment_expiration_name, is_required_coverage, company_codes, coverages }) {
+        const body = { 
             cust_name: String(cust_name ?? ''),
             age: Number(age ?? 0),
             gender: String(gender ?? ''),
@@ -151,7 +151,10 @@ export const apiService = {
             plan_payment_expiration_name: String(plan_payment_expiration_name ?? ''),
             is_required_coverage: String(is_required_coverage ?? 'N'),
             company_codes: company_codes || [],
-            coverages: coverages || []
+            coverages: coverages || [],
+            plan_payment_expiration_codes : [],
+            print_gubun : print_gubun ,//0. 한장 , 1.납입-만기별 , 2.연령별 ,3 상품유형별
+
         };
 
         const url = `${BASE_URL}${API_MMLFCP_URL.API_PRINT_PRODUCTS}`;

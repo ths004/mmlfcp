@@ -477,7 +477,7 @@ namespace mmlfcp.Controllers
             string event_id = "PRINT";
             // JWT 토큰 검증
             var authResult = ValidateJwtToken();
-            if (authResult.ErrorCode != 0)
+            if (authResult.ErrorCode != 0) 
             {
                 response.error_message = authResult.ErrorMessage;
 
@@ -499,16 +499,66 @@ namespace mmlfcp.Controllers
                 return Ok(response);
 
             }
-            List<PrintProductCoverage> coverage_list = await _repository.GetPrintProductCoveragePremiumsAsync(request);
+
+            try
+            {
+                List<PrintProductCoverage> coverage_list = new List<PrintProductCoverage>();
 
 
-            response.pdf_uri = _reportService.MakePDFReport(authResult.AgencyCompanyCD, authResult.ConsultantID, request, coverage_list);
+                //0. 한장 , 1.납입-만기별 , 2.연령별 ,3 상품유형별
+                if (request.print_gubun == 0) //한장
+                {
+                    coverage_list = await _repository.GetPrintProductCoveragePremiumsAsync(request);
+                }
+                else if (request.print_gubun == 1) //납입-만기별
+                {
+                    coverage_list = await _repository.GetPrintProductCoveragePremiumsByPaymentsAsync(request);
+                }
+                else if (request.print_gubun == 2) //연령별
+                {
+                    coverage_list = await _repository.GetPrintProductCoveragePremiumsByAgeAsync(request);
+                }
+                else if (request.print_gubun == 3) //플랜(상품)유형별
+                {
+                    /*
+                    01  생손보 건강(무해지),02  생손보 간편3.3.5(무해지),03 생손보 간편3.5.5(무해지),04 생손보 간편3.10.10(5)(무해지)
+                    05  손보 종합(표준환급),06  손보 종합(무해지),07   손보 5.10.10(무해지),14  손보 간편3.2.5(무해지),15  손보 간편3.3.5(무해지),16  손보 간편3.5.5(무해지),17  손보 간편3.10.10(5)(무해지),
+		            09  생보 건강(무해지),11   생보 간편3.3.5(무해지),12  생보 간편3.5.5(무해지),13  생보 간편3.10.5(무해지),
+		            18  손보 어린이(표준환급),19 손보 어린이(무해지)
+                    20  손보 청소년(표준환급),21 손보 청소년(무해지),22  손보 청소년5.10.10(무해지)
+                    */
+                    if ("01,02,03,04,05,06,07,14,15,16,17,09,11,12,13,18,19,20,21,22".Contains(request.plan_type_id) == false)
+                    {
+                        response.error_message = "상품(플랜)유형을 확인 해 주세요";
+                        return Ok(response);
+                    }
+                    coverage_list = await _repository.GetPrintProductCoveragePremiumsByPlanTypeAsync(request);
+                }
+                else //오류
+                {
+                    response.error_message = "출력 구분(print_gubun)은 0~3 사이의 값이어야 합니다.";
+                    return Ok(response);
+                }
 
-            await _repository.SaveEventlog(authResult.AgencyCompanyCD, authResult.ConsultantID, event_id);
+                response.pdf_uri = _reportService.MakePDFReport(authResult.AgencyCompanyCD, authResult.ConsultantID, request, coverage_list);
+                
+                await _repository.SaveEventlog(authResult.AgencyCompanyCD, authResult.ConsultantID, event_id);
 
-            response.is_success = true;
-            return Ok(response);
+                response.is_success = true;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "출력 중 오류 예외 발생");
+
+                response.error_message = "출력 중 오류가 발생하였습니다.";
+                return Ok(response);
+            }
+
         }
+
+
+
 
         //사용자 플랜 등록
         [HttpPost]

@@ -365,6 +365,7 @@ export const Controller = {
 
     //출력 데이터 만들기
     setCoveragesPrintData() {
+        const print_gubun = document.querySelector("input[name='plan_title']:checked")?.value || '0';
         const cust_name = mmlfcp_state.get('cust_name');
         const age = mmlfcp_state.get('age');
         const gender = mmlfcp_state.get('gender');
@@ -413,6 +414,7 @@ export const Controller = {
 
         // 최종 출력 데이터
         const printData = {
+            print_gubun,
             cust_name,
             age,
             gender,

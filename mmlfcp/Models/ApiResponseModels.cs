@@ -14,15 +14,6 @@ namespace mmlfcp.Models
     public class PrintProductsRequest
     {
 
-        public bool is_success { get; set; }
-        public string error_message { get; set; } = string.Empty;
-        public List<PlanCoverageEntity> plan_coverages { get; set; } = new List<PlanCoverageEntity>();
-
-        public List<CoveragePremiumEntity> coverage_premiums { get; set; } = new List<CoveragePremiumEntity>();
-
-        public List<InsurCDPremiumEntity> product_insur_premiums { get; set; } = new List<InsurCDPremiumEntity>();
-        public List<RequiredInsurCDPremiumEntity> required_premiums { get; set; } = new List<RequiredInsurCDPremiumEntity>();
-
         public String cust_name { get; set; }
 
         public int   age { get; set; }
@@ -47,8 +38,12 @@ namespace mmlfcp.Models
 
         public List<PrintCoverage>? coverages { get; set; }      //선택된 보장
 
+        public List<String> plan_payment_expiration_codes { get; set; }
 
-        public DataTable CoverageToDataTable()
+        //0. 한장 , 1.납입-만기별 , 2.연령별 ,3 상품유형별
+        public int print_gubun { get; set; }
+
+        public DataTable CoveragesToDataTable()
         {
             DataTable table = new DataTable();
             table.Columns.Add("coverage_cd", typeof(string));
@@ -65,7 +60,7 @@ namespace mmlfcp.Models
             return table;
         }
 
-        public DataTable CompanyToDataTable()
+        public DataTable CompanysToDataTable()
         {
             int seq = 0;
             DataTable table = new DataTable();
@@ -82,6 +77,23 @@ namespace mmlfcp.Models
             return table;
         }
 
+
+        public DataTable PlanPaymentExpirationsToDataTable()
+        {
+            int seq = 0;
+            DataTable table = new DataTable();
+            table.Columns.Add("plan_payterm_type", typeof(string));
+            table.Columns.Add("seq", typeof(int));
+            if (this.company_codes != null)
+            {
+                foreach (String detail in this.plan_payment_expiration_codes)
+                {
+                    table.Rows.Add(detail, seq);
+                    seq = seq + 1;
+                }
+            }
+            return table;
+        }
     }
 
     public class PrintCoverage
