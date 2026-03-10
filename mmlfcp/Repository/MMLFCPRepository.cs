@@ -52,16 +52,12 @@ namespace mmlfcp.Repository
         public Task<List<RequiredInsurCDPremiumEntity>> GetSimplifiedRequiredPremiums(string plan_id, string plan_type, string plan_payterm_type, string gender, int age);
 
 
-        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPaymentsAsync(
-               PrintProductsRequest request);
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPaymentsAsync(PrintProductsRequest request);
 
-        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByAgeAsync(
-       PrintProductsRequest request);
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByAgeAsync(PrintProductsRequest request);
 
-        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPlanTypeAsync(
-               PrintProductsRequest request);
-
-
+        public Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsByPlanTypeAsync(PrintProductsRequest request);
+        
         //사용자 플랜 등록
         public Task<UserCoverage> AddUserCoverageAsync(string ga_id, string consultant_id, UserCoverage user_bojang);
 
@@ -1674,7 +1670,7 @@ namespace mmlfcp.Repository
             {
                 _simplifiedRequiredPremiumsLock.Release();
             }
-
+        }
 
         //출력 한장보험료조회
         public async Task<List<PrintProductCoverage>> GetPrintProductCoveragePremiumsAsync(PrintProductsRequest request)
