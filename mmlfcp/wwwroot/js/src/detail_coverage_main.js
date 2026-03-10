@@ -1,18 +1,19 @@
-// detail_main.js
+// detail_coverage_main.js
 import { app } from './utils/app.js';
 import { appConstants } from './constants/constants.js';
 import { apiService } from './services/apiService.js';
 import { mmlfcp_state } from './core/state.js';
-import { detailController } from './components/detailcontroller.js';
+import { detailSimplController } from './components/detailsimplcontroller.js';
 
 // 파일 최상단에 변수 하나 선언
 let isApiCalled = false;
+
 document.addEventListener("DOMContentLoaded", async () => {
-
-    // ✅ [추가] 이미 API를 호출했거나, 뒤로가기 이벤트가 발생 중이면 종료
-    if (isApiCalled) return;
-
     try {
+
+        // ✅ [추가] 이미 API를 호출했거나, 뒤로가기 이벤트가 발생 중이면 종료
+        if (isApiCalled) return;
+
         // 1. URL에서 token 파라미터 추출
         const token = app.getUrlParameter("token");
         if (!token) {
@@ -22,9 +23,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // 2. 전역 appConstants에 토큰 저장
         appConstants.jwt = token;
-        appConstants.access_path = "MMLFCP_WEB_DETAIL";
+        appConstants.access_path = "MMLFCP_WEB_SIMPLIFICATION_DETAIL";
 
-        isApiCalled = true; // 호출 시작할 때 true로 변경
+        isApiCalled = true;
 
         // 3. 인증 요청
         const authResult = await apiService.auth();
@@ -34,14 +35,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // ✅ 4. plans를 상태에 저장
-        mmlfcp_state.set("mmlfcp_plans_detail", authResult.plans);
+        mmlfcp_state.set("mmlfcp_simplifi_plans", authResult.plans);
 
         // 5. 상세 컨트롤러 초기화
-        detailController.init();
+        detailSimplController.init();
+
 
     } catch (err) {
         isApiCalled = false; // 에러나면 다시 호출 가능하게 리셋
-        console.error("[Detail Init 오류]", err);
-        alert("상세 초기화 중 오류가 발생했습니다.");
+        console.error("[Detail Coverage Init 오류]", err);
+        alert("무해지 및 간편보험료 초기화 중 오류가 발생했습니다.");
     }
 });

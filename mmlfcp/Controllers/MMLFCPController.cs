@@ -298,6 +298,87 @@ namespace mmlfcp.Controllers
             }
         }
 
+
+        /// <summary>
+        /// 무해지 및 간편보험료 비교 조회
+        /// </summary>
+        /// <param name="plan_id">플랜 ID</param>
+        /// <param name="plan_type">상품 유형</param>
+        /// <param name="plan_payterm_type">만기 유형/param>
+        /// <param name="age">기준 나이</param>
+        /// <param name="gender">성별</param>
+        /// <returns>무해지 및 간편보험료 정보</returns>
+
+        //무해지 및 간편보험료 비교
+        [HttpGet]
+        [Route("api/PlanCoveragePremiumComparison")]
+        public async Task<ActionResult<SimplifiedPremiumResponse>> GetPlanCoveragePremiumsComparison([FromQuery] string plan_id, [FromQuery] string plan_type, [FromQuery] string plan_payterm_type, [FromQuery] int age, [FromQuery] string gender)
+        {
+            try
+            {
+                // JWT 토큰 검증
+                var authResult = ValidateJwtToken();
+                if (authResult.ErrorCode != 0)
+                {
+                    return Ok(new SimplifiedPremiumResponse
+                    {
+                        is_success = false,
+                        error_message = authResult.ErrorMessage
+                    });
+                }
+                _logger.LogInformation("무해지 및 간편보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, plan_payterm_type, age, gender);
+
+                // 입력값 검증
+                if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
+                {
+                    return Ok(new SimplifiedPremiumResponse
+                    {
+                        is_success = false,
+                        error_message = "필수 파라미터가 누락되었습니다."
+                    });
+                }
+                string remoteip = Utility.GetIPAddress(HttpContext);
+
+                //exception company
+                var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code).ToHashSet();
+
+                var simplified_coverage_premiums = await _repository.GetSimplifiedCoveragePremiums(plan_id, plan_type, plan_payterm_type, gender, age); //무해지 및 간편보험료 조회
+                var simplified_coverage_insur_premiums = await _repository.GetSimplifiedCoverageInsurPremiums(plan_id, plan_type, plan_payterm_type, gender, age);
+                var simplified_required_coverage_premiums = await _repository.GetSimplifiedRequiredPremiums(plan_id, plan_type, plan_payterm_type, gender, age);//무해지 및 간편 필수보험료 조회
+
+                await _repository.SaveAccesslog(authResult.AgencyCompanyCD, authResult.ConsultantID, remoteip, plan_id, gender, age);
+
+                if (exceptionCompanyCodes.Count > 0)
+                {
+                    simplified_coverage_premiums = simplified_coverage_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    simplified_coverage_insur_premiums = simplified_coverage_insur_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    simplified_required_coverage_premiums = simplified_required_coverage_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                }
+
+                return Ok(new SimplifiedPremiumResponse
+                {
+                    is_success = true,
+                    error_message = "",
+                    simplified_coverage_premiums = simplified_coverage_premiums,
+                    simplified_coverage_insur_premiums = simplified_coverage_insur_premiums,
+                    simplified_required_coverage_premiums = simplified_required_coverage_premiums
+                });
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "무해지 및 간편보험료 조회 중 오류 발생");
+                return Ok(new SimplifiedPremiumResponse
+                {
+                    is_success = false,
+                    error_message = "무해지 및 간편보험료 조회 중 오류가 발생했습니다."
+                });
+            }
+        }
+
+
+        //무해지 및 간편보험료 비교 
+
+
         /// <summary>
         /// 플랜 연령별 보험료 조회
         /// </summary>

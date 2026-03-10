@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//ko" "http://www.w3.org/TR/html4/strict.dtdViewer">
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한장으로 보는 생손보플랜 보험료 비교</title>
+    <link rel="stylesheet" href="./css/common.css?v=26.02.25.1">
+    <link rel="stylesheet" href="./css/detail_c.css?v=26.02.25.1">
+
+    <style>
+        /* Close button */
+        /* .detailPlanclose {
+            position: absolute;
+            top: 20px;
+            left: auto;
+            margin-left: 1350px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .detailPlanclose:hover,
+        .detailPlanclose:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        } */
+    </style>
+
+</head>
+
+<body>
+
+    <!--최대 모달-->
+    <div class="modal__layout" id="modal01">
+        <div class="modal-bg"></div>
+        <div class="area">
+            <div class="simplifi_main">
+                <div id="simplifiList" class="simplifi_inner">
+                </div>
+                <!--end simplifi_main-->
+            </div>
+        </div>
+    </div>
+
+    <div class="insurance-wrap">
+        <!-- 상단 탭 메뉴 -->
+        <header class="tab-header" style="position: sticky; top: 0px; z-index: 99;">
+            <!--탭-->
+            <span id="cust_info" style="font-size: 20px; color:#ffffff; margin-left: 40px;">
+            </span>
+            <span id="payment_info" style="font-size: 20px; color:#ffffff; margin-left: 0px;">
+            </span>
+            <span id="product_info" style="font-size: 20px; color:#ffffff; margin-left: 0px;">
+            </span>
+            <span style="font-size: 20px; color:#ffffff; margin-right: 0px;">
+                <form action="">
+                    <select id="product_group_name"
+                        style="font-size: 20px; padding: 5px; border-radius: 6px; width: 200px;">
+                    </select>
+                </form>
+            </span>
+            <span style="font-size: 20px; color:#ffffff; margin-left: -40px; margin-right: 150px;">
+                <button type="button" id="coverage_detail_print"
+                    style="height: 45px; padding: 10px 30px; background-color: rgb(161, 244, 255); color: #333333; font-size: 16px; border-radius: 12px;">출력하기</button>
+            </span>
+            <!-- <span class="detailPlanclose">&times;</span> -->
+
+        </header>
+        <!-- 상단 탭 메뉴 끝 -->
+        <main>
+            <!--보험료 비교 화면 - 무해지 및 간편 보험료 비교-->
+            <section class="tab-content content02 show">
+                <div class="title-header">
+                </div>
+                <div class="tc-middle">
+                    <div class="bottom-content">
+
+                        <section class=""
+                            style="position: sticky; top: 88px; z-index: 98; background-color:#ffffff; height: 132px;">
+                            <section class="company-area">
+                                <div class="left">
+                                    <span
+                                        style="color:#000000; position: absolute; margin-top: -40px; font-size: 15px;">
+                                        <h1>무해지 및 간편 보험료 비교</h1>
+                                    </span>
+                                    <span style="color:#000000; position: absolute; margin-top: -10px;">( 가입금액 : 만원 /
+                                        보험료
+                                        : 원 )</span>
+                                </div>
+
+                                <div id="simplifi_company_lists" class="right">
+                                </div>
+                            </section>
+                        </section>
+
+                        <section class="bottom" style="margin-top: -40px;">
+
+                            <!--암 질환 플랜-->
+                            <section class="product-table-wrap product01">
+                                <div class="title-header">
+                                    <strong> </strong>
+                                </div>
+                                <!--월 보험료-->
+                                <div class="total-amount"
+                                    style="position:sticky; top: 200px; z-index: 97; background-color: #ffffff;">
+                                    <div class="left">
+                                        <p>월 보험료</p>
+                                    </div>
+                                    <div class="right">
+                                        <ul>
+                                            <li id="monthly_premium_lists">
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+
+                                <!--총 납입 보험료-->
+                                <div class="total-amount"
+                                    style="border-top: 0px; position: sticky; top: 250px; z-index: 97; background-color: #ffffff; ">
+                                    <div class="left">
+                                        <p>총 납입 보험료</p>
+                                    </div>
+                                    <div class="right">
+                                        <ul>
+                                            <li id="payment_total_premium_lists">
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!--전체선택 창-->
+                                <!-- <div
+                                    style="border-bottom: 1px solid #000000; padding: 15px; position: sticky; top: 300px; z-index: 97; background-color: #ffffff; ">
+                                    <div class="left">
+                                        <div class="checkbox-area">
+                                            <input type="checkbox" id="all_checked" class="all">
+                                            <label for="all_checked">
+                                                <span style="margin-left:28px;">전체 선택</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div> -->
+
+                                <!--보장명/가입금액-->
+                                <div class="table-area">
+                                    <div class="product-name__list">
+                                        <ul id="simplifi_plan_lists">
+                                        </ul>
+                                    </div>
+
+                                    <!--보험료/상품정보-->
+                                    <div class="product-info__list">
+                                        <ul id="simplifi_premium_lists" class="info__price">
+                                        </ul>
+                                    </div>
+
+                                </div>
+
+                            </section>
+                        </section>
+                    </div>
+
+                    <!--설계자 교육용 자료-->
+                    <div class="tc-bottom">
+                        <strong>설계사 교육용 자료입니다!</strong>
+                        <ul>
+                            <li>
+                                <img src="./images/_list-ico.svg" alt="">
+                                <span>
+                                    본자료는 판매자 교육용 자료의 일부로 내용의 일부 또는 전체의 무단전제 및 복사를 금하며
+                                    고객에게 판매를 위해 직접 제시하는 용도로는 사용할 수 없습니다.
+                                    또한 담보별 가입 한도와 스코어링이 적용되지 않은 단순 보험료 비교입니다.
+                                </span>
+
+                            </li>
+                            <li>
+                                <img src="./images/_list-ico.svg" alt="">
+                                <span>
+                                    기본계약은 실제 가입설계시 달라질 수 있습니다.
+                                    상품설계를 위한 참고자료로 활용하세요.
+                                </span>
+
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+    <script type="module" src="./js/src/detail_coverage_main.js?v=26.03.03.1"></script>
+
+    <script>
+        // 1. 상세 페이지(iframe)가 로드되자마자 가짜 히스토리를 심어 브라우저 뒤로가기를 가로챕니다.
+        history.pushState({ page: "detail_c" }, null, "");
+
+        // 2. 사용자가 뒤로 가기를 눌렀을 때 실행될 이벤트
+        window.onpopstate = function (event) {
+            if (window.parent) {
+                // [방법 1] 부모 창에 리팩토링된 'closeModal' 함수가 직접 정의되어 있다면 실행
+                if (typeof window.parent.closeModal === "function") {
+                    window.parent.closeModal();
+                }
+                // [방법 2] 함수가 없다면 기존처럼 닫기 버튼을 찾아서 강제로 클릭
+                else {
+                    // 통합 모달 버튼(#unifiedCloseBtn) 또는 기존 버튼(.detailclose) 모두 대응
+                    const parentCloseBtn =
+                        window.parent.document.getElementById('unifiedCloseBtn') ||
+                        window.parent.document.querySelector('.detailclose') ||
+                        window.parent.document.querySelector('.detailPlanclose');
+
+                    if (parentCloseBtn) {
+                        parentCloseBtn.click();
+                    }
+                }
+            }
+        };
+    </script>
+</body>

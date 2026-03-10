@@ -1,17 +1,40 @@
 export const _state =
 {
+    jwt: '',
+    consultant_id: '',
+    ga_id: '',
     cust_name: '홍길동',
     plan_id: '921081111041',
-    gender: 'M',
-    age: 46,
+    plan_type_id: '01',
+    plan_type_name: '생손보 건강(무해지)',
+
+    plan_payment_expiration_cd: '01',
+    plan_payment_expiration_name: '20년/100세',
+    insurance_type: 'LF',
     birth_date: '19800101',
-    jwt: '',
+    gender: 'M',
+    age: 0,
+
+    guide_coverage_item: {},
+    coverage_ratio_map: {},
+    default_plan_snapshot: {},
+    user_coverage: {},
+
+    plan_coverages: [],
+    coverage_premiums: [],
+    product_insur_premiums: [],
+    required_premiums: [],
+    required_premiums_grouped: [],
+    user_coverages: [],
 
     // ✅ 페이지 상태 추가
     current_page: 1,
-    guide_coverage_item: new Map(),
-    premiumBaseMap: new Map(),
-    coverageIndexMap: new Map()
+    coveragePremiums_page: 1,
+    required_premiums_page: 1,
+    companyInfoEventsBound: false,
+
+    coverage_cd_checked: {},
+    company_code_checked: {},
 }
 
 export const mmlfcp_state = {

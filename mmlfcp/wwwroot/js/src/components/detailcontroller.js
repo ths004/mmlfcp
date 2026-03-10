@@ -1,4 +1,6 @@
 import { app } from '../utils/app.js';
+import { apiService } from '../services/apiService.js';
+import { mmlfcp_state } from '../core/state.js';
 
 const detail_coverage = {
 
@@ -17,23 +19,56 @@ const detail_coverage = {
 
     plan_coverages: [],
     coverage_premiums: [],
-    payterm_coverage_premiums: [],
     product_insur_premiums: [],
 
+    //연령별
     coverage_premiums_by_ages: [],
+    coverage_required_premiums_by_ages: [],
     coverage_premiums_by_ages_totals: [],
+
+    //만기별
+    payterm_coverage_premiums: [],
+    payterm_required_coverage_premiums: [],
+
     guide_coverage_detail_item: new Map(),
-    coverage_ratio_map: new Map(),
+    coverage_ratio_map: {},
     companyRows: [],
 };
 
 export const detailController = {
-    init() {
+    async init() {
 
+        //2.  로컬스토리지에서 기본 정보 로드
+        this.loadBasicInfo();
+
+        //3. 이벤트 실행
+        this.setcoverageDisplayonMenu();
+
+        //4. coverage_premiums setting
+        this.setcoverageDetailMap();
+
+        try {
+            await Promise.all([this.getProductPremiumsByAges(), this.getPaytermCoveragePremiums()]);
+            //5. rendering
+            this.setActiveTabUI();
+
+        }
+        catch (err) {
+            console.error("상세 데이터 로드 실패", err);
+            alert("데이터를 불러오는 중 오류가 발생했습니다.");
+        }
+
+        //6. events
+        this.detail_bindEvents();
+
+    },
+
+    loadBasicInfo() {
         detail_coverage.cust_name = localStorage.getItem('cust_name') || '';
         detail_coverage.birth_date = localStorage.getItem('birth_date') || '';
         detail_coverage.age = localStorage.getItem('age') || 0;
         detail_coverage.gender = localStorage.getItem('gender') || '';
+
 
         detail_coverage.plan_id = localStorage.getItem('plan_id') || '';
         detail_coverage.plan_type_id = localStorage.getItem('plan_type_id') || '';
@@ -42,22 +77,259 @@ export const detailController = {
         detail_coverage.plan_payment_expiration_cd = localStorage.getItem('plan_payment_expiration_cd') || '';
         detail_coverage.plan_payment_expiration_name = localStorage.getItem('plan_payment_expiration_name') || '';
 
+
         detail_coverage.plan_coverages = JSON.parse(localStorage.getItem("plan_coverages") || []);
         detail_coverage.coverage_premiums = JSON.parse(localStorage.getItem("coverage_premiums") || []);
-        detail_coverage.payterm_coverage_premiums = JSON.parse(localStorage.getItem("payterm_coverage_premiums") || []);
         detail_coverage.product_insur_premiums = JSON.parse(localStorage.getItem("product_insur_premiums") || []);
+        detail_coverage.coverage_ratio_map = JSON.parse(localStorage.getItem("coverage_ratio_map") || {});
 
-
-        detail_coverage.coverage_ratio_map = JSON.parse(localStorage.getItem('coverage_ratio_map') || {});
-        detail_coverage.coverage_premiums_by_ages = JSON.parse(localStorage.getItem("coverage_premiums_by_ages") || []);
-
-        // ⭐ 기존 로직 그대로 유지
-        this.setcoverageDisplayonMenu();
-        this.setcoverageDetailMap();
-        this.coverage_min_max_detail();
-        this.set_coverage_ages_detail();
-        this.detail_bindEvents();
+        console.log(detail_coverage);
     },
+
+    // detailcontroller.js 수정
+
+    setActiveTabUI() {
+        // 1. URL 파라미터에서 tab 가져오기 (없으면 기본값 premium)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabId = urlParams.get('tab') || 'premium';
+        console.log(`[setActiveTabUI] ${tabId} 보여짐`);
+
+        // 2. [UI 제어] 모든 탭(li)과 컨텐츠(section) 초기화 후 선택된 것만 활성화
+        const tabs = document.querySelectorAll('.tab-list li');
+        const contents = document.querySelectorAll('.tab-content');
+
+        // 3. 탭 li 태그들 처리
+        tabs.forEach(li => {
+            li.classList.remove('active');
+            if (li.id === tabId) li.classList.add('active');
+        });
+
+        // 컨텐츠 section 태그들 처리 (HTML 순서가 premium-0, payment-1, aging-2 인 점 활용)
+        const tabMap = { 'premium': 0, 'payment': 1, 'aging': 2 };
+        const targetIdx = tabMap[tabId] ?? 0;
+
+        contents.forEach((section, index) => {
+            section.classList.remove('show');
+            if (index === targetIdx) section.classList.add('show');
+        });
+
+        // 2️⃣ [데이터 호출] 탭 ID에 맞는 렌더링 함수를 실행
+        // 💡 여기서 'this'는 detailController를 가리킵니다.
+        this.renderTabContent(tabId);
+    },
+
+    // 탭별 렌더링 함수를 분기 처리하는 헬퍼 함수
+    renderTabContent(tabId) {
+        console.log(`[Tab Change] ${tabId} 렌더링 실행`);
+        switch (tabId) {
+            case "premium":
+                this.coverage_min_max_detail(); // 보험료 최저vs최대 렌더링
+                break;
+            case "payment":
+                this.coverage_payment_detail(); // 만기 보험료 비교 렌더링
+                break;
+            case "aging":
+                this.coverage_aging_detail();   // 연령별 보험료 비교 렌더링
+                break;
+        }
+    },
+
+
+    //연령별 보험료 조회 API
+    async getProductPremiumsByAges() {
+        try {
+            const { plan_id, age, gender } = detail_coverage;
+            const res = await apiService.getProductPremiumsByAges({ plan_id, age, gender });
+            if (res?.is_success) {
+                // detail_coverage 에 저장
+                detail_coverage.coverage_premiums_by_ages = res.coverage_premiums_by_ages || [];
+                detail_coverage.coverage_required_premiums_by_ages = res.coverage_required_premiums_by_ages || [];
+
+                //setting
+                this.setAgeCoveragePremiums();
+                this.setcoverageByAgeProducts();
+            }
+        }
+        catch (err) {
+            alert(err?.message || '조회 중 오류가 발생했습니다.');
+            return;
+        }
+    },
+
+    //만기별 보험료 조회 API
+    async getPaytermCoveragePremiums() {
+        try {
+            const { plan_id, plan_type_id, plan_payment_expiration_cd, age, gender } = detail_coverage;
+            const res = await apiService.getPaytermCoveragePremiums({ plan_id, plan_type: plan_type_id, plan_payterm_type: plan_payment_expiration_cd, age, gender });
+            if (res?.is_success) {
+
+                detail_coverage.payterm_coverage_premiums = res.payterm_coverage_premiums || [];
+                detail_coverage.payterm_required_coverage_premiums = res.payterm_required_coverage_premiums || [];
+
+                //setting
+                this.setPaytermCoveragePremiums();
+            }
+        }
+        catch (err) {
+            alert(err?.message || '만기별 보험료 조회 중 오류가 발생했습니다.');
+            return;
+        }
+    },
+
+    //1. 연령별 보험료 데이터 정제
+    setAgeCoveragePremiums() {
+        // 1️⃣ 데이터 가져오기 (detail_coverage 객체 내 데이터 사용)
+        const products = detail_coverage.coverage_premiums_by_ages || [];
+        const requiredList = detail_coverage.coverage_required_premiums_by_ages || []; // 상품별 필수보장 리스트
+        const main_coverage_premiums = detail_coverage.coverage_premiums || []; // 상품별 보장 리스트
+        const plan_coverages = detail_coverage.plan_coverages || []; // 담보 리스트
+
+        if (!products.length) return;
+
+        // 2️⃣ 동기화를 위한 Map 생성
+        const companyDispMap = new Map(main_coverage_premiums.map(c => [c.company_code, c.DispValue]));
+        const coverageSelectedMap = new Map(plan_coverages.map(p => [p.coverage_cd, p.plan_coverage_selected]));
+
+        // 3️⃣ 회사 + 나이 기준으로 필수보험료(required) 집계 Map 생성
+        const requiredMap = new Map();
+        if (requiredList.length) {
+            for (const company of requiredList) {
+                const company_code = company.company_code;
+                const details = company.detailList || [];
+                for (const d of details) {
+                    const key = `${company_code}|${d.age}`;
+                    if (!requiredMap.has(key)) {
+                        requiredMap.set(key, {
+                            min_amount: Math.round(d.min_insur_amount || 0),
+                            total_min_premium: 0
+                        });
+                    }
+                    requiredMap.get(key).total_min_premium += Math.round(d.min_premium || 0);
+                }
+            }
+        }
+
+        // 4️⃣ 제품(product) 순회하며 데이터 가공 및 상태 동기화
+        for (const product of products) {
+            // ✅ [동기화] 회사 노출 여부 (메인에 없으면 false)
+            product.DispValue = companyDispMap.has(product.company_code)
+                ? companyDispMap.get(product.company_code)
+                : false;
+
+            const key = `${product.company_code}|${product.age}`;
+            const details = product.detailList || [];
+
+            // ✅ [구조 생성] aa00(최저기본계약) 추가 (중복 방지 체크)
+            const requiredData = requiredMap.get(key);
+            if (requiredData && !details.some(d => d.coverage_cd === 'aa00')) {
+                details.unshift({
+                    coverage_cd: 'aa00',
+                    coverage_name: '최저기본계약조건',
+                    coverage_seq: -1,
+                    guide_coverage_amount: requiredData.min_amount,
+                    guide_coverage_premium: requiredData.total_min_premium,
+                    coverage_amount: requiredData.min_amount,
+                    premium: requiredData.total_min_premium,
+                    is_selected_coverage: 'Y',
+                    cover_selected: 'checked'
+                });
+            }
+
+            // ✅ [동기화] 각 담보별 선택 상태 반영
+            for (const d of details) {
+                // 메인에서 선택된 상태('checked')면 'checked', 아니면 ''
+                d.cover_selected = coverageSelectedMap.get(d.coverage_cd) === 'checked' ? 'checked' : '';
+            }
+        }
+
+        // 5️⃣ 최종 상태 반영
+        detail_coverage.coverage_premiums_by_ages = products;
+        //console.log("연령별 데이터 세팅 및 동기화 완료", products);
+    },
+
+    //2. 만기별 보험료 데이터 정제
+    setPaytermCoveragePremiums() {
+        const coverage_premiums = detail_coverage.payterm_coverage_premiums || [];
+        const required_premiums = detail_coverage.payterm_required_coverage_premiums || [];
+        const main_coverage_premiums = detail_coverage.coverage_premiums || [];
+        const plan_coverages = detail_coverage.plan_coverages || [];
+
+        // ✅ 메인에서 넘어온 가입금액 비율 맵 (중요!)
+        const ratioMap = detail_coverage.coverage_ratio_map || {};
+
+        if (!coverage_premiums.length) return;
+
+        const companyDispMap = new Map(main_coverage_premiums.map(c => [c.company_code, c.DispValue]));
+        const coverageSelectedMap = new Map(plan_coverages.map(p => [p.coverage_cd, p.plan_coverage_selected]));
+
+        const reqMap = required_premiums.reduce((map, r) => {
+            const key = r.company_code + '|' + r.product_code;
+            (map[key] ||= []).push(r);
+            return map;
+        }, Object.create(null));
+
+        for (const product of coverage_premiums) {
+            product.DispValue = companyDispMap.has(product.company_code) ? companyDispMap.get(product.company_code) : false;
+
+            const key = product.company_code + '|' + product.product_code;
+            const reqList = reqMap[key];
+
+            if (reqList?.length) {
+                let sum_min_premium = 0;
+                for (const r of reqList) {
+                    sum_min_premium += Math.round(r.min_premium || 0);
+                }
+
+                const aa00 = {
+                    coverage_cd: 'aa00',
+                    coverage_name: '최저기본계약조건',
+                    coverage_seq: -1,
+                    guide_coverage_amount: reqList[0].min_insur_amount || 0,
+                    coverage_amount: reqList[0].min_insur_amount || 0,
+                    guide_coverage_premium: sum_min_premium,
+                    premium: sum_min_premium,
+                    is_selected_coverage: 'Y',
+                    cover_selected: 'checked'
+                };
+
+                if (!product.detailList.some(d => d.coverage_cd === 'aa00')) {
+                    product.detailList = [aa00, ...(product.detailList || [])];
+                }
+            }
+
+            let total_premium = 0;
+            if (Array.isArray(product.detailList)) {
+                for (const detail of product.detailList) {
+                    // ✅ [가입금액 & 보험료 재계산 로직 추가]
+
+                    // base_premium 최초 1회 세팅
+                    detail.base_premium ??= detail.premium;
+
+                    if (detail.coverage_cd !== 'aa00') {
+                        // 메인에서 변경된 비율(ratio) 가져오기 (없으면 1)
+                        const ratio = ratioMap[detail.coverage_cd] ?? 1;
+                        // 기준 금액 * 비율 = 변경된 가입금액
+                        detail.coverage_amount = Math.round(ratio * (detail.guide_coverage_amount || 0));
+                        // 기준 보험료 * 비율 = 변경된 보험료
+                        detail.premium = Math.round(ratio * detail.base_premium || 0);
+
+                    }
+
+                    detail.cover_selected = coverageSelectedMap.get(detail.coverage_cd) === 'checked' ? 'checked' : '';
+
+                    if (detail.cover_selected === 'checked') {
+                        total_premium += detail.premium || 0;
+                    }
+                }
+            }
+            product.total_premium = total_premium;
+        }
+
+        const sortedPremiums = coverage_premiums.sort((a, b) => a.total_premium - b.total_premium);
+        detail_coverage.payterm_coverage_premiums = sortedPremiums;
+        //console.log("만기별 데이터 세팅(가입금액 비율 반영) 및 동기화 완료", sortedPremiums);
+    },
+
 
     setcoverageDisplayonMenu() {
         /*
@@ -72,7 +344,6 @@ export const detailController = {
         
             4. 나머지는
              보험료vs최저최대, 만기 보험료 비교, 연령대별 보험료 비교를 모두 보여준다.
-            
         */
 
         const plan_type_id = detail_coverage.plan_type_id; //01 - 상품유형 코드 
@@ -99,11 +370,10 @@ export const detailController = {
         // 여성건강무해지
         const FEMALE_HEALTH = "08";
 
-
+        // plan_payment_expiration_name.includes("갱신") ||
 
         // 3️⃣ 만기 조건 판별
         const isRenewalExpiration =
-            plan_payment_expiration_name.includes("갱신") ||
             plan_payment_expiration_name.includes("종신") ||
             plan_payment_expiration_name.includes("20년/100세,종신");
 
@@ -131,13 +401,15 @@ export const detailController = {
             menu.aging = true;
         }
 
-        // 6️⃣ 실제 DOM 반영 (한 번만!)
-        this.toggleMenu("premium", menu.premium);
-        this.toggleMenu("payment", menu.payment);
-        this.toggleMenu("aging", menu.aging);
+        // 한꺼번에 변경 사항을 모아서 브라우저에 전달합니다.
+        window.requestAnimationFrame(() => {
+            this.toggleMenu("premium", menu.premium);
+            this.toggleMenu("payment", menu.payment);
+            this.toggleMenu("aging", menu.aging);
+        });
     },
 
-
+    //보험료 최저 vs 최대 값 setting
     setcoverageDetailMap() {
         // 변수 선언
         const coverage_premiums = detail_coverage.coverage_premiums || [];
@@ -165,37 +437,7 @@ export const detailController = {
         });
     },
 
-    //연령대별 보험료 비교 setting
-    set_coverage_ages_detail() {
-        this.syncAgeCoverageSelection();
-        this.setcoverageByAgeProducts();
-    },
-
-    syncAgeCoverageSelection() {
-        const plan_coverages = detail_coverage.plan_coverages || [];
-        const coverage_premiums_by_ages = detail_coverage.coverage_premiums_by_ages || [];
-
-        if (!plan_coverages.length || !coverage_premiums_by_ages.length) return;
-
-        // 🔹 coverage_cd → 상태 Map 생성
-        const selectedMap = new Map();
-
-        plan_coverages.forEach(plan => {
-            selectedMap.set(plan.coverage_cd, plan.plan_coverage_selected === 'checked');
-        });
-
-
-        // 🔹 연령별 데이터에 상태 반영
-        coverage_premiums_by_ages.forEach(product => {
-            product.detailList?.forEach(detail => {
-                const selected = selectedMap.get(detail.coverage_cd);
-                detail.cover_selected = selected === true ? 'checked' : '';
-            });
-        });
-        detail_coverage.coverage_premiums_by_ages = coverage_premiums_by_ages;
-    },
-
-
+    //연령별 보험료 비교 값 setting
     setcoverageByAgeProducts() {
         const products = detail_coverage.coverage_premiums_by_ages || [];
         const ratioMap = detail_coverage.coverage_ratio_map || {};
@@ -232,6 +474,9 @@ export const detailController = {
         }
         detail_coverage.coverage_premiums_by_ages_totals = Array.from(totalsMap.values());
     },
+
+
+
 
     //보험료 최저vs 최대 랜더링
     coverage_min_max_detail() {
@@ -636,6 +881,12 @@ export const detailController = {
         // 1) 선택 회사의 모든 연령 row 확보
         const companyRows = (coverage_premiums_by_ages || []).filter(p => p.company_code == selectedValue && p.DispValue);
 
+        // 🚨 [수정 포인트] 데이터가 아예 없는 경우 바로 리턴해서 에러 방지
+        if (!companyRows || companyRows.length === 0) {
+            console.warn("표시할 연령별 상세 데이터가 없습니다.");
+            return;
+        }
+
         // 2) 나이 목록
         const agesKeys = [...new Set(companyRows.map(p => Number(p.age)))].sort((a, b) => a - b);
 
@@ -874,7 +1125,7 @@ export const detailController = {
         }
 
         // 3. 데이터가 있을 때만 아래 로직(테이블 그리기 등) 실행
-        console.log("데이터 있음 - 그리기 시작");
+        //console.log("데이터 있음 - 그리기 시작");
 
         /* =========================
            colgroup
@@ -1102,7 +1353,17 @@ export const detailController = {
     toggleMenu(id, isShow) {
         const el = document.getElementById(id);
         if (!el) return;
-        el.style.display = isShow ? "" : "none";
+
+        if (isShow) {
+            el.style.display = ""; // 공간 차지
+            // 아주 짧은 지연시간 뒤에 투명도를 올려 부드럽게 나타나게 함
+            setTimeout(() => {
+                el.style.opacity = "1";
+            }, 10);
+        } else {
+            el.style.opacity = "0";
+            el.style.display = "none"; // 공간 제거
+        }
     }
 
 };
