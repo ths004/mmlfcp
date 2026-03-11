@@ -8,7 +8,13 @@ namespace mmlfcp.Models
     {
         public T? data { get; set; }
     }
+    public class CommonErrorResponse
+    {
+        public string? code { get; set; }
 
+        public string? message { get; set; }
+
+    }
 
     // 플랜 연령별 보험료 조회 응답 모델
     public class PrintProductsRequest

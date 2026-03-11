@@ -37,8 +37,8 @@ namespace mmlfcp.Controllers
                 {
                     return new AuthEntity
                     {
-                        ErrorCode = 100,
-                        ErrorMessage = "Authorization 헤더가 없거나 형식이 잘못되었습니다."
+                        ErrorCode = 2005,
+                        ErrorMessage = "JWT  토큰 누락"
                     };
                 }
 
@@ -65,8 +65,8 @@ namespace mmlfcp.Controllers
                 _logger.LogError(ex, "JWT 토큰 검증 중 예외 발생");
                 return new AuthEntity
                 {
-                    ErrorCode = 100,
-                    ErrorMessage = "토큰 검증 중 서버 오류가 발생했습니다."
+                    ErrorCode = 2009,
+                    ErrorMessage = "JWT 토큰 검증 실패."
                 };
             }
         }
@@ -95,24 +95,31 @@ namespace mmlfcp.Controllers
                 // 현재는 임시로 토큰이 존재하면 인증 성공으로 처리
                 if (string.IsNullOrEmpty(token))
                 {
-                    response.is_success = false;
-                    response.error_message = "토큰이 필요합니다.";
-                    return Ok(response);
+                    return BadRequest(new CommonErrorResponse
+                    {
+                        code = "1001",
+                        message = "토큰 누락"
+                    });
                 }
                 string remoteip = Utility.GetIPAddress(HttpContext);
                 AuthEntity AuthEntity = Utility.JWTVerifying(token, remoteip);
 
                 if (AuthEntity.ErrorCode != 0)
                 {
-                    response.is_success = false;
-                    response.error_message = AuthEntity.ErrorMessage;
-                    return Ok(response);
+                    return Unauthorized(new CommonErrorResponse
+                    {
+                        code = AuthEntity.ErrorCode.ToString(),
+                        message = AuthEntity.ErrorMessage
+                    });
+
                 }
                 if (String.IsNullOrEmpty(AuthEntity.ConsultantID) == true || String.IsNullOrEmpty(AuthEntity.AgencyCompanyCD) == true)
                 {
-                    response.is_success = false;
-                    response.error_message = "인증 중 오류가 발생하였습니다.(앱을 종료후 다시 실행하세요)";
-                    return Ok(response);
+                    return Unauthorized(new CommonErrorResponse
+                    {
+                        code = "2002",
+                        message = "사용자 확인 불가."
+                    });
                 }
 
                 //consultant_id, ga_id 추가
@@ -132,9 +139,11 @@ namespace mmlfcp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "사용자 인증 중 오류 발생");
-                response.is_success = false;
-                response.error_message = "인증 중 오류가 발생하였습니다.";
-                return Ok(response);
+                return StatusCode(500, new CommonErrorResponse
+                {
+                    code = "9999",
+                    message = "사용자 인증 중 오류 발생"
+                });
             }
         }
 
@@ -155,10 +164,10 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Ok(new ProductPremiumsResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = authResult.ErrorMessage
+                        code = authResult.ErrorCode.ToString(),
+                        message = authResult.ErrorMessage
                     });
                 }
 
@@ -167,10 +176,10 @@ namespace mmlfcp.Controllers
                 // 입력값 검증
                 if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
                 {
-                    return Ok(new ProductPremiumsResponse
+                    return BadRequest(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = "필수 파라미터가 누락되었습니다."
+                        code = "1001",
+                        message = "필수 파라미터 누락"
                     });
                 }
                 string remoteip = Utility.GetIPAddress(HttpContext);
@@ -219,10 +228,10 @@ namespace mmlfcp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "상품 보험료 조회 중 오류 발생");
-                return Ok(new ProductPremiumsResponse
+                return StatusCode(500, new CommonErrorResponse
                 {
-                    is_success = false,
-                    error_message = "상품 보험료 조회 중 오류가 발생했습니다."
+                    code = "9999",
+                    message = "상품 보험료 조회 중 오류가 발생했습니다."
                 });
             }
         }
@@ -246,10 +255,10 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Ok(new ProductPaytermPremiumsByAgesResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = authResult.ErrorMessage
+                        code = authResult.ErrorCode.ToString(),
+                        message = authResult.ErrorMessage
                     });
                 }
                 _logger.LogInformation("만기별 보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, plan_payterm_type,age, gender);
@@ -257,10 +266,10 @@ namespace mmlfcp.Controllers
                 // 입력값 검증
                 if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
                 {
-                    return Ok(new ProductPaytermPremiumsByAgesResponse
+                    return BadRequest(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = "필수 파라미터가 누락되었습니다."
+                        code = "1001",
+                        message = "필수 파라미터 누락"
                     });
                 }
                 string remoteip = Utility.GetIPAddress(HttpContext);
@@ -290,10 +299,10 @@ namespace mmlfcp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "만기별 보험료 조회 중 오류 발생");
-                return Ok(new ProductPaytermPremiumsByAgesResponse
+                return StatusCode(500, new CommonErrorResponse
                 {
-                    is_success = false,
-                    error_message = "만기별 보험료 조회 중 오류가 발생했습니다."
+                    code = "9999",
+                    message = "만기별 보험료 조회 중 오류가 발생했습니다."
                 });
             }
         }
@@ -320,10 +329,10 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Ok(new SimplifiedPremiumResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = authResult.ErrorMessage
+                        code = authResult.ErrorCode.ToString(),
+                        message = authResult.ErrorMessage
                     });
                 }
                 _logger.LogInformation("무해지 및 간편보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, plan_payterm_type, age, gender);
@@ -331,10 +340,10 @@ namespace mmlfcp.Controllers
                 // 입력값 검증
                 if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
                 {
-                    return Ok(new SimplifiedPremiumResponse
+                    return BadRequest(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = "필수 파라미터가 누락되었습니다."
+                        code = "1001",
+                        message = "필수 파라미터가 누락되었습니다."
                     });
                 }
                 string remoteip = Utility.GetIPAddress(HttpContext);
@@ -367,10 +376,10 @@ namespace mmlfcp.Controllers
             catch(Exception ex)
             {
                 _logger.LogError(ex, "무해지 및 간편보험료 조회 중 오류 발생");
-                return Ok(new SimplifiedPremiumResponse
+                return StatusCode(500, new CommonErrorResponse
                 {
-                    is_success = false,
-                    error_message = "무해지 및 간편보험료 조회 중 오류가 발생했습니다."
+                    code = "9999",
+                    message = "무해지 및 간편보험료 조회 중 오류가 발생했습니다."
                 });
             }
         }
@@ -399,10 +408,10 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Ok(new ProductPremiumsByAgesResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = authResult.ErrorMessage
+                        code = "2002",
+                        message = "사용자 확인 불가."
                     });
                 }
 
@@ -412,11 +421,12 @@ namespace mmlfcp.Controllers
                 // 입력값 검증
                 if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
                 {
-                    return Ok(new ProductPremiumsByAgesResponse
+                    return BadRequest(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = "필수 파라미터가 누락되었습니다."
+                        code = "1001",
+                        message = "필수 파라미터가 누락되었습니다."
                     });
+
                 }
 
                 //exception company
@@ -454,10 +464,10 @@ namespace mmlfcp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "연령별 보험료 조회 중 오류 발생");
-                return Ok(new ProductPremiumsByAgesResponse
+                return StatusCode(500, new CommonErrorResponse
                 {
-                    is_success = false,
-                    error_message = "연령별 보험료 조회 중 오류가 발생했습니다."
+                    code = "9999",
+                    message = "연령별 보험료 조회 중 오류가 발생했습니다."
                 });
             }
         }
@@ -479,9 +489,11 @@ namespace mmlfcp.Controllers
             var authResult = ValidateJwtToken();
             if (authResult.ErrorCode != 0) 
             {
-                response.error_message = authResult.ErrorMessage;
-
-                return Ok(response);
+                return Unauthorized(new CommonErrorResponse
+                {
+                    code = authResult.ErrorCode.ToString(),
+                    message = authResult.ErrorMessage
+                });
             }
 
             _logger.LogInformation("출력 - PlanId: {PlanId}, Age: {Age}, Gender: {Gender}",
@@ -494,9 +506,11 @@ namespace mmlfcp.Controllers
                 request.company_codes?.Count <= 0 ||
                 request.coverages?.Count <= 0)
             {
-                response.error_message = "필수 파라미터가 누락되었습니다.";
-
-                return Ok(response);
+                return BadRequest(new CommonErrorResponse
+                {
+                    code = "1001",
+                    message = "필수 파라미터가 누락되었습니다."
+                });
 
             }
 
@@ -536,8 +550,11 @@ namespace mmlfcp.Controllers
                 }
                 else //오류
                 {
-                    response.error_message = "출력 구분(print_gubun)은 0~3 사이의 값이어야 합니다.";
-                    return Ok(response);
+                    return BadRequest(new CommonErrorResponse
+                    {
+                        code = "1003",
+                        message = "출력 구분(print_gubun)은 0~3 사이의 값이어야 합니다."
+                    });
                 }
 
                 response.pdf_uri = _reportService.MakePDFReport(authResult.AgencyCompanyCD, authResult.ConsultantID, request, coverage_list);
@@ -551,12 +568,14 @@ namespace mmlfcp.Controllers
             {
                 _logger.LogError(ex, "출력 중 오류 예외 발생");
 
-                response.error_message = "출력 중 오류가 발생하였습니다.";
-                return Ok(response);
+                return StatusCode(500, new CommonErrorResponse
+                {
+                    code = "9999",
+                    message = "출력 중 오류가 발생하였습니다."
+                });
             }
 
         }
-
 
 
 
@@ -574,10 +593,10 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Ok(new UserCoverageResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = authResult.ErrorMessage,
+                        code = authResult.ErrorCode.ToString(),
+                        message = authResult.ErrorMessage
                     });
                 }
 
@@ -586,11 +605,12 @@ namespace mmlfcp.Controllers
                 // 입력값 검증
                 if (string.IsNullOrEmpty(request.ga_id) || string.IsNullOrEmpty(request.consultant_id) || string.IsNullOrEmpty(request.user_plan_name))
                 {
-                    return Ok(new UserCoverageResponse
+                    return BadRequest(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = "필수 파라미터가 누락되었습니다."
+                        code = "1001",
+                        message = "필수 파라미터가 누락되었습니다."
                     });
+
                 }
 
                 var userCoverage = await _repository.AddUserCoverageAsync(request.ga_id, request.consultant_id, request);
@@ -605,10 +625,10 @@ namespace mmlfcp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "사용자 플랜 등록 중 오류 발생");
-                return Ok(new UserCoverageResponse
+                return StatusCode(500, new CommonErrorResponse
                 {
-                    is_success = false,
-                    error_message = "사용자 플랜 등록 중 오류가 발생했습니다."
+                    code = "9999",
+                    message = "사용자 플랜 등록 중 오류가 발생했습니다."
                 });
             }
         }
@@ -630,11 +650,12 @@ namespace mmlfcp.Controllers
                     request.ga_id = authResult.AgencyCompanyCD;
                     request.consultant_id = authResult.ConsultantID;
 
-                    return Ok(new UserCoverageResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = authResult.ErrorMessage
+                        code = authResult.ErrorCode.ToString(),
+                        message = authResult.ErrorMessage
                     });
+
                 }
 
                 _logger.LogInformation("사용자 플랜 삭제 요청  - ga_id: {ga_id}, consultant_id: {consultant_id}, user_plan_name: {user_plan_name}", request.ga_id, request.consultant_id, request.user_plan_name);
@@ -642,10 +663,19 @@ namespace mmlfcp.Controllers
                 // 입력값 검증
                 if (string.IsNullOrEmpty(request.consultant_id) || string.IsNullOrEmpty(request.user_plan_id.ToString()))
                 {
-                    return Ok(new UserCoverageResponse
+                    return BadRequest(new CommonErrorResponse
                     {
-                        is_success = false,
-                        error_message = "필수 파라미터가 누락되었습니다."
+                        code = "1001",
+                        message = "필수 파라미터가 누락되었습니다."
+                    });
+                }
+
+                if (authResult.ConsultantID.Equals(request.consultant_id) == false)
+                {
+                    return BadRequest(new CommonErrorResponse
+                    {
+                        code = "1003",
+                        message = "사용자 정보가 일치하지 않습니다."
                     });
                 }
 
@@ -661,10 +691,10 @@ namespace mmlfcp.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "사용자 플랜 삭제 중 오류 발생");
-                return Ok(new UserCoverageResponse
+                return StatusCode(500, new CommonErrorResponse
                 {
-                    is_success = false,
-                    error_message = "사용자 플랜 삭제 중 오류가 발생했습니다."
+                    code = "9999",
+                    message = "사용자 플랜 삭제 중 오류가 발생했습니다."
                 });
             }
         }
