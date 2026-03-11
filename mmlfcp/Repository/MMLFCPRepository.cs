@@ -776,47 +776,77 @@ namespace mmlfcp.Repository
                 }
 
                 string sql = @"
-            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-            SET NOCOUNT ON;
-            select a.company_code,
-                   e.CD_NM as company_name,
-                   a.product_code,
-                   d.prdt_name as product_name,
-                   d.attr1 as product_detail_name,
-                   d.mb_conditions as product_conditions,
-                   a.coverage_cd,
-                   f.coverage_name,
-                   c.is_selected_coverage,
-                   c.coverage_seq,
-                   a.gender,
-                   a.age,
-                   c.guide_coverage_amount,
-                   case when a.coverage_amount > 0 then  (c.guide_coverage_amount * a.premium) / a.coverage_amount else 0 end as guide_coverage_premium,
-                   a.coverage_amount,
-                   a.premium,
-                   isnull((select top 1 coverage_amount_ratio from TB_MMLFCP_AMOUNT_RATIO where a.company_code = company_code and a.product_code = product_code and c.coverage_cd = coverage_cd),1) as coverage_amount_ratio
-            from 
-                TB_MMLFCP_COVERAGE_PRICE a
-                join TB_MMLFCP_PLAN_PRODUCT b
+                    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+                    SET NOCOUNT ON;
+                    select
+                        b.company_code,
+                        b.product_code,
+                        d.prdt_name as product_name,
+                        d.attr1 as product_detail_name,
+                        d.mb_conditions as product_conditions,
+                        b.coverage_cd,
+                        c.coverage_name,
+                        b.is_selected_coverage,
+                        b.coverage_seq,
+                        a.gender,
+                        a.age,
+                        b.guide_coverage_amount,
+                        case when ISNULL(a.coverage_amount,0) > 0 then  (b.guide_coverage_amount * a.premium) / a.coverage_amount else 0 end as guide_coverage_premium,
+                        a.coverage_amount,
+                        a.premium,
+                        isnull((select top 1 coverage_amount_ratio from TB_MMLFCP_AMOUNT_RATIO where a.company_code = company_code and a.product_code = product_code and c.coverage_cd = coverage_cd),1) as coverage_amount_ratio
+
+                    from 
+                        TB_MMLFCP_COVERAGE_PRICE a
+                    
+                    join (
+                    select 
+                        b.company_code,
+                        b.product_code,
+                        c.coverage_cd,
+                        c.is_selected_coverage,
+                        c.coverage_seq,
+                        c.guide_coverage_amount
+                    
+                    from TB_MMLFCP_PLAN a
+		
+                    join TB_MMLFCP_PLAN_PRODUCT b
+                        on a.plan_id = b.plan_id
+		
+                    join TB_MMLFCP_PLAN_COVERAGE c
+                        on a.plan_id = c.plan_id
+                        and c.use_yn = 'Y'
+		
+                    where b.use_yn = 'Y'
+                        and a.plan_id = @plan_id
+                    ) b
                     on a.company_code = b.company_code
                     and a.product_code = b.product_code
-                    and b.plan_id = @plan_id
-                join TB_MMLFCP_PLAN_COVERAGE c
-                    on  a.coverage_cd = c.coverage_cd
-                    and c.plan_id = @plan_id
-                    and c.use_yn = 'Y'
-                join TB_TIC_PRDT d
-                    on a.company_code = d.compy_cd
-                    and a.product_code = d.prdt_cd
-                join TB_COMM_CD e
-                    on a.company_code = e.CD_ID
-                    and e.UPP_CD_ID = 'COMPY'
-                join TB_MMLFCP_COVERAGE f
-                    on a.coverage_cd = f.coverage_cd
-            where 1=1
-                and a.age in @ages_in_clause -- Dapper가 컬렉션을 IN 절로 자동 확장
-                and a.gender = @gender
-            order by a.company_code,a.product_code,a.age,c.coverage_seq";
+                    and a.coverage_cd = b.coverage_cd
+		
+                    join TB_MMLFCP_COVERAGE c
+                        on a.coverage_cd = c.coverage_cd
+	
+                    join TB_TIC_PRDT d
+                        on a.company_code = d.compy_cd
+                        and a.product_code = d.prdt_cd		
+                        and d.use_yn='Y'
+	
+                    join TB_COMM_CD g
+                        on a.company_code = g.CD_ID
+                        and g.UPP_CD_ID = 'COMPY' 
+                        and g.USE_YN='Y'
+	
+                    where 
+                        a.age in @ages_in_clause
+                        and a.gender = @gender
+                    
+                order by 
+                    b.company_code, 
+                    b.product_code, 
+                    a.age, 
+                    b.coverage_seq
+ ";
 
                 using (var connection = _context.CreateConnection())
                 {

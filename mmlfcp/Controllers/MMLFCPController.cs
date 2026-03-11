@@ -152,11 +152,12 @@ namespace mmlfcp.Controllers
         /// </summary>
         /// <param name="plan_id">플랜 ID</param>
         /// <param name="age">나이</param>
+        /// <param name="insurance_type">생손보 유형</param>
         /// <param name="gender">성별</param>
         /// <returns>플랜별 기준보장, 상품별 담보별, 필수보험료 정보</returns>
         [HttpGet]
         [Route("api/ProductPremiums")]
-        public async Task<ActionResult<ProductPremiumsResponse>> GetProductPremiums([FromQuery] string plan_id, [FromQuery] int age, [FromQuery] string gender)
+        public async Task<ActionResult<ProductPremiumsResponse>> GetProductPremiums([FromQuery] string plan_id, [FromQuery] string insurance_type, [FromQuery] int age, [FromQuery] string gender)
         {
             try
             {
@@ -191,7 +192,7 @@ namespace mmlfcp.Controllers
                 var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);  //플랜별기준보장 데이터 - 화면 왼쪽
                 var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜  상품별 / 보장별 보험료
                 var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜 상품별/ 담보별 보험료
-                var requiredPremiums = await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age);//필수 보험료 조회
+                var requiredPremiums = insurance_type == "LF" ? await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age) :  new List<RequiredInsurCDPremiumEntity>();//필수 보험료 조회
 
                 //string plan_id, String ga_id, String consultant_id
                 var userCoverages = await _repository.GetUserCoverageAsync(authResult.AgencyCompanyCD, authResult.ConsultantID); //사용자 플랜 조회
@@ -210,7 +211,11 @@ namespace mmlfcp.Controllers
                    
                     insurCDPremiums = insurCDPremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
 
-                    requiredPremiums = requiredPremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    // 데이터가 있을 때만 필터링 (LF가 아니면 빈 리스트라 에러 안 나요)
+                    if (requiredPremiums != null && requiredPremiums.Any())
+                    {
+                        requiredPremiums = requiredPremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    }
                 }
 
                 return Ok(new ProductPremiumsResponse
@@ -236,18 +241,18 @@ namespace mmlfcp.Controllers
             }
         }
 
+
         /// <summary>
-        /// 만기별 보험료 조회
+        /// 플랜 연령별 보험료 조회
         /// </summary>
         /// <param name="plan_id">플랜 ID</param>
-        /// <param name="plan_type">상품 유형</param>
-        /// <param name="plan_payterm_type">만기 유형/param>
+        /// <param name="insurance_type">생손보 유형</param>
         /// <param name="age">기준 나이</param>
         /// <param name="gender">성별</param>
-        /// <returns>만기별 보험료 정보</returns>
+        /// <returns>연령별 보장별 보험료 정보</returns>
         [HttpGet]
-        [Route("api/PaytermCoveragePremiums")]
-        public async Task<ActionResult<ProductPaytermPremiumsByAgesResponse>> GetPaytermCoveragePremiums([FromQuery] string plan_id, [FromQuery] string plan_type, [FromQuery] string plan_payterm_type, [FromQuery] int age, [FromQuery] string gender)
+        [Route("api/ProductPremiumsByAges")]
+        public async Task<ActionResult<ProductPremiumsByAgesResponse>> GetProductPremiumsByAges([FromQuery] string plan_id, [FromQuery] string insurance_type, [FromQuery] int age, [FromQuery] string gender)
         {
             try
             {
@@ -261,7 +266,9 @@ namespace mmlfcp.Controllers
                         message = authResult.ErrorMessage
                     });
                 }
-                _logger.LogInformation("만기별 보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, plan_payterm_type,age, gender);
+
+                _logger.LogInformation("연령별 보험료 조회 요청 - PlanId: {PlanId}, Age: {Age}, Gender: {Gender}",
+                    plan_id, age, gender);
 
                 // 입력값 검증
                 if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
@@ -272,28 +279,34 @@ namespace mmlfcp.Controllers
                         message = "필수 파라미터 누락"
                     });
                 }
-                string remoteip = Utility.GetIPAddress(HttpContext);
 
                 //exception company
-                var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code).ToHashSet();
-                
-                var paytermcoveragePremiums = await _repository.GetPaytermCoveragePremiums(plan_id, plan_type, plan_payterm_type, gender, age); //만기별 보험료 조회
-                var paytermrequiredPremiums = await _repository.GetPaytermRequiredPremiums(plan_id, plan_type, plan_payterm_type, gender, age); //만기별 필수보험료 조회
-                
-                await _repository.SaveAccesslog(authResult.AgencyCompanyCD,authResult.ConsultantID, remoteip, plan_id, gender, age);
+                List<ExceptionCompanyEntity> exceptionCompanies = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).ToList();
 
-                if (exceptionCompanyCodes.Count > 0)
+
+                var coveragePremiums = await _repository.GetCoveragePremiumsByAgesAsync(plan_id, gender, age);   // 연령별 대표 보험료 데이터 조회
+                var coverage_required_premiums_by_ages = insurance_type == "LF" ? await _repository.GetRequiredInsurCDPremiumsByAgesAsync(plan_id, gender, age) : new List<RequiredInsurGrouped>(); ; //  연령별 필수 보험료 조회
+
+
+                if (exceptionCompanies != null && exceptionCompanies.Any())
                 {
-                    paytermcoveragePremiums = paytermcoveragePremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
-                    paytermrequiredPremiums = paytermrequiredPremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    var exceptionCompanyCodes = exceptionCompanies.Select(e => e.company_code).ToHashSet();
+
+                    coveragePremiums = coveragePremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+
+                    if (coverage_required_premiums_by_ages != null && coverage_required_premiums_by_ages.Any())
+                    {
+                        coverage_required_premiums_by_ages = coverage_required_premiums_by_ages.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    }
                 }
-                
-                return Ok(new ProductPaytermPremiumsByAgesResponse
+
+
+                return Ok(new ProductPremiumsByAgesResponse
                 {
                     is_success = true,
                     error_message = "",
-                    payterm_coverage_premiums = paytermcoveragePremiums,
-                    payterm_required_coverage_premiums = paytermrequiredPremiums
+                    coverage_premiums_by_ages = coveragePremiums.ToList(),
+                    coverage_required_premiums_by_ages = coverage_required_premiums_by_ages.ToList()
                 });
             }
             catch (Exception ex)
@@ -308,20 +321,20 @@ namespace mmlfcp.Controllers
         }
 
 
+
         /// <summary>
-        /// 무해지 및 간편보험료 비교 조회
+        /// 만기별 보험료 조회
         /// </summary>
         /// <param name="plan_id">플랜 ID</param>
         /// <param name="plan_type">상품 유형</param>
+        /// <param name="insurance_type">생손보 유형</param>
         /// <param name="plan_payterm_type">만기 유형/param>
         /// <param name="age">기준 나이</param>
         /// <param name="gender">성별</param>
-        /// <returns>무해지 및 간편보험료 정보</returns>
-
-        //무해지 및 간편보험료 비교
+        /// <returns>만기별 보험료 정보</returns>
         [HttpGet]
-        [Route("api/PlanCoveragePremiumComparison")]
-        public async Task<ActionResult<SimplifiedPremiumResponse>> GetPlanCoveragePremiumsComparison([FromQuery] string plan_id, [FromQuery] string plan_type, [FromQuery] string plan_payterm_type, [FromQuery] int age, [FromQuery] string gender)
+        [Route("api/PaytermCoveragePremiums")]
+        public async Task<ActionResult<ProductPaytermPremiumsByAgesResponse>> GetPaytermCoveragePremiums([FromQuery] string plan_id, [FromQuery] string plan_type, [FromQuery] string insurance_type, [FromQuery] string plan_payterm_type, [FromQuery] int age, [FromQuery] string gender)
         {
             try
             {
@@ -329,13 +342,13 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Unauthorized(new CommonErrorResponse
+                    return Ok(new ProductPaytermPremiumsByAgesResponse
                     {
                         code = authResult.ErrorCode.ToString(),
                         message = authResult.ErrorMessage
                     });
                 }
-                _logger.LogInformation("무해지 및 간편보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, plan_payterm_type, age, gender);
+                _logger.LogInformation("만기별 보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, InsuranceType:{insurance_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, insurance_type,plan_payterm_type, age, gender);
 
                 // 입력값 검증
                 if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
@@ -350,10 +363,91 @@ namespace mmlfcp.Controllers
 
                 //exception company
                 var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code).ToHashSet();
+                
+                var paytermcoveragePremiums = await _repository.GetPaytermCoveragePremiums(plan_id, plan_type, plan_payterm_type, gender, age); //만기별 보험료 조회
+                var paytermrequiredPremiums = insurance_type == "LF" ? await _repository.GetPaytermRequiredPremiums(plan_id, plan_type, plan_payterm_type, gender, age) : new List<RequiredInsurCDPremiumEntity>(); //만기별 필수보험료 조회
+                
+                await _repository.SaveAccesslog(authResult.AgencyCompanyCD,authResult.ConsultantID, remoteip, plan_id, gender, age);
+
+                if (exceptionCompanyCodes.Count > 0)
+                {
+                    paytermcoveragePremiums = paytermcoveragePremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+
+                    if(paytermrequiredPremiums != null && paytermrequiredPremiums.Any())
+                    {
+                        paytermrequiredPremiums = paytermrequiredPremiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    }
+                }
+                
+                return Ok(new ProductPaytermPremiumsByAgesResponse
+                {
+                    is_success = true,
+                    error_message = "",
+                    payterm_coverage_premiums = paytermcoveragePremiums,
+                    payterm_required_coverage_premiums = paytermrequiredPremiums
+                });
+            }
+            catch (Exception ex)
+            {
+
+                _logger.LogError(ex, "무해지 및 간편보험료 조회 중 오류 발생");
+                return StatusCode(500, new CommonErrorResponse
+                {
+                    code = "9999",
+                    message = "무해지 및 간편보험료 조회 중 오류가 발생했습니다."
+                });
+            }
+        }
+
+
+        /// <summary>
+        /// 무해지 및 간편보험료 비교 조회
+        /// </summary>
+        /// <param name="plan_id">플랜 ID</param>
+        /// <param name="plan_type">상품 유형</param>
+       /// <param name="insurance_type">생손보 유형</param>
+        /// <param name="plan_payterm_type">만기 유형/param>
+        /// <param name="age">기준 나이</param>
+        /// <param name="gender">성별</param>
+        /// <returns>무해지 및 간편보험료 정보</returns>
+
+        //무해지 및 간편보험료 비교
+        [HttpGet]
+        [Route("api/PlanCoveragePremiumComparison")]
+        public async Task<ActionResult<SimplifiedPremiumResponse>> GetPlanCoveragePremiumsComparison([FromQuery] string plan_id, [FromQuery] string plan_type, [FromQuery] string insurance_type,[FromQuery] string plan_payterm_type, [FromQuery] int age, [FromQuery] string gender)
+        {
+            try
+            {
+                // JWT 토큰 검증
+                var authResult = ValidateJwtToken();
+                if (authResult.ErrorCode != 0)
+                {
+<                    return Unauthorized(new CommonErrorResponse
+                    {
+                        code = "2002",
+                        message = "사용자 확인 불가."
+                    });
+                }
+                _logger.LogInformation("무해지 및 간편보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, InsuranceType:{insurance_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, insurance_type,plan_payterm_type, age, gender);
+
+                // 입력값 검증
+                if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
+                {
+                    return BadRequest(new CommonErrorResponse
+                    {
+                        code = "1001",
+                        message = "필수 파라미터가 누락되었습니다."
+                    });
+
+                }
+                string remoteip = Utility.GetIPAddress(HttpContext);
+
+                //exception company
+                var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code).ToHashSet();
 
                 var simplified_coverage_premiums = await _repository.GetSimplifiedCoveragePremiums(plan_id, plan_type, plan_payterm_type, gender, age); //무해지 및 간편보험료 조회
                 var simplified_coverage_insur_premiums = await _repository.GetSimplifiedCoverageInsurPremiums(plan_id, plan_type, plan_payterm_type, gender, age);
-                var simplified_required_coverage_premiums = await _repository.GetSimplifiedRequiredPremiums(plan_id, plan_type, plan_payterm_type, gender, age);//무해지 및 간편 필수보험료 조회
+                var simplified_required_coverage_premiums = insurance_type == "LF" ?  await _repository.GetSimplifiedRequiredPremiums(plan_id, plan_type, plan_payterm_type, gender, age) : new List<RequiredInsurCDPremiumEntity>(); ;//무해지 및 간편 필수보험료 조회
 
                 await _repository.SaveAccesslog(authResult.AgencyCompanyCD, authResult.ConsultantID, remoteip, plan_id, gender, age);
 
@@ -361,7 +455,11 @@ namespace mmlfcp.Controllers
                 {
                     simplified_coverage_premiums = simplified_coverage_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
                     simplified_coverage_insur_premiums = simplified_coverage_insur_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
-                    simplified_required_coverage_premiums = simplified_required_coverage_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+
+                    if(simplified_required_coverage_premiums != null && simplified_required_coverage_premiums.Any())
+                    {
+                        simplified_required_coverage_premiums = simplified_required_coverage_premiums.Where(premium => !exceptionCompanyCodes.Contains(premium.company_code)).ToList();
+                    }
                 }
 
                 return Ok(new SimplifiedPremiumResponse
@@ -375,94 +473,6 @@ namespace mmlfcp.Controllers
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex, "무해지 및 간편보험료 조회 중 오류 발생");
-                return StatusCode(500, new CommonErrorResponse
-                {
-                    code = "9999",
-                    message = "무해지 및 간편보험료 조회 중 오류가 발생했습니다."
-                });
-            }
-        }
-
-
-        //무해지 및 간편보험료 비교 
-
-
-        /// <summary>
-        /// 플랜 연령별 보험료 조회
-        /// </summary>
-        /// <param name="plan_id">플랜 ID</param>
-        /// <param name="age">기준 나이</param>
-        /// <param name="gender">성별</param>
-        /// <returns>연령별 보장별 보험료 정보</returns>
-        [HttpGet]
-        [Route("api/ProductPremiumsByAges")]
-        public async Task<ActionResult<ProductPremiumsByAgesResponse>> GetProductPremiumsByAges(
-            [FromQuery] string plan_id,
-            [FromQuery] int age,
-            [FromQuery] string gender)
-        {
-            try
-            {
-                // JWT 토큰 검증
-                var authResult = ValidateJwtToken();
-                if (authResult.ErrorCode != 0)
-                {
-                    return Unauthorized(new CommonErrorResponse
-                    {
-                        code = "2002",
-                        message = "사용자 확인 불가."
-                    });
-                }
-
-                _logger.LogInformation("연령별 보험료 조회 요청 - PlanId: {PlanId}, Age: {Age}, Gender: {Gender}", 
-                    plan_id, age, gender);
-
-                // 입력값 검증
-                if (string.IsNullOrEmpty(plan_id) || string.IsNullOrEmpty(gender))
-                {
-                    return BadRequest(new CommonErrorResponse
-                    {
-                        code = "1001",
-                        message = "필수 파라미터가 누락되었습니다."
-                    });
-
-                }
-
-                //exception company
-                List<ExceptionCompanyEntity> exceptionCompanies = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).ToList();
-
-
-             
-                var coveragePremiums = await _repository.GetCoveragePremiumsByAgesAsync(plan_id, gender, age);   // 연령별 대표 보험료 데이터 조회
-                var coverage_required_premiums_by_ages = await _repository.GetRequiredInsurCDPremiumsByAgesAsync(plan_id, gender, age); //  연령별 필수 보험료 조회
-
-
-                if (exceptionCompanies != null && exceptionCompanies.Any())
-                {
-                    var exceptionCompanyCodes = exceptionCompanies
-                    .Select(e => e.company_code)
-                    .ToHashSet();
-
-                    coveragePremiums = coveragePremiums
-                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
-                                    .ToList();
-                    coverage_required_premiums_by_ages = coverage_required_premiums_by_ages
-                                    .Where(premium => !exceptionCompanyCodes.Contains(premium.company_code))
-                                    .ToList();
-                }
-
-
-                return Ok(new ProductPremiumsByAgesResponse
-                {
-                    is_success = true,
-                    error_message = "",
-                    coverage_premiums_by_ages = coveragePremiums.ToList(),
-                    coverage_required_premiums_by_ages = coverage_required_premiums_by_ages.ToList()
-                });
-            }
-            catch (Exception ex)
-            {
                 _logger.LogError(ex, "연령별 보험료 조회 중 오류 발생");
                 return StatusCode(500, new CommonErrorResponse
                 {
@@ -472,6 +482,8 @@ namespace mmlfcp.Controllers
             }
         }
 
+
+
         /// <summary>
         /// 플랜 기준 상품 보험료 조회
         /// </summary>
@@ -479,8 +491,7 @@ namespace mmlfcp.Controllers
         /// <returns>플랜별 기준보장, 상품별 담보별, 필수보험료 정보</returns>
         [HttpPost]
         [Route("api/PrintProducts")]
-        public async Task<ActionResult<PrintProductsResponse>> PrintProducts(
-            [FromBody] PrintProductsRequest request)
+        public async Task<ActionResult<PrintProductsResponse>> PrintProducts([FromBody] PrintProductsRequest request)
         {
             PrintProductsResponse response = new PrintProductsResponse();
             response.is_success = false;

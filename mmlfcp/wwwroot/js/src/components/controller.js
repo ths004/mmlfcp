@@ -145,11 +145,11 @@ export const Controller = {
 
         // 🔹 required를 빠르게 찾기 위한 Map
         const reqMap = required_premiums.reduce((map, r) => {
-            const key = r.company_code + '|' + r.product_code;
+            const key = `${r.company_code}|${r.product_code}`; // 템플릿 리터럴이 조금 더 읽기 편해요!
+            // 논리 할당 연산자 (||=)는 최신 브라우저에서 아주 잘 돌아갑니다.
             (map[key] ||= []).push(r);
             return map;
         }, Object.create(null));
-
 
         coverage_premiums.forEach(product => {
             product.DispValue = true;
@@ -219,8 +219,9 @@ export const Controller = {
 
         // 🔹 required를 빠르게 찾기 위한 Map
         const reqMap = required_premiums.reduce((map, r) => {
-            const key = r.company_code + '|' + r.product_code;
+            const key = `${r.company_code}|${r.product_code}`;
             (map[key] ||= []).push(r);
+
             return map;
         }, Object.create(null));
 
@@ -355,10 +356,10 @@ export const Controller = {
     //원본 리스트 따로 저장
     saveOriginalPlanSnapshot() {
         const snapshot = {
-            plan_coverages: structuredClone(mmlfcp_state.get('plan_coverages')),
-            required_premiums: structuredClone(mmlfcp_state.get('required_premiums')),
-            coverage_premiums: structuredClone(mmlfcp_state.get('coverage_premiums')),
-            product_insur_premiums: structuredClone(mmlfcp_state.get('product_insur_premiums')),
+            plan_coverages: structuredClone(mmlfcp_state.get('plan_coverages') || []),
+            required_premiums: structuredClone(mmlfcp_state.get('required_premiums') || []),
+            coverage_premiums: structuredClone(mmlfcp_state.get('coverage_premiums') || []),
+            product_insur_premiums: structuredClone(mmlfcp_state.get('product_insur_premiums') || []),
         };
         mmlfcp_state.set('default_plan_snapshot', snapshot);
     },
@@ -1438,6 +1439,7 @@ export const Controller = {
         //1) 입력값 수집
         const planSel = document.getElementById('selProductsGroupCD');
         const genderSel = document.getElementById('gender');
+        const insurance_type = mmlfcp_state.get('insurance_type') || 'LF';
         const plan_id = mmlfcp_state.get('plan_id') || planSel.value;
         const gender = genderSel?.value || mmlfcp_state.get('gender') || '';
         const birth_date = mmlfcp_state.get('birth_date');
@@ -1456,7 +1458,7 @@ export const Controller = {
         //3) 호출
         this.setLoading(true);
         try {
-            const res = await apiService.getProductPremiums({ plan_id, age, gender });
+            const res = await apiService.getProductPremiums({ plan_id, insurance_type, age, gender });
             if (res?.is_success == true && (res.coverage_premiums.length > 0 && res.product_insur_premiums.length > 0)) {
 
                 mmlfcp_state.set('plan_coverages', res.plan_coverages || []);
@@ -1507,7 +1509,6 @@ export const Controller = {
                 this.show_content();
             }
             else {
-
                 alert("조회된 상품이 없습니다.");
                 this.hide_content();
                 return;
@@ -2512,6 +2513,9 @@ export const Controller = {
         localStorage.setItem('birth_date', mmlfcp_state.get('birth_date'));
         localStorage.setItem('age', mmlfcp_state.get('age'));
         localStorage.setItem('gender', mmlfcp_state.get('gender'));
+
+        //생손보유형
+        localStorage.setItem("insurance_type", mmlfcp_state.get('insurance_type'));
 
         //상품유형
         localStorage.setItem('plan_id', mmlfcp_state.get('plan_id'));
