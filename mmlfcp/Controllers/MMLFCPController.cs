@@ -342,7 +342,7 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-                    return Ok(new ProductPaytermPremiumsByAgesResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
                         code = authResult.ErrorCode.ToString(),
                         message = authResult.ErrorMessage
@@ -422,10 +422,10 @@ namespace mmlfcp.Controllers
                 var authResult = ValidateJwtToken();
                 if (authResult.ErrorCode != 0)
                 {
-<                    return Unauthorized(new CommonErrorResponse
+                    return Unauthorized(new CommonErrorResponse
                     {
-                        code = "2002",
-                        message = "사용자 확인 불가."
+                        code = authResult.ErrorCode.ToString(),
+                        message = authResult.ErrorMessage
                     });
                 }
                 _logger.LogInformation("무해지 및 간편보험료 조회 요청 - PlanId: {plan_id}, PlanType: {plan_type}, InsuranceType:{insurance_type}, PlanPaytermType:{plan_payterm_type},Age: {age}, Gender: {gender}", plan_id, plan_type, insurance_type,plan_payterm_type, age, gender);
