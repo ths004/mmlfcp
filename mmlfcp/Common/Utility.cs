@@ -76,18 +76,18 @@ namespace mmlfcp.Common
             }
             catch (TokenExpiredException)
             {
-                authEntity.ErrorCode = 300;
-                authEntity.ErrorMessage = "인증된 토큰의 사용시간이 지났습니다.";
+                authEntity.ErrorCode = 2007;
+                authEntity.ErrorMessage = "웹 토큰의 사용시간이 지났습니다.";
             }
             catch (SignatureVerificationException)
             {
-                authEntity.ErrorCode = 200;
-                authEntity.ErrorMessage = "인증키 오류";
+                authEntity.ErrorCode = 2008;
+                authEntity.ErrorMessage = "JWT 토큰 서명 유효성 검증 실패";
             }
             catch (Exception)
             {
-                authEntity.ErrorCode = 100;
-                authEntity.ErrorMessage = "서버 오류";
+                authEntity.ErrorCode = 2009;
+                authEntity.ErrorMessage = "JWT 토큰 검증 실패";
             }
 
             return authEntity;
@@ -115,19 +115,20 @@ namespace mmlfcp.Common
             }
             catch (TokenExpiredException)
             {
-                authEntity.ErrorCode = 300;
-                authEntity.ErrorMessage = "인증된 토큰의 사용시간이 지났습니다.";
+                authEntity.ErrorCode = 2007;
+                authEntity.ErrorMessage = "웹 토큰의 사용시간이 지났습니다.";
             }
             catch (SignatureVerificationException)
             {
-                authEntity.ErrorCode = 200;
-                authEntity.ErrorMessage = "인증키 오류";
+                authEntity.ErrorCode = 2008;
+                authEntity.ErrorMessage = "JWT 토큰 서명 유효성 검증 실패";
             }
             catch (Exception)
             {
-                authEntity.ErrorCode = 100;
-                authEntity.ErrorMessage = "서버 오류";
+                authEntity.ErrorCode = 2009;
+                authEntity.ErrorMessage = "JWT 토큰 검증 실패";
             }
+
 
             return authEntity;
         }
@@ -136,22 +137,16 @@ namespace mmlfcp.Common
         {
             AuthEntity authEntity = new AuthEntity();
             authEntity.ErrorCode = 0;
-
+            authEntity.ErrorMessage = "";
             if (String.IsNullOrEmpty(token) == true)
             {
-                authEntity.ErrorCode = 100;
-                authEntity.ErrorMessage = "인증토큰이 없습니다..(앱을 종료후 다시 실행하세요)";
+                authEntity.ErrorCode = 2005;
+                authEntity.ErrorMessage = "JWT  토큰 누락";
                 return authEntity;
             }
 
             AuthEntity pcAuthEntity = PCJWTVerifying(token, remoteip);
             AuthEntity bcAuthEntity = BCJWTVerifying(token);
-
-            if (pcAuthEntity.ErrorCode == 300 || bcAuthEntity.ErrorCode == 300)
-            {
-                authEntity.ErrorCode = 300;
-                authEntity.ErrorMessage = "인증된 토큰의 사용시간이 지났습니다.(앱을 종료후 다시 실행하세요)";
-            }
 
             if (pcAuthEntity.ErrorCode == 0 || bcAuthEntity.ErrorCode == 0)
             {
@@ -170,10 +165,15 @@ namespace mmlfcp.Common
                     authEntity.AgencyCompanyName = bcAuthEntity.AgencyCompanyName;
                 }
             }
-            else
+            else if(pcAuthEntity.ErrorCode != 0)
             {
-                authEntity.ErrorCode = 200;
-                authEntity.ErrorMessage = "인증 중 오류가 발생하였습니다.(앱을 종료후 다시 실행하세요)";
+                authEntity.ErrorCode = pcAuthEntity.ErrorCode;
+                authEntity.ErrorMessage = pcAuthEntity.ErrorMessage;
+            }
+            else if (bcAuthEntity.ErrorCode != 0)
+            {
+                authEntity.ErrorCode = bcAuthEntity.ErrorCode;
+                authEntity.ErrorMessage = bcAuthEntity.ErrorMessage;
             }
 
             return authEntity;
