@@ -55,8 +55,9 @@ export const detailController = {
 
         }
         catch (err) {
-            console.error("상세 데이터 로드 실패", err);
-            alert("데이터를 불러오는 중 오류가 발생했습니다.");
+            console.error("[연령별/ 만기별 보험료 조회 시 오류 발생]", err.code);
+            alert(err.message);
+            return;
         }
 
         //6. events
@@ -154,7 +155,8 @@ export const detailController = {
             }
         }
         catch (err) {
-            alert(err?.message || '조회 중 오류가 발생했습니다.');
+            console.error("[연령별 보험료 비교 조회 중 오류 발생]", err.code);
+            alert(err.message);
             return;
         }
     },
@@ -174,7 +176,8 @@ export const detailController = {
             }
         }
         catch (err) {
-            alert(err?.message || '만기별 보험료 조회 중 오류가 발생했습니다.');
+            console.error("[만기별 보험료 조회 중 오류 발생]", err.code);
+            alert(err.message);
             return;
         }
     },

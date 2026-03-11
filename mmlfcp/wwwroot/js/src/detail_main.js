@@ -41,7 +41,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     } catch (err) {
         isApiCalled = false; // 에러나면 다시 호출 가능하게 리셋
-        console.error("[Detail Init 오류]", err);
-        alert("상세 초기화 중 오류가 발생했습니다.");
+        console.error("[연령별/만기별 보험료 최초 조회 시 오류]", err.code);
+        alert(err.message);
+        return;
     }
 });

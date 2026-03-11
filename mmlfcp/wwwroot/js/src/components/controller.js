@@ -1515,7 +1515,8 @@ export const Controller = {
             }
         }
         catch (err) {
-            alert(err?.message || '조회 중 오류가 발생했습니다.');
+            console.error("[상품별 보험료 조회 중 오류 발생]", err.code);
+            alert(err.message);
             return;
         }
         finally {
@@ -1537,7 +1538,8 @@ export const Controller = {
 
         }
         catch (err) {
-            alert("출력 요청 중 오류가 발생했습니다.");
+            console.error("[출력 요청 중 오류 발생]", err.code);
+            alert(err.message);
             return;
         }
         finally {
@@ -1605,8 +1607,9 @@ export const Controller = {
 
 
         } catch (err) {
-            console.error('❌ 사용자 플랜 등록 실패:', err);
-            alert(`플랜 저장 중 오류가 발생했습니다.\n${err.message}`);
+            console.error("[사용자 플랜 등록 중 오류 발생]", err.code);
+            alert(err.message);
+            return;
         }
 
     },
@@ -1891,8 +1894,9 @@ export const Controller = {
                     }
 
                 } catch (err) {
-                    console.error('❌ 사용자 플랜 삭제 실패:', err);
-                    alert(`플랜 삭제 중 오류가 발생했습니다.\n${err.message}`);
+                    console.error("[사용자 플랜 삭제 중 오류 발생]", err.code);
+                    alert(err.message);
+                    return;
                 }
 
 

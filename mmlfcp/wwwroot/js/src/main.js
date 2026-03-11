@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     } catch (err) {
-        console.log('[Init 오류]', err);
-        alert('초기화 중 오류가 발생했습니다.');
+        console.error("[상품별 보험료 최초 조회 시 오류]", err.code);
+        alert(err.message);
+        return;
     }
 });

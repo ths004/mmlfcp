@@ -100,7 +100,8 @@ export const detailSimplController = {
             }
         }
         catch (err) {
-            alert(err?.message || '무해지 및 간편보험료 비교 조회 중 오류가 발생했습니다.');
+            console.error("[상품유형별 보험료 조회 중 오류 발생]", err.code);
+            alert(err.message);
             return;
         }
     },
