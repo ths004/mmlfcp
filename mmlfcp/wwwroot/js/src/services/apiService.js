@@ -47,13 +47,14 @@ export const apiService = {
     * 플랜 기준 상품 보험료 조회 (GET)
     * /api/ProductPremiums?plan_id=...&age=...&gender=...
     */
-    async getProductPremiums({ plan_id, age, gender }) {
+    async getProductPremiums({ plan_id, insurance_type, age, gender }) {
 
         // 디버깅용 (토큰 확인)
         //console.log('[API] JWT exists?', !!appConstants.jwt);
 
         const query = new URLSearchParams({
             plan_id: String(plan_id ?? ''),
+            insurance_type: String(insurance_type ?? ''),
             age: String(age ?? ''),
             gender: String(gender ?? '')
         }).toString();
@@ -70,10 +71,11 @@ export const apiService = {
     * 플랜 기준 만기별 보험료 조회 (GET)
     * /api/PaytermCoveragePremiums?plan_id=...&age=...&gender=...
     */
-    async getPaytermCoveragePremiums({ plan_id, plan_type, plan_payterm_type, age, gender }) {
+    async getPaytermCoveragePremiums({ plan_id, plan_type, insurance_type, plan_payterm_type, age, gender }) {
         const query = new URLSearchParams({
             plan_id: String(plan_id ?? ''),
             plan_type: String(plan_type ?? ''),
+            insurance_type: String(insurance_type ?? ''),
             plan_payterm_type: String(plan_payterm_type ?? ''),
             age: String(age ?? ''),
             gender: String(gender ?? '')
@@ -91,10 +93,11 @@ export const apiService = {
     * 무해지 및 간편보험료 조회 (GET)
     * /api/PlanCoveragePremiumComparison?plan_id=...&age=...&gender=...
     */
-    async getPlanCoveragePremiumsComparison({ plan_id, plan_type, plan_payterm_type, age, gender }) {
+    async getPlanCoveragePremiumsComparison({ plan_id, plan_type, insurance_type, plan_payterm_type, age, gender }) {
         const query = new URLSearchParams({
             plan_id: String(plan_id ?? ''),
             plan_type: String(plan_type ?? ''),
+            insurance_type: String(insurance_type ?? ''),
             plan_payterm_type: String(plan_payterm_type ?? ''),
             age: String(age ?? ''),
             gender: String(gender ?? '')
@@ -112,13 +115,14 @@ export const apiService = {
     * 플랜 연령별 보험료 조회 (GET)
     * /api/ProductPremiumsByAges?plan_id=...&age=...&gender=...
     */
-    async getProductPremiumsByAges({ plan_id, age, gender }) {
+    async getProductPremiumsByAges({ plan_id, insurance_type, age, gender }) {
 
         // 디버깅용 (토큰 확인)
         //console.log('[API] JWT exists?', !!appConstants.jwt);
 
         const query = new URLSearchParams({
             plan_id: String(plan_id ?? ''),
+            insurance_type: String(insurance_type ?? ''),
             age: String(age ?? ''),
             gender: String(gender ?? '')
         }).toString();
@@ -136,8 +140,8 @@ export const apiService = {
     /*
     플랜별 기준보장, 상품별 담보별, 필수보험료 정보 한장출력
 */
-    async PrintProducts({ print_gubun,cust_name, age, gender, birth_date, plan_id, plan_type_id, plan_type_name, plan_payment_expiration_cd, plan_payment_expiration_name, is_required_coverage, company_codes, coverages }) {
-        const body = { 
+    async PrintProducts({ print_gubun, cust_name, age, gender, birth_date, plan_id, plan_type_id, plan_type_name, plan_payment_expiration_cd, plan_payment_expiration_name, is_required_coverage, company_codes, coverages }) {
+        const body = {
             cust_name: String(cust_name ?? ''),
             age: Number(age ?? 0),
             gender: String(gender ?? ''),
@@ -152,8 +156,8 @@ export const apiService = {
             is_required_coverage: String(is_required_coverage ?? 'N'),
             company_codes: company_codes || [],
             coverages: coverages || [],
-            plan_payment_expiration_codes : [],
-            print_gubun : print_gubun ,//0. 한장 , 1.납입-만기별 , 2.연령별 ,3 상품유형별
+            plan_payment_expiration_codes: [],
+            print_gubun: print_gubun,//0. 한장 , 1.납입-만기별 , 2.연령별 ,3 상품유형별
 
         };
 

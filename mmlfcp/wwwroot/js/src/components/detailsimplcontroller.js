@@ -1,7 +1,7 @@
 
 import { app } from '../utils/app.js';
 import { apiService } from '../services/apiService.js';
-import { mmlfcp_state } from '../core/state.js';
+
 
 const simplified_detail_coverage =
 {
@@ -9,6 +9,8 @@ const simplified_detail_coverage =
     birth_date: '',
     age: 0,
     gender: '',
+
+    insurance_type: '',
 
     plan_id: '',
     plan_type: '',
@@ -64,6 +66,8 @@ export const detailSimplController = {
         simplified_detail_coverage.age = localStorage.getItem('age') || 0;
         simplified_detail_coverage.gender = localStorage.getItem('gender') || '';
 
+        simplified_detail_coverage.insurance_type = localStorage.getItem('insurance_type') || 'LF';
+
 
         simplified_detail_coverage.plan_id = localStorage.getItem('plan_id') || '';
         simplified_detail_coverage.plan_type = localStorage.getItem('plan_type_id') || '';
@@ -83,8 +87,8 @@ export const detailSimplController = {
     async getPlanSimplifiPremiumsComparison() {
         try {
 
-            const { plan_id, plan_type, plan_payterm_type, age, gender } = simplified_detail_coverage;
-            const res = await apiService.getPlanCoveragePremiumsComparison({ plan_id, plan_type, plan_payterm_type, age, gender });
+            const { plan_id, plan_type, insurance_type, plan_payterm_type, age, gender } = simplified_detail_coverage;
+            const res = await apiService.getPlanCoveragePremiumsComparison({ plan_id, plan_type, insurance_type, plan_payterm_type, age, gender });
             if (res?.is_success == true) {
 
                 // 👉 state에 캐싱
@@ -120,7 +124,7 @@ export const detailSimplController = {
             const key = `${r.company_code}_${r.product_code}`;
             (map[key] ||= []).push(r);
             return map;
-        }, {});
+        }, Object.create(null));
 
         //simplified_coverage_premiums 매핑
         const products = Array.isArray(simplified_coverage_premiums) ? simplified_coverage_premiums : [simplified_coverage_premiums];
