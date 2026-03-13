@@ -11,7 +11,7 @@ export const _state =
     plan_payment_expiration_cd: '01',
     plan_payment_expiration_name: '20년/100세',
     insurance_type: 'LF',
-    birth_date: '19800101',
+    birth_date: '19860101',
     gender: 'M',
     age: 0,
 

@@ -1250,7 +1250,7 @@ body .modal__layout .content_list {
   border: 1px solid #d5d5d5;
   border-radius: 11px;
   color: #3d3d3d;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: normal;
   line-height: normal;
@@ -1273,7 +1273,7 @@ body .modal__layout .content_list {
 }
 
 .top-header section.bottom ul li:nth-child(2) {
-  width: 180px;
+  width: 148px;
 }
 
 .top-header section.bottom ul li:nth-child(3) {
@@ -1289,7 +1289,7 @@ body .modal__layout .content_list {
 }
 
 .top-header section.bottom ul li:nth-child(6) {
-  width: 150px;
+  width: 170px;
 }
 
 .top-header section.bottom button {
@@ -2143,5 +2143,3 @@ a {
   background-color: #7ceeff !important;
   border-color: #5edceb !important;
 }
-
-

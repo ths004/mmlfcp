@@ -138,7 +138,7 @@ export const detailSimplController = {
         products.forEach(product => {
             product.DispValue = checked_company_code.includes(product.company_code);
             //aa00 setting
-            this._ensureMinimumContract(product, reqMap);
+            //this._ensureMinimumContract(product, reqMap);
 
             let currentTotal = 0; // 합계용 변수 분리
             product.detailList.forEach(detail => {
@@ -205,7 +205,7 @@ export const detailSimplController = {
             product.DispValue = checked_company_code.includes(product.company_code);
 
             //aa00 setting
-            this._ensureMinimumContractDetail(product, reqMap);
+            //this._ensureMinimumContractDetail(product, reqMap);
 
             //비율 계산 (비율에 따라 detail.premium이 바뀔 수 있음)
             product.detailList.forEach(detail => {
@@ -492,7 +492,8 @@ export const detailSimplController = {
             .filter(item => item.DispValue === true)
             .map((item) => {
                 const isChecked = item.plan_coverage_selected === "checked" ? "checked" : "";
-                const amount = item.coverage_cd === "aa00" ? "-" : app.formatNumber(item.guide_coverage_amount);
+                // item.coverage_cd === "aa00" ? "-" :
+                const amount = app.formatNumber(item.guide_coverage_amount || 0);
                 return `<li>
                         <div class='left'>
                             <div class='checkbox-area'>
@@ -780,9 +781,11 @@ export const detailSimplController = {
                 if (checkbox) checkbox.checked = isSelected;
 
                 // 2. 금액 텍스트 계산
-                const displayVal = coverage_cd === 'aa00' ? '-' : app.formatNumber(planCoverage.guide_coverage_amount);
+                // coverage_cd === 'aa00' ? '-' :
+                const displayVal = app.formatNumber(planCoverage.guide_coverage_amount || 0);
                 // 선택되지 않았을 때는 0 혹은 '-' 처리
-                const guide_coverage_amount = (coverage_cd === 'aa00') ? '-' : (isSelected ? displayVal : 0);
+                //(coverage_cd === 'aa00') ? '-' : 
+                const guide_coverage_amount = (isSelected ? displayVal : 0);
 
                 // 3. 우측 금액 표시 업데이트 (.rightn 내의 em 태그)
                 const emTarget = li.querySelector('.rightn em');
@@ -880,7 +883,6 @@ export const detailSimplController = {
                 if (!cb) return;
                 const company_code = cb.getAttribute("company_code"); // DB, HA, LABL
                 const checked_id = cb.getAttribute("id");
-                console.log('checked_id,', checked_id);
 
                 // 1.회사체크 Dispvalue 상태값 업데이트
                 this.updateSimpliProductState(company_code, cb.checked, checked_id);
@@ -1054,8 +1056,8 @@ export const detailSimplController = {
 
     /** 헬퍼 함수 4: 담보별 비율 및 보험료 계산 */
     _calculateDetailRatio(detail, ratioMap) {
-        if (detail.coverage_cd === 'aa00') return;
 
+        //if (detail.coverage_cd === 'aa00') return;
         const coverage_cd = String(detail.coverage_cd).trim();
         const ratio = Number(ratioMap[coverage_cd]) || 1;
 

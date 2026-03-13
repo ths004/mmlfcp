@@ -71,7 +71,7 @@ export const detailController = {
         detail_coverage.age = localStorage.getItem('age') || 0;
         detail_coverage.gender = localStorage.getItem('gender') || '';
 
-        detail_coverage.insurance_type = localStorage.getItem('insurance_type') || 'LF';
+        detail_coverage.insurance_type = localStorage.getItem('insurance_type') || 'F';
 
 
         detail_coverage.plan_id = localStorage.getItem('plan_id') || '';
@@ -921,8 +921,8 @@ export const detailController = {
             .map(cd => coverageMeta.get(cd))
             .filter(Boolean)
             .sort((a, b) => {
-                if (a.coverage_cd === 'aa00') return -1;
-                if (b.coverage_cd === 'aa00') return 1;
+                //if (a.coverage_cd === 'aa00') return -1;
+                //if (b.coverage_cd === 'aa00') return 1;
                 return (a.coverage_seq ?? 9999) - (b.coverage_seq ?? 9999);
             });
 
@@ -973,7 +973,8 @@ export const detailController = {
 
         coverages.forEach(cov => {
             const agePremiums = premiumByCoverage.get(cov.coverage_cd) || {};
-            const amountText = (cov.coverage_cd === 'aa00') ? "-" : app.formatNumber(cov.coverage_amount || 0);
+            // (cov.coverage_cd === 'aa00') ? "-" :
+            const amountText = app.formatNumber(cov.coverage_amount || 0);
             tbody.appendChild(createRow(cov.coverage_name, amountText, agePremiums));
         });
 
@@ -1175,20 +1176,20 @@ export const detailController = {
             });
         });
 
-        //aa00이 없으면 강제 추가
-        if (!coverageMap.has("aa00")) {
-            coverageMap.set("aa00", {
-                coverage_cd: "aa00",
-                coverage_name: "최저기본계약조건",
-                coverage_seq: -1,
-                coverage_amount: 0
-            });
-        }
+        // aa00이 있으면 추가
+        // if (coverageMap.has("aa00")) {
+        //     coverageMap.set("aa00", {
+        //         coverage_cd: "aa00",
+        //         coverage_name: "최저기본계약조건",
+        //         coverage_seq: -1,
+        //         coverage_amount: 0
+        //     });
+        // }
 
         //정렬
         const coverageList = Array.from(coverageMap.values()).sort((a, b) => {
-            if (a.coverage_cd === "aa00") return -1;
-            if (b.coverage_cd === "aa00") return 1;
+            //if (a.coverage_cd === "aa00") return -1;
+            //if (b.coverage_cd === "aa00") return 1;
             return (a.coverage_seq ?? 9999) - (b.coverage_seq ?? 9999);
         });
 
@@ -1204,7 +1205,8 @@ export const detailController = {
             tr.appendChild(tdName);
 
             // 가입금액
-            const coverageAmountText = baseDetail.coverage_cd === "aa00" ? "-" : app.formatNumber(baseDetail.coverage_amount || 0);
+            //baseDetail.coverage_cd === "aa00" ? "-" : 
+            const coverageAmountText = app.formatNumber(baseDetail.coverage_amount || 0);
             tr.appendChild(this._makeTd(coverageAmountText));
 
             // 🔥 만기별 보험료
