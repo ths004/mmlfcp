@@ -109,7 +109,6 @@ export const detailSimplController = {
     setPlanSimplifiPreiumsComparison() {
         const {
             simplified_coverage_premiums,
-            simplified_required_coverage_premiums,
             coverage_cd_checked,
             company_code_checked,
             plan_type,
@@ -120,12 +119,6 @@ export const detailSimplController = {
         const checked_coverage_cd = (coverage_cd_checked || "").split(',').map(s => s.trim()).filter(Boolean);
         const checked_company_code = (company_code_checked || "").split(',').map(s => s.trim()).filter(Boolean);
 
-        // 필수보험료 그룹화 (ID 기반 매핑)
-        const reqMap = simplified_required_coverage_premiums.reduce((map, r) => {
-            const key = `${r.company_code}_${r.product_code}`;
-            (map[key] ||= []).push(r);
-            return map;
-        }, Object.create(null));
 
         //simplified_coverage_premiums 매핑
         const products = Array.isArray(simplified_coverage_premiums) ? simplified_coverage_premiums : [simplified_coverage_premiums];
@@ -137,8 +130,6 @@ export const detailSimplController = {
         // 2️⃣ 메인 로직 실행
         products.forEach(product => {
             product.DispValue = checked_company_code.includes(product.company_code);
-            //aa00 setting
-            //this._ensureMinimumContract(product, reqMap);
 
             let currentTotal = 0; // 합계용 변수 분리
             product.detailList.forEach(detail => {
@@ -154,8 +145,7 @@ export const detailSimplController = {
 
                 // 4. '최종 확정된 상태'가 'checked'인 경우에만 합산
                 if (detail.cover_selected === 'checked') {
-                    currentTotal += Math.round(detail.premium || 0);
-
+                    currentTotal += Math.round(detail.base_premium || 0);
                 }
             });
 
@@ -181,18 +171,9 @@ export const detailSimplController = {
     setPlanSimplifiPreiumsDetailComparison() {
         const {
             simplified_coverage_insur_premiums: product_insur_premiums,
-            simplified_required_coverage_premiums: required_premiums,
             coverage_ratio_map: coverage_ratio_map,
             company_code_checked
         } = simplified_detail_coverage
-
-
-        // 필수보험료 그룹화 (ID 기반 매핑)
-        const reqMap = required_premiums.reduce((map, r) => {
-            const key = `${r.company_code}_${r.product_code}`;
-            (map[key] ||= []).push(r);
-            return map;
-        }, {});
 
 
         // 1️. 데이터 전처리 (파싱 및 맵 생성)
@@ -204,14 +185,12 @@ export const detailSimplController = {
         products.forEach(product => {
             product.DispValue = checked_company_code.includes(product.company_code);
 
-            //aa00 setting
-            //this._ensureMinimumContractDetail(product, reqMap);
-
             //비율 계산 (비율에 따라 detail.premium이 바뀔 수 있음)
             product.detailList.forEach(detail => {
                 this._calculateInsurDetailRatio(detail, ratioMap);
             });
         });
+
         //simplified_coverage_insur_premiums 반영
         simplified_detail_coverage.simplified_coverage_insur_premiums = products;
         //console.log('[🚀 상품별 상세 보험료 갱신 완료]', products);
@@ -492,7 +471,6 @@ export const detailSimplController = {
             .filter(item => item.DispValue === true)
             .map((item) => {
                 const isChecked = item.plan_coverage_selected === "checked" ? "checked" : "";
-                // item.coverage_cd === "aa00" ? "-" :
                 const amount = app.formatNumber(item.guide_coverage_amount || 0);
                 return `<li>
                         <div class='left'>
@@ -508,7 +486,6 @@ export const detailSimplController = {
         coveragePlansList.innerHTML = listHtml;
     },
 
-    //상품별 보험료 랜더링
     //상품별 보험료 랜더링
     renderPremiumTable() {
         const {
@@ -532,11 +509,11 @@ export const detailSimplController = {
                     const detailIdxList = guideMap[coverageKey] || [];
                     return detailIdxList.reduce((acc, idx) => {
                         const detail = product.detailList[idx];
-                        return acc + (Number(detail?.premium) || 0);
+                        return acc + (Math.round(detail?.base_premium) || 0);
                     }, 0);
                 });
                 // 🌟 죠르디러버님이 원하신 방식대로 Map에 저장!
-                coverageMinMaxMap[coverage.coverage_cd] = this._getMaxMinPremium(premiums.map(v => ({ premium: v })), 'premium');
+                coverageMinMaxMap[coverage.coverage_cd] = this._getMaxMinPremium(premiums.map(v => ({ base_premium: v })), 'base_premium');
             }
         });
 
@@ -550,8 +527,8 @@ export const detailSimplController = {
                 const { totalAmount, totalPremium } = detailIdxList.reduce((acc, idx) => {
                     const detail = product.detailList[idx];
                     if (detail) {
-                        acc.totalAmount += (Number(detail.coverage_amount) || 0);
-                        acc.totalPremium += (Number(detail.premium) || 0);
+                        acc.totalAmount += (Number(detail.base_coverage_amount) || 0);
+                        acc.totalPremium += (Math.round(detail.base_premium) || 0);
                     }
                     return acc;
                 }, { totalAmount: 0, totalPremium: 0 });
@@ -703,7 +680,7 @@ export const detailSimplController = {
 
                 const newTotal = product.detailList.reduce((sum, detail) => {
                     const isSelected = selectedCodes.has(detail.coverage_cd.trim());
-                    return isSelected ? sum + Math.round(detail.premium || 0) : sum;
+                    return isSelected ? sum + Math.round(detail.base_premium || 0) : sum;
                 }, 0);
 
                 //변경사항이 있을때만 update
@@ -797,18 +774,18 @@ export const detailSimplController = {
 
         // --- Part 2. 전체 기준 Max/Min 계산 ---
         const allValues = coveragePremiums.map(product => {
-            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.round(d.premium || 0), 0);
+            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
-            return { code: product.company_code, premium: premiumValue };
+            return { code: product.company_code, base_premium: premiumValue };
         });
 
-        const { max: globalMax, min: globalMin } = this._getMaxMinPremium(allValues, 'premium');
+        const { max: globalMax, min: globalMin } = this._getMaxMinPremium(allValues, 'base_premium');
         const flags = { maxAssigned: false, minAssigned: false };
 
         // --- Part 3. 테이블 내 보험료 셀 업데이트 (coveragePremiums 사용) ---
         coveragePremiums.forEach(product => {
             // 해당 상품에서 이 담보의 보험료 합산
-            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.round(d.premium || 0), 0);
+            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
 
             // ID 규칙에 맞춰 요소 찾기
@@ -1012,68 +989,20 @@ export const detailSimplController = {
         return rawMap || {};
     },
 
-    /** 헬퍼 함수 2: 최저기본계약(aa00) 보장 */
-    _ensureMinimumContract(product, reqMap) {
-        const key = `${product.company_code}_${product.product_code}`;
-        const reqList = reqMap[key];
-
-        if (reqList?.length && !product.detailList.some(d => d.coverage_cd === 'aa00')) {
-            const sumPremium = reqList.reduce((sum, r) => sum + Math.round(r.min_premium || 0), 0);
-            const aa00 = {
-                coverage_cd: 'aa00',
-                coverage_name: '최저기본계약조건',
-                coverage_seq: -1,
-                guide_coverage_amount: reqList[0].min_insur_amount || 0,
-                coverage_amount: reqList[0].min_insur_amount || 0,
-                guide_coverage_premium: sumPremium,
-                premium: sumPremium,
-                is_selected_coverage: 'N',
-                cover_selected: ''
-            };
-            product.detailList = [aa00, ...(product.detailList || [])];
-        }
-    },
-
-    /** 헬퍼 함수 3: 상세 최저기본계약(aa00) 보장 */
-    _ensureMinimumContractDetail(product, reqMap) {
-        const key = `${product.company_code}_${product.product_code}`;
-        const reqList = reqMap[key];
-        if (reqList?.length && !product.detailList.some(d => d.coverage_cd === 'aa00')) {
-            const aa00 = reqList.map(r => ({
-                coverage_cd: "aa00",
-                insur_cd: r.insur_cd,
-                insur_nm: r.insur_nm,
-                pay_term: r.pay_term,
-                insur_bojang: r.insur_bojang,
-                guide_contract_amount: parseInt(r.min_insur_amount),
-                contract_amount: parseInt(r.min_insur_amount),
-                guide_premium: parseInt(r.min_premium),
-                premium: parseInt(r.min_premium),
-            }));
-            product.detailList = [...aa00, ...(product.detailList || [])];
-        }
-    },
-
-    /** 헬퍼 함수 4: 담보별 비율 및 보험료 계산 */
+    /** 헬퍼 함수 2: 담보별 비율 및 보험료 계산 */
     _calculateDetailRatio(detail, ratioMap) {
 
-        //if (detail.coverage_cd === 'aa00') return;
         const coverage_cd = String(detail.coverage_cd).trim();
         const ratio = Number(ratioMap[coverage_cd]) || 1;
 
-        // base_premium 원본 보존
-        if (detail.base_premium === undefined || detail.base_premium === null) {
-            detail.base_premium = Number(detail.premium) || 0;
-        }
-
         const baseAmount = Number(detail.guide_coverage_amount) || 0;
-        const basePremium = Number(detail.base_premium) || 0;
+        const basePremium = Number(detail.guide_coverage_premium) || 0;
 
-        detail.coverage_amount = Math.round(ratio * baseAmount);
-        detail.premium = Math.round(ratio * basePremium);
+        detail.base_coverage_amount = Math.round(ratio * baseAmount);
+        detail.base_premium = Math.round(ratio * basePremium);
     },
 
-    /** 헬퍼 함수 5: 담보 상세별 비율 및 보험료 계산 */
+    /** 헬퍼 함수 3: 담보 상세별 비율 및 보험료 계산 */
     _calculateInsurDetailRatio(detail, ratioMap) {
         if (detail.coverage_cd === 'aa00') return;
 
@@ -1110,21 +1039,21 @@ export const detailSimplController = {
         let allValues = products.map(product => {
             const totalPremium = product.detailList
                 .filter(d => d.coverage_cd == coverage_cd)
-                .reduce((sum, d) => sum + Math.round(d.premium || 0), 0);
+                .reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
 
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
-            return { code: product.company_code, premium: premiumValue };
+            return { code: product.company_code, base_premium: premiumValue };
         });
 
         // 전체 기준 min/max
-        const { max: globalMax, min: globalMin } = this._getMaxMinPremium(allValues, 'premium');
+        const { max: globalMax, min: globalMin } = this._getMaxMinPremium(allValues, 'base_premium');
         const flags = { maxAssigned: false, minAssigned: false };
 
         // ✅ 페이지 데이터만 DOM 반영 (색상은 global 기준)
         products.forEach(product => {
             const totalPremium = product.detailList
                 .filter(d => d.coverage_cd == coverage_cd)
-                .reduce((sum, d) => sum + Math.round(d.premium || 0), 0);
+                .reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
 
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
             const el = document.querySelector(`em[id="${product.company_code}_${product.product_code}_${coverage_cd}"][company_code="${product.company_code}"][product_code="${product.product_code}"]`);
@@ -1169,7 +1098,7 @@ export const detailSimplController = {
     /**
     * * 최대·최소 보험료 계산 (담보 셀 & 합계 셀 공통)
     * */
-    _getMaxMinPremium(values, key = 'premium') {
+    _getMaxMinPremium(values, key = 'base_premium') {
         if (!values.length) return { max: 0, min: 0 };
         const filtered = values.map(v => Number(v[key]) || 0).filter(v => v > 0); // 0 제외
         if (!filtered.length) return { max: 0, min: 0 };

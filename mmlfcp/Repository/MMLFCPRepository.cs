@@ -482,6 +482,7 @@ namespace mmlfcp.Repository
 	                join TB_COMM_CD e
 		                on a.company_code = e.CD_ID
 		                and e.UPP_CD_ID = 'COMPY'
+                        and e.USE_YN='Y'
 	                join TB_MMLFCP_COVERAGE f
 	                    on a.coverage_cd = f.coverage_cd
                 where 
