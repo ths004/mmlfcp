@@ -772,7 +772,7 @@ namespace mmlfcp.Services
             int coverage_page_count = coverages.Count / 33;
             coverage_page_count = (coverages.Count % 33) > 0 ? coverage_page_count + 1 : coverage_page_count;
 
-            string title = String.Format("{0} ({1}세,{2},생년월일 : {3}),{4},{5}", cust_name, age, gender, insur_birth_date, plan_type_name, plan_payment_expiration_name);
+            string title = String.Format("{0} ({1}세,{2},생년월일 : {3}),{4},{5}", cust_name, age, gender == "M" ? "남성":"여성", insur_birth_date, plan_type_name, plan_payment_expiration_name);
 
             var groupedCoverageByCompany = from item in coverage_list
                                            group item by item.company_code into companyGroup
