@@ -468,8 +468,10 @@ export const detailSimplController = {
         if (!coveragePlansList) return;
 
         const planCoverages = simplified_detail_coverage.simplified_plan_coverages || [];
+        console.log({ planCoverages: planCoverages });
+
         const listHtml = planCoverages
-            .filter(item => item.DispValue === true)
+            .filter(item => item.DispValue === true && item.coverage_cd !== 'aa00')
             .map((item) => {
                 const isChecked = item.plan_coverage_selected === "checked" ? "checked" : "";
                 const amount = app.formatNumber(item.guide_coverage_amount || 0);
@@ -503,7 +505,7 @@ export const detailSimplController = {
 
         // 2️⃣ [추가] 렌더링 전, 미리 모든 담보의 최저/최고가를 계산하여 Map에 저장
         planCoverages.forEach(coverage => {
-            if (coverage.DispValue === true) {
+            if (coverage.DispValue === true && coverage.coverage_cd !== 'aa00') {
                 // 해당 담보에 대한 모든 상품의 보험료 수집
                 const premiums = products.map(product => {
                     const coverageKey = `${product.company_code}_${product.product_code}_${coverage.coverage_cd}`;
@@ -518,8 +520,11 @@ export const detailSimplController = {
             }
         });
 
+        console.log({ products: products });
+
+
         // 3️⃣ HTML 조립
-        const listHtml = planCoverages.filter(coverage => coverage.DispValue === true).map(coverage => {
+        const listHtml = planCoverages.filter(coverage => coverage.DispValue === true && coverage.coverage_cd !== 'aa00').map(coverage => {
 
             const columnsHtml = products.map(product => {
                 const coverageKey = `${product.company_code}_${product.product_code}_${coverage.coverage_cd}`;
@@ -759,10 +764,7 @@ export const detailSimplController = {
                 if (checkbox) checkbox.checked = isSelected;
 
                 // 2. 금액 텍스트 계산
-                // coverage_cd === 'aa00' ? '-' :
                 const displayVal = app.formatNumber(planCoverage.guide_coverage_amount || 0);
-                // 선택되지 않았을 때는 0 혹은 '-' 처리
-                //(coverage_cd === 'aa00') ? '-' : 
                 const guide_coverage_amount = (isSelected ? displayVal : 0);
 
                 // 3. 우측 금액 표시 업데이트 (.rightn 내의 em 태그)
