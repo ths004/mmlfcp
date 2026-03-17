@@ -30,6 +30,9 @@ const simplified_detail_coverage =
     simplified_coverage_insur_premiums: [],
     simplified_required_coverage_premiums: [],
     coverage_ratio_map: {},
+
+    // 제외할 담보 코드 리스트를 여기에 선언
+    exclude_coverage_codes: ['aa00'],
 };
 
 
@@ -468,10 +471,11 @@ export const detailSimplController = {
         if (!coveragePlansList) return;
 
         const planCoverages = simplified_detail_coverage.simplified_plan_coverages || [];
-        console.log({ planCoverages: planCoverages });
+        // 객체에 정의된 제외 리스트 가져오기 (없을 경우를 대비해 빈 배열 기본값 설정)
+        const excludeCodes = simplified_detail_coverage.exclude_coverage_codes || [];
 
         const listHtml = planCoverages
-            .filter(item => item.DispValue === true && item.coverage_cd !== 'aa00')
+            .filter(item => item.DispValue === true && !excludeCodes.includes(item.coverage_cd))
             .map((item) => {
                 const isChecked = item.plan_coverage_selected === "checked" ? "checked" : "";
                 const amount = app.formatNumber(item.guide_coverage_amount || 0);
@@ -502,10 +506,11 @@ export const detailSimplController = {
 
         // 1️⃣ [추가] 담보별 Max/Min 보험료를 저장할 Map 생성
         const coverageMinMaxMap = {};
+        const excludeCodes = simplified_detail_coverage.exclude_coverage_codes || [];
 
         // 2️⃣ [추가] 렌더링 전, 미리 모든 담보의 최저/최고가를 계산하여 Map에 저장
         planCoverages.forEach(coverage => {
-            if (coverage.DispValue === true && coverage.coverage_cd !== 'aa00') {
+            if (coverage.DispValue === true && !excludeCodes.includes(coverage.coverage_cd)) {
                 // 해당 담보에 대한 모든 상품의 보험료 수집
                 const premiums = products.map(product => {
                     const coverageKey = `${product.company_code}_${product.product_code}_${coverage.coverage_cd}`;
@@ -524,7 +529,7 @@ export const detailSimplController = {
 
 
         // 3️⃣ HTML 조립
-        const listHtml = planCoverages.filter(coverage => coverage.DispValue === true && coverage.coverage_cd !== 'aa00').map(coverage => {
+        const listHtml = planCoverages.filter(coverage => coverage.DispValue === true && !excludeCodes.includes(coverage.coverage_cd)).map(coverage => {
 
             const columnsHtml = products.map(product => {
                 const coverageKey = `${product.company_code}_${product.product_code}_${coverage.coverage_cd}`;
