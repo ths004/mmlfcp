@@ -200,6 +200,9 @@ export const Controller = {
             return map;
         }, Object.create(null));
 
+        console.log('reqMap,', reqMap);
+
+
         coverage_premiums.forEach(product => {
             product.DispValue = true;
             const key = product.company_code + '|' + product.product_code;
@@ -213,8 +216,16 @@ export const Controller = {
                     insur_cd: r.insur_cd,
                     insur_nm: r.insur_nm,
                     insur_bojang: r.insur_bojang,
-                    contract_amount: parseInt(r.min_insur_amount),
+
+                    guide_coverage_amount: parseInt(r.min_insur_amount),
+                    guide_coverage_premium: parseInt(r.min_premium),
+
+                    base_coverage_amount: parseInt(r.min_insur_amount),
                     base_premium: parseInt(r.min_premium),
+
+                    coverage_amount: parseInt(r.min_insur_amount),
+                    premium: parseInt(r.min_premium),
+
                     is_selected_coverage: "Y",
                     coverage_amount_ratio: 1,
                     cover_selected: "checked"
@@ -236,7 +247,7 @@ export const Controller = {
         });
 
         mmlfcp_state.set('coverage_premiums', coverage_premiums);
-        //   console.log('coverage_premiums,', coverage_premiums);
+        // console.log('coverage_premiums,', coverage_premiums);
     },
 
     setCoverageGuideData() {
@@ -808,6 +819,8 @@ export const Controller = {
 
         // 1️⃣ 조건에 맞는 플랜을 정확히 하나만 찾음
         const selectedPlan = plans.find(p => p.plan_id == plan_id && p.plan_type == plan_type && p.plan_payterm_type == plan_payterm_type);
+        //console.log({ plans: plans });
+
 
         // 찾지 못하면 그냥 리턴
         if (!selectedPlan) {
@@ -820,7 +833,7 @@ export const Controller = {
         const maxAge = gender == '남성' ? selectedPlan.plan_max_m_age : selectedPlan.plan_max_f_age;
 
         // 3️⃣ 출력
-        selectedResult.textContent = `${gender} / ${selectedPlan.plan_type_name} / ${selectedPlan.plan_payterm_type_name} 상품은 ` + `${minAge}세 ~ ${maxAge}세까지 조회가 가능합니다.`;
+        selectedResult.textContent = `${gender} / ${selectedPlan.plan_name} / ${selectedPlan.plan_payterm_type_name} 상품은 ` + `${minAge}세 ~ ${maxAge}세까지 조회가 가능합니다.`;
     },
 
     //상품유형에 따라 상세보기 버튼 활성화/비활성화
@@ -1133,7 +1146,7 @@ export const Controller = {
                     if (idxList) {
                         premiumSum = idxList.reduce((sum, idx) => {
                             const detail = product.detailList[idx];
-                            return sum + Math.round(detail?.premium || 0);
+                            return sum + Math.round(detail?.base_premium || 0);
                         }, 0);
                     }
                     const displayPremium = premiumSum;

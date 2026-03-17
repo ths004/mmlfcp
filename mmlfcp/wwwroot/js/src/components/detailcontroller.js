@@ -319,7 +319,6 @@ export const detailController = {
                 detail.cover_selected = coverageSelectedMap.get(detail.coverage_cd) === 'checked' ? 'checked' : '';
 
                 // ✅ 금액 및 보험료 계산 (비율 반영)
-                // base_premium 최초 1회 세팅 (guide_coverage_premium 우선 사용)
                 detail.base_premium ??= (detail.guide_coverage_premium || 0);
 
                 const ratio = ratioMap[detail.coverage_cd] ?? 1;
@@ -375,7 +374,6 @@ export const detailController = {
                 detail.cover_selected = coverageSelectedMap.get(detail.coverage_cd) === 'checked' ? 'checked' : '';
 
                 // ✅ 금액 및 보험료 계산 (비율 반영)
-                // base_premium 최초 1회 세팅 (guide_coverage_premium 우선 사용)
                 detail.base_premium ??= (detail.guide_coverage_premium || 0);
 
                 const ratio = ratioMap[detail.coverage_cd] ?? 1;
@@ -893,7 +891,6 @@ export const detailController = {
 
         coverages.forEach(cov => {
             const agePremiums = premiumByCoverage.get(cov.coverage_cd) || {};
-            // (cov.coverage_cd === 'aa00') ? "-" :
             const amountText = app.formatNumber(cov.coverage_amount || 0);
             tbody.appendChild(createRow(cov.coverage_name, amountText, agePremiums));
         });
@@ -1152,12 +1149,12 @@ export const detailController = {
         //coverage_premiums 중 DispValue 가 true 만 배열에 추가해준다.
         coverage_premiums.forEach((p, i) => {
             if (p.DispValue) {
-                arr.push({ premium: parseInt(p.total_premium), product_pos: i });
+                arr.push({ total_premium: parseInt(p.total_premium), product_pos: i });
             }
         });
 
         // 보험료 오름차순 정렬
-        arr.sort((a, b) => a.premium - b.premium);
+        arr.sort((a, b) => a.total_premium - b.total_premium);
 
         if (arr.length == 0) {
             return; // 데이터가 없을 경우 null 반환

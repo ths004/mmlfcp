@@ -181,6 +181,7 @@ export const detailSimplController = {
         const checked_company_code = (company_code_checked || "").split(',').map(s => s.trim()).filter(Boolean);
         const products = Array.isArray(product_insur_premiums) ? product_insur_premiums : [product_insur_premiums];
 
+
         // 2. 메인 로직 실행
         products.forEach(product => {
             product.DispValue = checked_company_code.includes(product.company_code);
@@ -527,7 +528,7 @@ export const detailSimplController = {
                 const { totalAmount, totalPremium } = detailIdxList.reduce((acc, idx) => {
                     const detail = product.detailList[idx];
                     if (detail) {
-                        acc.totalAmount += (Number(detail.base_coverage_amount) || 0);
+                        acc.totalAmount += (Math.round(detail.base_coverage_amount) || 0);
                         acc.totalPremium += (Math.round(detail.base_premium) || 0);
                     }
                     return acc;

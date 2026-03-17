@@ -142,7 +142,7 @@ export const userController = {
         if (!selected_user_plan_id) {
             this.restoreDefaultPlanState();
             console.log('🔁 기본플랜으로 복원되었습니다.');
-            // console.log({ default_plan_snapshot: mmlfcp_state.get('default_plan_snapshot'), coverage_ratio_map: mmlfcp_state.get('coverage_ratio_map') });
+            //console.log({ default_plan_snapshot: mmlfcp_state.get('default_plan_snapshot') });
             return;
         }
 
@@ -208,13 +208,12 @@ export const userController = {
                 // [1] 사용자 플랜에 없는 담보 → 미선택 처리
                 if (!userDetailMap.has(coverage_cd)) {
                     detail.cover_selected = ''; // 선택되지 않은 담보는 합산 및 계산에서 제외되도록 처리
-
                 }
 
                 // [2] aa00 (최저기본계약조건) 일 경우 고정값 세팅
                 else if (coverage_cd === 'aa00') {
-                    detail.coverage_amount = detail.contract_amount;
-                    detail.premium = detail.base_premium;
+                    detail.base_coverage_amount = detail.guide_coverage_amount;
+                    detail.base_premium = detail.guide_coverage_premium;
                     detail.cover_selected = 'checked';
                 }
 
