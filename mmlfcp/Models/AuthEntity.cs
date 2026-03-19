@@ -11,3 +11,12 @@
 
         public String AgencyCompanyName { get; set; }
     }
+
+    public class UserRestrictEntity
+    {
+
+        public String ga_id { get; set; }
+
+        public String consultant_id { get; set; }
+        public String app_id { get; set; }
+    }
