@@ -396,7 +396,7 @@ namespace mmlfcp.Repository
 				on a.plan_id = c.plan_id
 				and c.insu_compy_type = 'L'
             where a.use_yn='Y'
-          order by a.plan_id, a.coverage_cd, a.coverage_seq
+          order by a.plan_id,a.coverage_seq
             ";
 
             using (var connection = _context.CreateConnection())
