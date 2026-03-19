@@ -233,7 +233,7 @@ export const userController = {
 
                     // 이전 요청에서 언급하신 'base' 관련 필드도 업데이트가 필요하다면 아래를 포함하세요.
                     detail.base_coverage_amount = ratio * baseAmount;
-                    detail.base_premium = Math.round(ratio * basePremium) || 0;
+                    detail.base_premium = Math.floor(ratio * basePremium) || 0;
                     detail.cover_selected = 'checked';
 
 
@@ -251,7 +251,7 @@ export const userController = {
 
                 // [5] 선택된 담보만 합계 보험료에 누적
                 if (detail.cover_selected === 'checked') {
-                    totalPremium += (Math.round(detail.base_premium) || 0);
+                    totalPremium += (Math.floor(detail.base_premium) || 0);
                 }
             }
             // 3️. 제품별 최종 합계 및 노출 상태 반영
@@ -275,8 +275,8 @@ export const userController = {
 
                 return {
                     ...detail,
-                    premium: Math.round((detail.guide_premium || 0) * ratio),
-                    contract_amount: Math.round((detail.guide_contract_amount || 0) * ratio)
+                    premium: Math.floor((detail.guide_premium || 0) * ratio),
+                    contract_amount: Math.floor((detail.guide_contract_amount || 0) * ratio)
                 };
             });
             return {

@@ -323,8 +323,8 @@ export const detailController = {
 
                 const ratio = ratioMap[detail.coverage_cd] ?? 1;
 
-                detail.base_coverage_amount = Math.round(ratio * (detail.guide_coverage_amount || 0));
-                detail.base_premium = Math.round(ratio * (detail.base_premium || 0));
+                detail.base_coverage_amount = Math.floor(ratio * (detail.guide_coverage_amount || 0));
+                detail.base_premium = Math.floor(ratio * (detail.base_premium || 0));
 
                 // ✅ 선택된 담보만 합계 보험료에 누적 (회사가 노출될 때만 계산)
                 if (product.DispValue && detail.cover_selected === 'checked') {
@@ -378,8 +378,8 @@ export const detailController = {
 
                 const ratio = ratioMap[detail.coverage_cd] ?? 1;
 
-                detail.base_coverage_amount = Math.round(ratio * (detail.guide_coverage_amount || 0));
-                detail.base_premium = Math.round(ratio * (detail.base_premium || 0));
+                detail.base_coverage_amount = Math.floor(ratio * (detail.guide_coverage_amount || 0));
+                detail.base_premium = Math.floor(ratio * (detail.base_premium || 0));
 
                 // ✅ 선택된 담보만 합계 보험료에 누적 (회사가 노출될 때만 계산)
                 if (coverage.DispValue && detail.cover_selected === 'checked') {

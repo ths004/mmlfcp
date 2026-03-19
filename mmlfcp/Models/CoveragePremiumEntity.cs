@@ -123,7 +123,7 @@
             {
                 foreach (var coverage in Coverages.Values)
                 {
-                    total_premium +=(float)Math.Round(coverage.plan_coverage_premium);
+                    total_premium +=(float)Math.Floor(coverage.plan_coverage_premium);
                 }
             }
         }

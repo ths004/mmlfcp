@@ -148,7 +148,7 @@ export const detailSimplController = {
 
                 // 4. '최종 확정된 상태'가 'checked'인 경우에만 합산
                 if (detail.cover_selected === 'checked') {
-                    currentTotal += Math.round(detail.base_premium || 0);
+                    currentTotal += Math.floor(detail.base_premium || 0);
                 }
             });
 
@@ -517,7 +517,7 @@ export const detailSimplController = {
                     const detailIdxList = guideMap[coverageKey] || [];
                     return detailIdxList.reduce((acc, idx) => {
                         const detail = product.detailList[idx];
-                        return acc + (Math.round(detail?.base_premium) || 0);
+                        return acc + (Math.floor(detail?.base_premium) || 0);
                     }, 0);
                 });
                 // 🌟 죠르디러버님이 원하신 방식대로 Map에 저장!
@@ -538,8 +538,8 @@ export const detailSimplController = {
                 const { totalAmount, totalPremium } = detailIdxList.reduce((acc, idx) => {
                     const detail = product.detailList[idx];
                     if (detail) {
-                        acc.totalAmount += (Math.round(detail.base_coverage_amount) || 0);
-                        acc.totalPremium += (Math.round(detail.base_premium) || 0);
+                        acc.totalAmount += (Math.floor(detail.base_coverage_amount) || 0);
+                        acc.totalPremium += (Math.floor(detail.base_premium) || 0);
                     }
                     return acc;
                 }, { totalAmount: 0, totalPremium: 0 });
@@ -691,7 +691,7 @@ export const detailSimplController = {
 
                 const newTotal = product.detailList.reduce((sum, detail) => {
                     const isSelected = selectedCodes.has(detail.coverage_cd.trim());
-                    return isSelected ? sum + Math.round(detail.base_premium || 0) : sum;
+                    return isSelected ? sum + Math.floor(detail.base_premium || 0) : sum;
                 }, 0);
 
                 //변경사항이 있을때만 update
@@ -782,7 +782,7 @@ export const detailSimplController = {
 
         // --- Part 2. 전체 기준 Max/Min 계산 ---
         const allValues = coveragePremiums.map(product => {
-            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
+            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.floor(d.base_premium || 0), 0);
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
             return { code: product.company_code, base_premium: premiumValue };
         });
@@ -793,7 +793,7 @@ export const detailSimplController = {
         // --- Part 3. 테이블 내 보험료 셀 업데이트 (coveragePremiums 사용) ---
         coveragePremiums.forEach(product => {
             // 해당 상품에서 이 담보의 보험료 합산
-            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
+            const totalPremium = product.detailList.filter(d => String(d.coverage_cd) === String(coverage_cd)).reduce((sum, d) => sum + Math.floor(d.base_premium || 0), 0);
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
 
             // ID 규칙에 맞춰 요소 찾기
@@ -1006,8 +1006,8 @@ export const detailSimplController = {
         const baseAmount = Number(detail.guide_coverage_amount) || 0;
         const basePremium = Number(detail.guide_coverage_premium) || 0;
 
-        detail.base_coverage_amount = Math.round(ratio * baseAmount);
-        detail.base_premium = Math.round(ratio * basePremium);
+        detail.base_coverage_amount = Math.floor(ratio * baseAmount);
+        detail.base_premium = Math.floor(ratio * basePremium);
     },
 
     /** 헬퍼 함수 3: 담보 상세별 비율 및 보험료 계산 */
@@ -1025,8 +1025,8 @@ export const detailSimplController = {
         const baseAmount = Number(detail.guide_contract_amount) || 0;
         const basePremium = Number(detail.base_premium) || 0;
 
-        detail.contract_amount = Math.round(ratio * baseAmount);
-        detail.premium = Math.round(ratio * basePremium);
+        detail.contract_amount = Math.floor(ratio * baseAmount);
+        detail.premium = Math.floor(ratio * basePremium);
     },
 
     //coverage_cd 별 보장보험료 최대-최소 색상 지정
@@ -1047,7 +1047,7 @@ export const detailSimplController = {
         let allValues = products.map(product => {
             const totalPremium = product.detailList
                 .filter(d => d.coverage_cd == coverage_cd)
-                .reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
+                .reduce((sum, d) => sum + Math.floor(d.base_premium || 0), 0);
 
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
             return { code: product.company_code, base_premium: premiumValue };
@@ -1061,7 +1061,7 @@ export const detailSimplController = {
         products.forEach(product => {
             const totalPremium = product.detailList
                 .filter(d => d.coverage_cd == coverage_cd)
-                .reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
+                .reduce((sum, d) => sum + Math.floor(d.base_premium || 0), 0);
 
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
             const el = document.querySelector(`em[id="${product.company_code}_${product.product_code}_${coverage_cd}"][company_code="${product.company_code}"][product_code="${product.product_code}"]`);

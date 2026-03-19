@@ -394,7 +394,7 @@ namespace mmlfcp.Repository
 				on a.plan_id = c.plan_id
 				and c.insu_compy_type = 'L'
             where a.use_yn='Y'
-            order by plan_id, coverage_name
+          order by a.plan_id, a.coverage_cd, a.coverage_seq
             ";
 
             using (var connection = _context.CreateConnection())
@@ -487,7 +487,7 @@ namespace mmlfcp.Repository
 	                        a.gender,
                             a.age,
 	                        c.guide_coverage_amount,
-	                        case when a.coverage_amount > 0 then  (c.guide_coverage_amount * a.premium) / a.coverage_amount  else 0  end  as guide_coverage_premium,
+	                        case when a.coverage_amount > 0 then  FLOOR((c.guide_coverage_amount * a.premium) / a.coverage_amount)  else 0  end  as guide_coverage_premium,
 	                        a.coverage_amount,
                             a.premium,
                             isnull((select top 1 coverage_amount_ratio from TB_MMLFCP_AMOUNT_RATIO where a.company_code = company_code and a.product_code = product_code and c.coverage_cd = coverage_cd),1)  as coverage_amount_ratio
@@ -612,9 +612,9 @@ namespace mmlfcp.Repository
                        d.insur_nm,
                        d.insur_bojang,
                        e.contract_amount as guide_contract_amount,
-                       case when a.std_contract_amt > 0 then (e.contract_amount * a.premium) / a.std_contract_amt else 0 end as guide_premium,
+                       case when a.std_contract_amt > 0 then FLOOR((e.contract_amount * a.premium) / a.std_contract_amt) else 0 end as guide_premium,
                        e.contract_amount,
-                       case when a.std_contract_amt > 0 then (e.contract_amount * a.premium) / a.std_contract_amt else 0 end as premium
+                       case when a.std_contract_amt > 0 then FLOOR((e.contract_amount * a.premium) / a.std_contract_amt) else 0 end as premium
                 from 
                     TB_TIC_PRDT_PRICE a
                     join TB_MMLFCP_PLAN_PRODUCT b
@@ -730,7 +730,7 @@ namespace mmlfcp.Repository
                    d.insur_nm,
                    d.insur_bojang,
                    e.min_insur_amount,
-                   case when a.std_contract_amt > 0 then (e.min_insur_amount * a.premium) / a.std_contract_amt else 0 end as min_premium,
+                   case when a.std_contract_amt > 0 then FLOOR((e.min_insur_amount * a.premium) / a.std_contract_amt) else 0 end as min_premium,
                    a.std_contract_amt as contract_amount,
                    a.premium
             from 
@@ -818,7 +818,7 @@ namespace mmlfcp.Repository
                         a.gender,
                         a.age,
                         b.guide_coverage_amount,
-                        case when ISNULL(a.coverage_amount,0) > 0 then  (b.guide_coverage_amount * a.premium) / a.coverage_amount else 0 end as guide_coverage_premium,
+                        case when ISNULL(a.coverage_amount,0) > 0 then  FLOOR((b.guide_coverage_amount * a.premium) / a.coverage_amount) else 0 end as guide_coverage_premium,
                         a.coverage_amount,
                         a.premium,
                         isnull((select top 1 coverage_amount_ratio from TB_MMLFCP_AMOUNT_RATIO where a.company_code = company_code and a.product_code = product_code and c.coverage_cd = coverage_cd),1) as coverage_amount_ratio
@@ -964,7 +964,7 @@ namespace mmlfcp.Repository
                                 a.sex as gender,a.age,
                                 a.insur_cd,d.insur_nm,d.insur_bojang,
                                 e.min_insur_amount,
-                                case when a.std_contract_amt > 0 then  (e.min_insur_amount * a.premium) / a.std_contract_amt else 0 end as min_premium,
+                                case when a.std_contract_amt > 0 then  FLOOR((e.min_insur_amount * a.premium) / a.std_contract_amt) else 0 end as min_premium,
                                 a.std_contract_amt as contract_amount,
                                 a.premium
                                 from 
@@ -1108,7 +1108,7 @@ namespace mmlfcp.Repository
                                 a.age,
                                 b.guide_coverage_amount,
                                 -- 보험료 계산 로직
-                                case when ISNULL(a.coverage_amount, 0) > 0 then (b.guide_coverage_amount * a.premium) / a.coverage_amount else 0 end as guide_coverage_premium,
+                                case when ISNULL(a.coverage_amount, 0) > 0 then FLOOR((b.guide_coverage_amount * a.premium) / a.coverage_amount) else 0 end as guide_coverage_premium,
                                 a.coverage_amount,
                                 a.premium,
                                 -- 정렬용 시퀀스 (입력값 최우선)
@@ -1244,7 +1244,7 @@ namespace mmlfcp.Repository
                                         e.insur_bojang,
                                         f.min_insur_amount,
                                         -- 가입 금액 대비 필수 보험료 비례 계산 (0 나누기 방지)
-                                        case when ISNULL(c.std_contract_amt, 0) > 0 then (f.min_insur_amount * c.premium) / c.std_contract_amt else 0 end as min_premium,
+                                        case when ISNULL(c.std_contract_amt, 0) > 0 then FLOOR((f.min_insur_amount * c.premium) / c.std_contract_amt) else 0 end as min_premium,
                                         c.std_contract_amt as contract_amount,
                                         c.premium
 
@@ -1366,7 +1366,7 @@ namespace mmlfcp.Repository
                                     a.age,
                                     b.guide_coverage_amount,
                                     -- 보험료 계산 (가이드 금액 대비 비례 계산)
-                                    case when ISNULL(a.coverage_amount, 0) > 0 then (b.guide_coverage_amount * a.premium) / a.coverage_amount else 0 end as guide_coverage_premium,
+                                    case when ISNULL(a.coverage_amount, 0) > 0 then FLOOR((b.guide_coverage_amount * a.premium) / a.coverage_amount) else 0 end as guide_coverage_premium,
                                     a.coverage_amount,
                                     a.premium,
                                     -- 만기 타입 정렬용 시퀀스
@@ -1508,10 +1508,10 @@ namespace mmlfcp.Repository
                                     f.insur_nm,
                                     f.insur_bojang,
                                     c.contract_amount as guide_contract_amount,
-                                    case when ISNULL(d.std_contract_amt,0) > 0  then (c.contract_amount * d.premium) / d.std_contract_amt  else 0  end as guide_premium,
+                                    case when ISNULL(d.std_contract_amt,0) > 0  then FLOOR((c.contract_amount * d.premium) / d.std_contract_amt)  else 0  end as guide_premium,
                                     -- 보험료 계산 (나누기 0 방지)
                                     c.contract_amount as contract_amount,
-                                    case when ISNULL(d.std_contract_amt,0) > 0  then (c.contract_amount * d.premium) / d.std_contract_amt  else 0  end as premium
+                                    case when ISNULL(d.std_contract_amt,0) > 0  then FLOOR((c.contract_amount * d.premium) / d.std_contract_amt)  else 0  end as premium
 
                                     from TB_MMLFCP_PLAN a
 
@@ -1652,7 +1652,7 @@ namespace mmlfcp.Repository
                                     e.insur_bojang,
                                     f.min_insur_amount,
                                     -- 가입 금액 대비 보험료 계산 (0 나누기 방지)
-                                    case when ISNULL(c.std_contract_amt,0) > 0 then (f.min_insur_amount * c.premium) / c.std_contract_amt else 0 end as min_premium,
+                                    case when ISNULL(c.std_contract_amt,0) > 0 then FLOOR((f.min_insur_amount * c.premium) / c.std_contract_amt) else 0 end as min_premium,
                                     c.std_contract_amt  as contract_amount,
                                     c.premium
 

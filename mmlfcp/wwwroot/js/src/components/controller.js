@@ -200,9 +200,6 @@ export const Controller = {
             return map;
         }, Object.create(null));
 
-        console.log('reqMap,', reqMap);
-
-
         coverage_premiums.forEach(product => {
             product.DispValue = true;
             const key = product.company_code + '|' + product.product_code;
@@ -240,7 +237,7 @@ export const Controller = {
                 d.base_premium = d.guide_coverage_premium || 0;
                 d.cover_selected = selected ? 'checked' : '';
                 if (selected) {
-                    total_premium += Math.round(d.base_premium || 0);
+                    total_premium += Math.floor(d.base_premium || 0);
                 }
             }
             product.total_premium = total_premium;
@@ -339,7 +336,7 @@ export const Controller = {
                 if (!ratio) continue;
 
                 // ⚠️ 기존 코드 버그 수정 (연산 우선순위)
-                const adjusted = Math.round((+detail.guide_premium || 0) / ratio);
+                const adjusted = Math.floor((+detail.guide_premium || 0) / ratio);
                 detail.guide_premium = adjusted;
                 detail.premium = adjusted;
             }
@@ -1146,7 +1143,7 @@ export const Controller = {
                     if (idxList) {
                         premiumSum = idxList.reduce((sum, idx) => {
                             const detail = product.detailList[idx];
-                            return sum + Math.round(detail?.base_premium || 0);
+                            return sum + Math.floor(detail?.base_premium || 0);
                         }, 0);
                     }
                     const displayPremium = premiumSum;
@@ -1304,7 +1301,7 @@ export const Controller = {
 
                 // 객체 속성 직접 수정 (참조에 의한 변경)
                 d.base_coverage_amount = change_coverage_amount;
-                d.base_premium = Math.round(ratio * (d.guide_coverage_premium || 0));
+                d.base_premium = Math.floor(ratio * (d.guide_coverage_premium || 0));
             }
         }
         return ratio;
@@ -1317,8 +1314,8 @@ export const Controller = {
             if (!details) continue;
             for (const d of details) {
                 if (d.coverage_cd !== cd) continue;
-                d.contract_amount = Math.round(ratio * (d.guide_contract_amount || 0));
-                d.premium = Math.round(ratio * (d.guide_premium || 0));
+                d.contract_amount = Math.floor(ratio * (d.guide_contract_amount || 0));
+                d.premium = Math.floor(ratio * (d.guide_premium || 0));
             }
         }
     },
@@ -1390,7 +1387,7 @@ export const Controller = {
         let allValues = coverage_premiums.map(product => {
             const totalPremium = product.detailList
                 .filter(d => d.coverage_cd == coverage_cd)
-                .reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
+                .reduce((sum, d) => sum + Math.floor(d.base_premium || 0), 0);
 
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
             return { code: product.company_code, base_premium: premiumValue };
@@ -1404,7 +1401,7 @@ export const Controller = {
         pageCompanies.forEach(product => {
             const totalPremium = product.detailList
                 .filter(d => d.coverage_cd == coverage_cd)
-                .reduce((sum, d) => sum + Math.round(d.base_premium || 0), 0);
+                .reduce((sum, d) => sum + Math.floor(d.base_premium || 0), 0);
 
             const premiumValue = (product.DispValue && isSelected) ? totalPremium : 0;
             const el = document.querySelector(`em[id="${product.company_code}_${coverage_cd}"][coverage_cd="${coverage_cd}"][company_code="${product.company_code}"]`);
@@ -1534,7 +1531,7 @@ export const Controller = {
             const newTotalPremium = product.detailList.reduce((sum, detail) => {
                 // 메인 화면에서 체크된 코드(Set)에 포함되어 있는지만 확인하면 됩니다.
                 const isSelected = selectedCoverageCodes.has(detail.coverage_cd);
-                return isSelected ? sum + Math.round(detail.base_premium || 0) : sum;
+                return isSelected ? sum + Math.floor(detail.base_premium || 0) : sum;
             }, 0);
 
 

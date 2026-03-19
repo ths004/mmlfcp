@@ -190,8 +190,8 @@ namespace mmlfcp.Controllers
                 var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code).ToHashSet();
                 // 데이터 조회
                 var guideCoverages = await _repository.GetGuideCoveragesByPlanIdAsync(plan_id);  //플랜별기준보장 데이터 - 화면 왼쪽
-                var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜  상품별 / 보장별 보험료
-                var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜 상품별/ 담보별 보험료
+                var coveragePremiums = await _repository.GetProductCoveragePremiumsAsync(plan_id, gender, age); //플랜상품별 보장별 보험료
+                var insurCDPremiums = await _repository.GetProductInsurCDPremiumsAsync(plan_id, gender, age); //플랜상품별 상세보험료
                 var requiredPremiums = insurance_type == "LF" ? await _repository.GetRequiredInsurCDPremiumsAsync(plan_id, gender, age) :  new List<RequiredInsurCDPremiumEntity>();//필수 보험료 조회
 
                 //string plan_id, String ga_id, String consultant_id
