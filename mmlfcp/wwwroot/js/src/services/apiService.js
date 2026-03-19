@@ -14,10 +14,23 @@ const defaultHeaders = () => {
  * - 오류 응답시 에러 메시지를 포함한 예외 throw
  */
 const handleResponse = async (res) => {
+    // JSON 파싱 시도 (실패 시 빈 객체)
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.is_success == false) {
-        throw new Error(data?.error_message || `[API] ${res.status}`);
+
+    // 1. HTTP 상태 코드가 에러(!res.ok)거나, 비즈니스 로직상 실패(is_success == false)인 경우
+    if (!res.ok || data?.is_success === false) {
+
+        // 2. 서버가 주는 메시지 우선순위: message -> error_message -> 기본값 순서
+        const msg = data?.message || `[API] ${res.status}`;
+
+        // 3. 에러 객체 생성 및 추가 정보 저장
+        const error = new Error(msg);
+        error.status = res.status; // 401
+        error.code = data?.code;   // "2009"
+        throw error;
     }
+
+    // 성공 시 데이터 반환
     return data;
 };
 

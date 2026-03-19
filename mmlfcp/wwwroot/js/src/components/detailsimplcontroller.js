@@ -103,7 +103,7 @@ export const detailSimplController = {
             }
         }
         catch (err) {
-            console.error("[상품유형별 보험료 조회 중 오류 발생]", err.code);
+            console.error("[상품유형별 보험료 조회 중 오류 발생]", err);
             alert(err.message);
             return;
         }

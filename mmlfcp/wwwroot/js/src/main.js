@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     } catch (err) {
-        console.error("[상품별 보험료 최초 조회 시 오류]", err.code);
+        console.error("[최초 실행 시 오류]", err);
         alert(err.message);
         return;
     }

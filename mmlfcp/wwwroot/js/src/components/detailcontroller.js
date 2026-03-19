@@ -55,7 +55,7 @@ export const detailController = {
 
         }
         catch (err) {
-            console.error("[연령별/ 만기별 보험료 조회 시 오류 발생]", err.code);
+            console.error("[연령별/ 만기별 보험료 조회 시 오류 발생]", err);
             alert(err.message);
             return;
         }
@@ -154,7 +154,7 @@ export const detailController = {
             }
         }
         catch (err) {
-            console.error("[연령별 보험료 비교 조회 중 오류 발생]", err.code);
+            console.error("[연령별 보험료 비교 조회 중 오류 발생]", err);
             alert(err.message);
             return;
         }
@@ -175,7 +175,7 @@ export const detailController = {
             }
         }
         catch (err) {
-            console.error("[만기별 보험료 조회 중 오류 발생]", err.code);
+            console.error("[만기별 보험료 조회 중 오류 발생]", err);
             alert(err.message);
             return;
         }

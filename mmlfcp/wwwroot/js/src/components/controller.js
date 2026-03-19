@@ -1667,7 +1667,7 @@ export const Controller = {
             }
         }
         catch (err) {
-            console.error("[상품별 보험료 조회 중 오류 발생]", err.code);
+            console.error("[상품별 보험료 조회 중 오류 발생]", err);
             alert(err.message);
             return;
         }
@@ -1690,7 +1690,7 @@ export const Controller = {
 
         }
         catch (err) {
-            console.error("[출력 요청 중 오류 발생]", err.code);
+            console.error("[출력 요청 중 오류 발생]", err);
             alert(err.message);
             return;
         }
@@ -1759,7 +1759,7 @@ export const Controller = {
 
 
         } catch (err) {
-            console.error("[사용자 플랜 등록 중 오류 발생]", err.code);
+            console.error("[사용자 플랜 등록 중 오류 발생]", err);
             alert(err.message);
             return;
         }
@@ -2053,7 +2053,7 @@ export const Controller = {
                     }
 
                 } catch (err) {
-                    console.error("[사용자 플랜 삭제 중 오류 발생]", err.code);
+                    console.error("[사용자 플랜 삭제 중 오류 발생]", err);
                     alert(err.message);
                     return;
                 }
