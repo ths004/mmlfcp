@@ -360,16 +360,42 @@ namespace mmlfcp.Repository
         private async Task LoadAllCoveragesAsync()
         {
             string sql = @"
-            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+           SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
             SET NOCOUNT ON;
             select 
-                a.plan_id, a.coverage_cd, b.coverage_name, a.guide_coverage_amount, 
+                a.plan_id, a.coverage_cd,b.life_fire_coverage_name as coverage_name, a.guide_coverage_amount, 
                 a.is_selected_coverage, a.coverage_seq
             from TB_MMLFCP_PLAN_COVERAGE a
             join TB_MMLFCP_COVERAGE b
                 on a.coverage_cd = b.coverage_cd
+			join TB_MMLFCP_PLAN c
+				on a.plan_id = c.plan_id
+				and c.insu_compy_type = 'LF'
             where a.use_yn='Y'
-            order by a.plan_id, a.coverage_seq";
+			union
+            select 
+                a.plan_id, a.coverage_cd,b.fire_coverage_name as coverage_name, a.guide_coverage_amount, 
+                a.is_selected_coverage, a.coverage_seq
+            from TB_MMLFCP_PLAN_COVERAGE a
+            join TB_MMLFCP_COVERAGE b
+                on a.coverage_cd = b.coverage_cd
+			join TB_MMLFCP_PLAN c
+				on a.plan_id = c.plan_id
+				and c.insu_compy_type = 'F'
+            where a.use_yn='Y'
+			union
+            select 
+                a.plan_id, a.coverage_cd,b.life_coverage_name as coverage_name, a.guide_coverage_amount, 
+                a.is_selected_coverage, a.coverage_seq
+            from TB_MMLFCP_PLAN_COVERAGE a
+            join TB_MMLFCP_COVERAGE b
+                on a.coverage_cd = b.coverage_cd
+			join TB_MMLFCP_PLAN c
+				on a.plan_id = c.plan_id
+				and c.insu_compy_type = 'L'
+            where a.use_yn='Y'
+            order by plan_id, coverage_name
+            ";
 
             using (var connection = _context.CreateConnection())
             {
