@@ -186,6 +186,17 @@ namespace mmlfcp.Controllers
                 string remoteip = Utility.GetIPAddress(HttpContext);
 
 
+                if (await _repository.IsUserRestricted(authResult.AgencyCompanyCD, authResult.ConsultantID, "MMLFCP") == true)
+                {
+
+                    return Unauthorized(new CommonErrorResponse
+                    {
+                        code = "2003",
+                        message = "매크로, 스크래핑 등과 같은 자동화된 프로그램을 이용해 데이터를 수집할 경우 할 경우, 서비스 이용이 제한되거나 계정이 중지 또는 차단될 수 있습니다. 상기와 같은 사유로 사용이 제한되었으니 문의사항이 있으시면 당사 고객센터(010-4796-5284)로 문의 부탁드립니다."
+                    });
+                }
+
+
                 //exception company
                 var exceptionCompanyCodes = (await _repository.GetExcpCompanysAsync(authResult.AgencyCompanyCD)).Select(e => e.company_code).ToHashSet();
                 // 데이터 조회

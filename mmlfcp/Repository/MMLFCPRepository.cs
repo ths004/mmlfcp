@@ -76,6 +76,8 @@ namespace mmlfcp.Repository
 
 
         public Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id);
+
+        public Task<Boolean> IsUserRestricted(string ga_id, String consultant_id, String app_id);
     }
 
     public class MMLFCPRepository : IMMLFCPRepository
@@ -2050,6 +2052,42 @@ namespace mmlfcp.Repository
 
             return true;
         }
+
+        public async Task<Boolean> IsUserRestricted(string ga_id, String consultant_id, String app_id)
+        {
+
+            bool rtn = false;
+
+            String qry = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
+            select ga_id,consultant_id,app_id,start_date  from TB_USER_RESTRICTIONS
+            where 
+	            ga_id = @ga_id and consultant_id = @consultant_id  and app_id = @app_Id
+	            and end_date > getdate()
+            ";
+
+            using (var connection = _context.CreateConnection())
+            {
+
+                var db_retrun = await connection.QueryAsync<UserRestrictEntity>(qry,
+                                                new
+                                                {
+                                                    ga_id = ga_id,
+                                                    consultant_id = consultant_id,
+                                                    app_id = app_id
+                                                },
+                                                commandType: CommandType.Text);
+
+                if (db_retrun.ToList().Count > 0)
+                {
+                    rtn = true;
+                }
+            }
+
+            return rtn;
+        }
+
 
         //사용자 플랜 리스트 조회
         public async Task<List<UserCoverage>> GetUserCoverageAsync(String ga_id, String consultant_id)
