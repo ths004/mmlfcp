@@ -524,10 +524,6 @@ export const detailSimplController = {
                 coverageMinMaxMap[coverage.coverage_cd] = this._getMaxMinPremium(premiums.map(v => ({ base_premium: v })), 'base_premium');
             }
         });
-
-        console.log({ products: products });
-
-
         // 3️⃣ HTML 조립
         const listHtml = planCoverages.filter(coverage => coverage.DispValue === true && !excludeCodes.includes(coverage.coverage_cd)).map(coverage => {
 
@@ -712,12 +708,16 @@ export const detailSimplController = {
 
     //월 보험료, 총 납입보험료 색상 갱신
     syncSimpliPremiumCells() {
-        const coveragePremiums = (simplified_detail_coverage.simplified_coverage_premiums || []).filter(item => item.DispValue);
+        const selectedCompany = document.getElementById('product_group_name')?.value;
+        const coveragePremiums = (simplified_detail_coverage.simplified_coverage_premiums || []).filter(item => item.DispValue && selectedCompany === item.company_code);
         if (coveragePremiums.length === 0) return;
 
         // 1. 비교를 위한 값 배열 추출
         const totalList = coveragePremiums.map(item => item.total_premium);
         const paymentList = coveragePremiums.map(item => item.payment_total_premium);
+
+        //console.log({ selectedCompany: selectedCompany, totalList: totalList, paymentList: paymentList });
+
 
         // 2. 각각의 Max, Min 값 계산
         const stats = {
@@ -905,11 +905,13 @@ export const detailSimplController = {
 
                     // 3. 국소 업데이트 (입력창에만 반영) - 한 프레임에 몰아서
                     requestAnimationFrame(() => {
-                        //3. 월 보험료, 총 납입보험료 색상 갱신
+
+                        //3. 특정 담보(coverage_cd) 만 보험료 갱신
+                        this.syncSimpliPremiumByCoverageCd(coverage_cd);
+
+                        //4. 월 보험료, 총 납입보험료 색상 갱신
                         this.syncSimpliPremiumCells();
 
-                        //4. 특정 담보(coverage_cd) 만 보험료 갱신
-                        this.syncSimpliPremiumByCoverageCd(coverage_cd);
                     }, 100);
                 }
             });
