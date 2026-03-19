@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using System.IO;
-using ceTe.DynamicPDF.Merger;
+﻿using ceTe.DynamicPDF.Merger;
 using ceTe.DynamicPDF.Text;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using mmlfcp.Controllers;
+using Serilog.Core;
+using System.IO;
 
 namespace mmlfcp.Middleware
 {
@@ -10,6 +12,7 @@ namespace mmlfcp.Middleware
     {
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
+        private readonly ILogger<ReportContext> _logger;
 
         private OpenTypeFont _regularFont;
         private OpenTypeFont _boldFont;
@@ -24,8 +27,9 @@ namespace mmlfcp.Middleware
 
         private string _reportSavePath;
 
-        public ReportContext(IConfiguration config, IWebHostEnvironment env)
+        public ReportContext(IConfiguration config, IWebHostEnvironment env, ILogger<ReportContext> logger)
         {
+            _logger = logger;
             _config = config;
             _env = env;
             InitializeResources();
@@ -33,6 +37,13 @@ namespace mmlfcp.Middleware
 
         private void InitializeResources()
         {
+            _logger.LogInformation("Initializing ReportContext resources...");
+            _logger.LogInformation("regularFont :" + _config.GetSection("Fonts")["regularFont"]);
+            _logger.LogInformation("boldFont :" + _config.GetSection("Fonts")["boldFont"]);
+            _logger.LogInformation("ReportSavePath :" + _config.GetValue<string>("ReportSavePath"));
+            _logger.LogInformation("ReportTemplate :" + _config.GetValue<string>("ReportTemplate"));
+            _logger.LogInformation("ReportPlantypeTemplate :" + _config.GetValue<string>("ReportPlantypeTemplate"));
+
             // 폰트 파일 로드
             var regularFontPath = GetPhysicalPath(_config.GetSection("Fonts")["regularFont"]);
             var boldFontPath = GetPhysicalPath(_config.GetSection("Fonts")["boldFont"]);
