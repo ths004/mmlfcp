@@ -2239,10 +2239,8 @@ namespace mmlfcp.Repository
             return plan_type switch
             {
                 "01" or "02" or "03" or "04" => new List<string> { "01", "02", "03", "04" },
-                "05" or "06" or "07" or "14" or "15" or "16" or "17" => new List<string> { "05", "06", "07", "14", "15", "16", "17" },
+                "06" or "07" or "14" or "15" or "16" or "17" or "21" or "22" => new List<string> { "06", "07", "14", "15", "16", "17", "21","22" },
                 "09" or "11" or "12" or "13" => new List<string> { "09", "11", "12", "13" },
-                "18" or "19" => new List<string> { "18", "19" },
-                "20" or "21" or "22" => new List<string> { "20", "21", "22" },
                 _ => new List<string> { plan_type } // 정의되지 않은 경우 자기 자신만 조회
             };
         }
