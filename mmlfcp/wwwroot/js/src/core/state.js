@@ -19,6 +19,7 @@ export const _state =
     coverage_ratio_map: {},
     default_plan_snapshot: {},
     user_coverage: {},
+    upload_date: {},
 
     plan_coverages: [],
     coverage_premiums: [],

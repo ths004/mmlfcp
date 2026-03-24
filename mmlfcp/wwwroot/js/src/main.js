@@ -34,6 +34,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         mmlfcp_state.set('mmlfcp_plans', authResult.plans);
         mmlfcp_state.set('consultant_id', authResult.consultant_id);
         mmlfcp_state.set('ga_id', authResult.ga_id);
+        mmlfcp_state.set('upload_date', authResult.upload_date);
+
+        console.log({ upload_date: authResult.upload_date });
+
 
         // ⭐ 추가: URL에서 받은 path 값을 state에 저장
         if (path) {

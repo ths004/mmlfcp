@@ -17,6 +17,7 @@ export const Controller = {
         // 2. 세팅된 State를 바탕으로 UI 렌더링
         this.renderPlanOptions();           // 상품유형 리스트
         this.renderPayTermBySelectedPlan(); // 납기/만기 리스트
+        this.renderUploadDate(); //손보, 생보 업데이트 날짜 랜더링
         this.renderPayTermSelectedAge();    // 조회가능 나이 안내 텍스트
 
         // 3. 이벤트 바인딩
@@ -808,6 +809,29 @@ export const Controller = {
         }
     },
 
+
+    //업데이트 날짜 랜더링
+    renderUploadDate() {
+        // 1. 구조 분해 할당을 통해 변수를 깔끔하게 추출합니다.
+        const { fire_upload_date, life_upload_date } = mmlfcp_state.get('upload_date') || {};
+
+        // 2. 템플릿 리터럴(`)을 사용하여 HTML 구조를 한눈에 보기 쉽게 작성합니다.
+        const html = `
+        <span style="font-weight: 600;">업데이트 일자 ( </span>
+        <span style="color: #2f88ff; font-weight: 600;">손해보험 </span>
+        <span style="font-weight: 400;"> ${fire_upload_date} </span>
+        <i>/</i> 
+        <span style="color: #2f88ff; font-weight: 600;">생명보험 </span>
+        <span style="font-weight: 400;"> ${life_upload_date}</span>
+        <span style="font-weight: 600;"> )</span>
+        `;
+
+        // 3. innerHTML을 사용합니다.
+        const uploadDateElement = document.getElementById('uploadDate');
+        if (uploadDateElement) {
+            uploadDateElement.innerHTML = html;
+        }
+    },
 
     /**
     * 선택된 상품유형(plan_type)에 따른 조회나이 랜더링
