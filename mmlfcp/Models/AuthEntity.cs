@@ -20,3 +20,11 @@
         public String consultant_id { get; set; }
         public String app_id { get; set; }
     }
+
+    public class UploadDateEntity
+{
+        public string fire_upload_date  { get; set; }
+
+        public string life_upload_date { get; set; }
+
+}

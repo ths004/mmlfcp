@@ -18,6 +18,7 @@ namespace mmlfcp.Models
         public String consultant_id { get; set; }
 
         public List<PlanEntity> plans { get; set; } = new List<PlanEntity>();
+        public UploadDateEntity upload_date { get; set; } 
     }
 
     // 플랜 기준 상품 보험료 조회 응답 모델

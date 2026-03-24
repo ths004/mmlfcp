@@ -131,6 +131,9 @@ namespace mmlfcp.Controllers
                 var plans = await _repository.GetPlansAsync();
                 response.plans = plans.ToList();
 
+                response.upload_date = await _repository.GetUploadDateAsync();
+
+
                 await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id);
 
                 return Ok(response);
