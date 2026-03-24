@@ -17,6 +17,10 @@ namespace mmlfcp.Repository
         //플랜조회
         public Task<List<PlanEntity>> GetPlansAsync();
 
+        //업데이트 날짜 조회
+        public Task<UploadDateEntity> GetUploadDateAsync();
+
+
         //플랜별기준보장 데이터 - 화면 왼쪽
         public Task<List<PlanCoverageEntity>> GetGuideCoveragesByPlanIdAsync(string planId);
 
@@ -87,6 +91,9 @@ namespace mmlfcp.Repository
 
         // 캐시 필드
         private List<PlanEntity>? _cachedPlans;
+        private UploadDateEntity? _cachedUploadDate;
+
+
         private Dictionary<string, List<PlanCoverageEntity>>? _cachedCoverages;
         private Dictionary<string, List<ExceptionCompanyEntity>>? _cachedExpCompanys;
 
@@ -108,6 +115,8 @@ namespace mmlfcp.Repository
 
         // 락 객체
         private readonly SemaphoreSlim _planLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _uploadDateLock = new SemaphoreSlim(1, 1);
+
         private readonly SemaphoreSlim _excpCompanyLock = new SemaphoreSlim(1, 1);
         
         private readonly SemaphoreSlim _coverageLock = new SemaphoreSlim(10, 10);
@@ -411,6 +420,53 @@ namespace mmlfcp.Repository
             }
         }
 
+
+        private async Task LoadUploadDateAsync()
+        {
+            string sql = @"
+            SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+            SET NOCOUNT ON;
+            select top 1 
+                        replace(convert(nvarchar,life_upload_date,111),'/','-') as life_upload_date, 
+                        replace(convert(nvarchar,fire_upload_date,111),'/','-') as  fire_upload_date 
+            from 
+                TB_TIC_UPLOAD order by in_date desc
+            ";
+
+            using (var connection = _context.CreateConnection())
+            {
+                var uploadDates = await connection.QueryAsync<UploadDateEntity>(sql);
+
+
+                _cachedUploadDate = uploadDates.FirstOrDefault();
+
+                _logger.LogInformation("upload date loaded and cached: {Count} ", uploadDates.Count());
+            }
+        }
+
+        public async Task<UploadDateEntity> GetUploadDateAsync()
+        {
+            if (_cachedUploadDate == null)
+            {
+                await _uploadDateLock.WaitAsync();
+                try
+                {
+                    if (_cachedUploadDate == null)
+                    {
+                        await LoadUploadDateAsync();
+                    }
+                }
+                finally
+                {
+                    _uploadDateLock.Release();
+                }
+            }
+
+            return _cachedUploadDate != null 
+                ? _cachedUploadDate
+                : new UploadDateEntity();
+
+        }
 
         public async Task<List<ExceptionCompanyEntity>> GetExcpCompanysAsync(string ga_id)
         {
