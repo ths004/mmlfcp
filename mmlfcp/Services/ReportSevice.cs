@@ -8,6 +8,7 @@ using mmlfcp.Models;
 using mmlfcp.Repository;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.Intrinsics.X86;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -760,7 +761,7 @@ namespace mmlfcp.Services
         }
 
 
-        public String MakePlanTypePDFReport(String cust_name, int age, String gender, String insur_birth_date, String plan_type_name, String plan_payment_expiration_name, List<string> company_codes, List<PrintCoverage> coverages, List<PrintProductCoverage> coverage_list)
+        public String MakePlanTypePDFReport(String cust_name, int age, String gender, String insur_birth_date, String plan_type_name, String plan_payment_expiration_name, List<string> company_codes, List<PrintCoverage> coverages, List<PrintProductCoverage> product_coverage_list)
         {
             //문서 생성
             Document document = new Document();
@@ -774,15 +775,21 @@ namespace mmlfcp.Services
 
             string title = String.Format("{0} ({1}세,{2},생년월일 : {3}),{4},{5}", cust_name, age, gender == "M" ? "남성":"여성", insur_birth_date, plan_type_name, plan_payment_expiration_name);
 
-            var groupedCoverageByCompany = from item in coverage_list
+            var groupedCoverageByCompany = from item in product_coverage_list
                                            group item by item.company_code into companyGroup
                                            select companyGroup;
+
 
             foreach (var CoveragebyCompany in groupedCoverageByCompany)  //company  pgae
             {
                 for (int j = 0; j < coverage_page_count; j++)  //coverage page
                 {
-                    document.Pages.Add(MakePage_PlanTypes((j * 33), title, cust_name, plan_type_name, plan_payment_expiration_name, coverages, CoveragebyCompany.ToList()));
+
+                    List<Page> pages = MakePage_PlanTypes((j * 33), title, cust_name, plan_type_name, plan_payment_expiration_name, coverages, CoveragebyCompany.ToList());
+                    foreach (Page p in pages)
+                    {
+                        document.Pages.Add(p);
+                    }
                 }
             }
 
@@ -796,10 +803,10 @@ namespace mmlfcp.Services
             return WebFullPathName(prt_fileNm);
         }
 
-        public Page MakePage_PlanTypes(int start_row_pos,string title, String cust_name, String plan_type_name, String plan_payment_expiration_name, List<PrintCoverage> coverages, List<PrintProductCoverage> coverage_list)
+        public List<Page> MakePage_PlanTypes(int start_row_pos,string title, String cust_name, String plan_type_name, String plan_payment_expiration_name, List<PrintCoverage> coverages, List<PrintProductCoverage> company_product_coverage_list)
         {
-            Page page = new Page(PageSize.A4, PageOrientation.Portrait, 0F);
-            page.Elements.Add(tepmlatePlanTypePage);
+            List<Page> pages = new List<Page>();
+
 
             float x = 0; float y = 0;
             float step_x = 58.57f;
@@ -807,6 +814,7 @@ namespace mmlfcp.Services
             
             int payment_priod = 0;
             long tmpPremium = 0;
+
 
             //납입기간
             Regex rg = new Regex(@"\d+년");
@@ -821,67 +829,86 @@ namespace mmlfcp.Services
             }
 
             RgbColor rgbColor = RgbColor.Black;
-            // 선택한 회사명
-            x = 13f; y = 12f;
-            page.Elements.Add(new Label(coverage_list[0].company_name, x, y, 100, 25, boldFont, 10, TextAlign.Left));
+            (int min_pos, int max_pos) = GetMinMaxPosition(company_product_coverage_list);
 
-            // 정보
-            x = 13f; y = 28f;
-            page.Elements.Add(new Label(title, x, y, 800, 14, boldFont, 13, TextAlign.Left));
+            int totalPlanPages = company_product_coverage_list.Count  / 7; 
+            totalPlanPages = (company_product_coverage_list.Count % 7) > 0 ? totalPlanPages + 1 : totalPlanPages;
 
-            x = 175f;
-            (int min_pos, int max_pos) = GetMinMaxPosition(coverage_list);
-            for (int i = 0; i < coverage_list.Count; i++)
+            for (int pageIndex = 0; pageIndex < totalPlanPages; pageIndex++)
             {
-                PrintProductCoverage product = coverage_list[i];
 
-                y = 49f;
-                page.Elements.Add(new TextArea(product.plan_type_name, x + (i * step_x), y, 60, 40, boldFont, 8, TextAlign.Center, RgbColor.White));
+                Page page = new Page(PageSize.A4, PageOrientation.Portrait, 0F);
+                page.Elements.Add(tepmlatePlanTypePage);
 
-                y = 79f;
-                page.Elements.Add(new TextArea(product.product_name.Replace("보험", ""), x + (i * step_x), y, 60, 40, regularFont, 7, TextAlign.Center, RgbColor.Black));
 
-                long total_payable_premium = (long)(product.total_premium * payment_priod * 12);
-                rgbColor = (i == max_pos) ? RgbColor.Red : (i == min_pos) ? RgbColor.Blue : RgbColor.Black;
-                y = 130f;
-                page.Elements.Add(new Label(product.total_premium.ToString("#,###"), x + (i * step_x), y, 60, 30, boldFont, 9, TextAlign.Center, rgbColor));
-                y = 155f;
-                page.Elements.Add(new Label(total_payable_premium.ToString("#,###"), x + (i * step_x), y, 60, 30, boldFont, 9, TextAlign.Center, rgbColor));
-            }
+                // 선택한 회사명
+                x = 13f; y = 12f;
+                page.Elements.Add(new Label(company_product_coverage_list[0].company_name, x, y, 100, 25, boldFont, 10, TextAlign.Left));
 
-            int cur_bojang_cnt = 0;
-            for (int i = start_row_pos; i < coverages.Count; i++)
-            {
-                (min_pos, max_pos) = GetMinMaxPosition(coverage_list, coverages[i].coverage_cd);
-                y = 195f + (step_y * cur_bojang_cnt);
+                // 정보
+                x = 13f; y = 28f;
+                page.Elements.Add(new Label(title, x, y, 800, 14, boldFont, 13, TextAlign.Left));
 
-                x = 10f;
-                page.Elements.Add(new Label(coverages[i].coverage_name, x, y, 145, 18, regularFont, 9, TextAlign.Left)); //담보명
-                x = 120f;
-                page.Elements.Add(new Label(coverages[i].coverage_amount.ToString("#,###"), x, y, 50, 18, regularFont, 9, TextAlign.Right)); //가입금액
 
-                
-                for (int j = 0; j < coverage_list.Count; j++)
+                x = 175f;
+                int lastIndex = Math.Min(company_product_coverage_list.Count, (pageIndex + 1) * 7);
+                int print_x_cnt = 0; 
+                for (int i = (pageIndex * 7); i < lastIndex; i++)
                 {
-                    PrintCoveragePremium tmp_dic_val;
-                    if (coverage_list[j].Coverages.TryGetValue(coverages[i].coverage_cd, out tmp_dic_val) == true)
-                    {
-                        tmpPremium = (long)tmp_dic_val.plan_coverage_premium;
-                    }
-                    else
-                    {
-                        tmpPremium = 0;
-                    }
-                    x = 175f + (step_x * j);
-                    rgbColor = (j == max_pos) ? RgbColor.Red : (j == min_pos) ? RgbColor.Blue : RgbColor.Black;
-                    page.Elements.Add(new Label(tmpPremium == 0 ? "-" : tmpPremium.ToString("#,###"), x, y, 50, 18, regularFont, 9, TextAlign.Right, rgbColor)); //보험료
+                    PrintProductCoverage product = company_product_coverage_list[i];
+
+                    y = 49f;
+                    page.Elements.Add(new TextArea(product.plan_type_name, x + (print_x_cnt * step_x), y, 60, 40, boldFont, 8, TextAlign.Center, RgbColor.White));
+
+                    y = 79f;
+                    page.Elements.Add(new TextArea(product.product_name.Replace("보험", ""), x + (print_x_cnt * step_x), y, 60, 40, regularFont, 7, TextAlign.Center, RgbColor.Black));
+
+                    long total_payable_premium = (long)(product.total_premium * payment_priod * 12);
+                    rgbColor = (i == max_pos) ? RgbColor.Red : (i == min_pos) ? RgbColor.Blue : RgbColor.Black;
+                    y = 130f;
+                    page.Elements.Add(new Label(product.total_premium.ToString("#,###"), x + (print_x_cnt * step_x), y, 60, 30, boldFont, 9, TextAlign.Center, rgbColor));
+                    y = 155f;
+                    page.Elements.Add(new Label(total_payable_premium.ToString("#,###"), x + (print_x_cnt * step_x), y, 60, 30, boldFont, 9, TextAlign.Center, rgbColor));
+                    print_x_cnt = print_x_cnt + 1;
                 }
 
-                cur_bojang_cnt += 1;
-                if (cur_bojang_cnt >= 33) { break; }
-            }
+                int cur_bojang_cnt = 0;
+                
+                for (int i = start_row_pos; i < coverages.Count; i++)
+                {
+                    (min_pos, max_pos) = GetMinMaxPosition(company_product_coverage_list, coverages[i].coverage_cd);
+                    y = 195f + (step_y * cur_bojang_cnt);
 
-            return page;
+                    x = 10f;
+                    page.Elements.Add(new Label(coverages[i].coverage_name, x, y, 145, 18, regularFont, 9, TextAlign.Left)); //담보명
+                    x = 120f;
+                    page.Elements.Add(new Label(coverages[i].coverage_amount.ToString("#,###"), x, y, 50, 18, regularFont, 9, TextAlign.Right)); //가입금액
+
+                    print_x_cnt = 0;
+                    for (int j = (pageIndex * 7); j < lastIndex; j++)
+                    {
+                        PrintCoveragePremium tmp_dic_val;
+                        if (company_product_coverage_list[j].Coverages.TryGetValue(coverages[i].coverage_cd, out tmp_dic_val) == true)
+                        {
+                            tmpPremium = (long)tmp_dic_val.plan_coverage_premium;
+                        }
+                        else
+                        {
+                            tmpPremium = 0;
+                        }
+                        x = 175f + (step_x * print_x_cnt);
+                        rgbColor = (j == max_pos) ? RgbColor.Red : (j == min_pos) ? RgbColor.Blue : RgbColor.Black;
+                        page.Elements.Add(new Label(tmpPremium == 0 ? "-" : tmpPremium.ToString("#,###"), x, y, 50, 18, regularFont, 9, TextAlign.Right, rgbColor)); //보험료
+                        print_x_cnt = print_x_cnt + 1;
+                    }
+
+                    cur_bojang_cnt += 1;
+                    if (cur_bojang_cnt >= 33) { break; }
+                }
+
+                pages.Add(page);
+            }
+            return pages;
         }
 
 
