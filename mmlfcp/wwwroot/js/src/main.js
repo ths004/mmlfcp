@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         //1. URL에서 token 파라미터 추출
         const token = app.getUrlParameter("token");
+        const path = app.getUrlParameter("path"); // ⭐ path 파라미터 추출 추가
         if (!token) {
             alert('접속 토큰이 존재하지 않습니다.');
             return;
@@ -34,8 +35,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         mmlfcp_state.set('consultant_id', authResult.consultant_id);
         mmlfcp_state.set('ga_id', authResult.ga_id);
 
-        // 디버깅용 확인
-        // mmlfcp_state.debug();
+        // ⭐ 추가: URL에서 받은 path 값을 state에 저장
+        if (path) {
+            mmlfcp_state.set('url_path', path);
+        }
 
         //localstorage 일부 제거
         Controller.resetBeforeSearch();

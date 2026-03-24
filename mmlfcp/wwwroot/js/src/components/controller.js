@@ -14,18 +14,12 @@ export const Controller = {
         // 1. 기초 데이터 동기화 (기존 데이터나 input의 생년월일로부터 나이 계산 포함)
         this.syncStateAndUI();
 
-        // 2. ⭐ 나이가 있다면 그에 맞는 기본 상품 세팅
-        const currentAge = mmlfcp_state.get('age');
-        if (currentAge !== undefined) {
-            this.setDefaultByAge(currentAge);
-        }
-
-        // 3. 세팅된 State를 바탕으로 UI 렌더링
+        // 2. 세팅된 State를 바탕으로 UI 렌더링
         this.renderPlanOptions();           // 상품유형 리스트
         this.renderPayTermBySelectedPlan(); // 납기/만기 리스트
         this.renderPayTermSelectedAge();    // 조회가능 나이 안내 텍스트
 
-        // 4. 이벤트 바인딩
+        // 3. 이벤트 바인딩
         this.bindEvents();
     },
 
@@ -560,7 +554,7 @@ export const Controller = {
         if (!selectEl) return;
 
         const plans = mmlfcp_state.getPlans();
-        const insurance_type = mmlfcp_state.get('insurance_type') || 'F';
+        const insurance_type = mmlfcp_state.get('insurance_type');
         let plan_type = mmlfcp_state.get('plan_type_id'); // State의 현재 값
 
         // 1) 보험유형 필터링 및 중복 제거
@@ -604,12 +598,12 @@ export const Controller = {
         }
     },
 
-    // ====== Step 3: state <-> UI sync ======
     syncStateAndUI() {
         const planSel = document.getElementById('selProductsGroupCD');
         const genderSel = document.getElementById('gender');
         const birthEl = document.getElementById('birth_date');
-        const insurSel = document.getElementById('selInsuranceType'); // 보험유형 셀렉트 추가
+        const insurSel = document.getElementById('selInsuranceType');
+        const payExpSel = document.getElementById('selPaymentExpirationCD'); // 만기 셀렉트 추가
 
         // 1️⃣ 이름 및 생년월일 기초 세팅
         if (!mmlfcp_state.get('cust_name')) {
@@ -619,47 +613,61 @@ export const Controller = {
             mmlfcp_state.set('birth_date', _state.birth_date || birthEl?.value);
         }
 
-        // 2️⃣ 나이 계산 및 그에 따른 자동 상품 세팅 (핵심!)
+        // 2️⃣ 경로(path) 또는 나이에 따른 자동 상품 세팅
+        const path = mmlfcp_state.get('url_path'); // main.js에서 저장한 path 값
         const currentBirthDate = mmlfcp_state.get('birth_date');
-        if (currentBirthDate && currentBirthDate.length === 8) {
-            const age = app.getAgefromString(currentBirthDate);
-            mmlfcp_state.set('age', age);
+        const age = (currentBirthDate && currentBirthDate.length === 8) ? app.getAgefromString(currentBirthDate) : 0;
+        mmlfcp_state.set('age', age);
 
-            // ⭐ 나이에 맞는 보험유형, 상품유형, 만기를 State에 강제 세팅
+        if (path === 'fire') {
+            // 🔥 path=fire (손보) 우선 세팅
+            mmlfcp_state.set('insurance_type', 'F');
+            mmlfcp_state.set('plan_type_id', '06'); // 손보 종합(무해지)
+            mmlfcp_state.set('plan_payment_expiration_cd', '01'); // 20년/100세
+        }
+        else if (path === 'lifefire') {
+            // 🌿 path=lifefire (생손보) 우선 세팅
+            mmlfcp_state.set('insurance_type', 'LF');
+            mmlfcp_state.set('plan_type_id', '01'); // 생손보 건강(무해지)
+            mmlfcp_state.set('plan_payment_expiration_cd', '01'); // 20년/100세
+        }
+        else if (age > 0) {
+            // 경로 정보가 없을 때만 나이 기반 기본값 세팅
             this.setDefaultByAge(age);
         }
 
         // 3️⃣ 세팅된 State 값을 UI(DOM)에 반영
         if (insurSel) {
-            insurSel.value = mmlfcp_state.get('insurance_type') || 'F';
+            insurSel.value = mmlfcp_state.get('insurance_type');
         }
 
+        // 상품 유형 UI 반영 (선택된 옵션의 텍스트도 같이 저장)
         if (planSel) {
-            // setDefaultByAge에서 세팅된 plan_type_id를 UI에 반영
             const targetPlanType = mmlfcp_state.get('plan_type_id');
             if (targetPlanType) {
                 planSel.value = targetPlanType;
-            }
-
-            // State에 최종 상품명 저장 (UI에 선택된 텍스트 기준)
-            if (planSel.selectedOptions.length > 0) {
-                mmlfcp_state.set('plan_type_id', planSel.value);
-                mmlfcp_state.set('plan_type_name', planSel.selectedOptions[0].textContent);
+                if (planSel.selectedOptions.length > 0) {
+                    mmlfcp_state.set('plan_type_name', planSel.selectedOptions[0].textContent);
+                }
             }
         }
 
-        // 4️⃣ 성별 select 기본값 적용
+        // 만기 UI 반영
+        if (payExpSel) {
+            const targetExp = mmlfcp_state.get('plan_payment_expiration_cd');
+            if (targetExp) {
+                payExpSel.value = targetExp;
+            }
+        }
+
+        // 4️⃣ 성별 select 기본값 및 제한 적용
         const defaultGender = mmlfcp_state.get('gender') || _state.gender;
         if (genderSel && defaultGender) {
             Array.from(genderSel.options).forEach(opt => opt.disabled = false);
 
-            // ⭐ [추가] 현재 상품 유형에 따른 성별 제한 적용
-            // 여기서 '08(여성건강)' 플랜이라면 남성을 다시 disabled 시킵니다.
             const currentPlanType = mmlfcp_state.get('plan_type_id');
             this.handleGenderByPlan(currentPlanType);
 
-            // 최종적으로 결정된 성별값을 UI에 반영
-            // (만약 위 함수에서 남성->여성으로 강제 변경했다면 바뀐 값이 들어갑니다)
             const finalGender = mmlfcp_state.get('gender') || defaultGender;
             genderSel.value = finalGender;
             mmlfcp_state.set('gender', finalGender);
@@ -849,7 +857,7 @@ export const Controller = {
             보험료vs최저최대, 만기 보험료 비교, 연령대별 보험료 비교를 모두 보여준다.
        */
 
-        const plan_type_id = mmlfcp_state.get('plan_type_id'); //01 - 상품유형 코드 
+        const plan_type = mmlfcp_state.get('plan_type_id'); //01 - 상품유형 코드 
         const plan_payment_expiration_name = mmlfcp_state.get('plan_payment_expiration_name'); //20년/100세 -> 만기명
 
         //1️⃣ 기본 탭 상태(전부 숨김)
@@ -881,7 +889,7 @@ export const Controller = {
 
         // 4️⃣ 예외 조건 먼저 처리 (중요!)
         // 🔹 예외 1: 여성건강무해지
-        if (plan_type_id === FEMALE_HEALTH) {
+        if (plan_type === FEMALE_HEALTH) {
             menu.payment = true;
             menu.aging = true;
         }
@@ -892,7 +900,7 @@ export const Controller = {
         }
 
         // 5️⃣ 기본 대상 상품
-        else if (BASE_TARGET_PRODUCTS.includes(plan_type_id)) {
+        else if (BASE_TARGET_PRODUCTS.includes(plan_type)) {
             menu.premium = true;
             menu.payment = true;
             menu.aging = true;
@@ -912,7 +920,7 @@ export const Controller = {
     },
 
     setSimplifiDetailMenu() {
-        const plan_type_id = mmlfcp_state.get('plan_type_id'); //01 - 상품유형 코드 
+        const plan_type = mmlfcp_state.get('plan_type_id'); //01 - 상품유형 코드 
 
         //1️⃣ 기본 탭 상태(전부 숨김)
         const menu = {
@@ -927,7 +935,7 @@ export const Controller = {
         ];
 
         //3. 활성화 구분
-        if (BASE_TARGET_PRODUCTS.includes(plan_type_id)) {
+        if (BASE_TARGET_PRODUCTS.includes(plan_type)) {
             menu.simplifi = true;
         }
 
@@ -935,7 +943,41 @@ export const Controller = {
         this._toggleMenu("openCoverageDetailModalBtn", menu.simplifi);
     },
 
+    setPrintliMenu() {
+        const plan_type = mmlfcp_state.get('plan_type_id'); //상품유형 코드
 
+        const menu = {
+            payment: false, //만기별 보험료 비교 출력
+            simplifi: false, // 상품유형별 비교 출력
+        };
+
+        //만기별 비교 상품유형 코드
+        const BASE_PAYMENT_PRODUCTS = [
+            "05", "06", "07", // 종합
+            "14", "15", "16", "17",// 간편 325/335/355/31010
+            "18", "19",// 어린이
+            "20", "21", "22",// 청소년
+            "25", //생보 치매(무해지)
+        ];
+
+        //상품유형별 비교 상품유형 코드
+        const BASE_SIMPLIFI_PRODUCTS = [
+            "01", "02", "03", "04", // 생손보
+            "06", "07", "14", "15", "16", "17", "21", "22",// 손보 종합(무해지), 51010, 간편, 청소년
+            "09", "11", "12", "13",// 생보건강, 생보간편
+        ];
+
+        if (BASE_PAYMENT_PRODUCTS.includes(plan_type)) {
+            menu.payment = true;
+        }
+        if (BASE_SIMPLIFI_PRODUCTS.includes(plan_type)) {
+            menu.simplifi = true;
+        }
+
+        // 3. _toggleMenu 함수를 호출하여 실제 DOM 제어
+        this._toggleMenu('product-title', menu.payment);
+        this._toggleMenu('plan-type-title', menu.simplifi);
+    },
 
     render_coverage_bojang() {
         // ✅ 추가 (user_coverages가 있을 때만 사용자 플랜 렌더)
@@ -1583,14 +1625,11 @@ export const Controller = {
         mmlfcp_state.set('birth_date', birth_date);
         mmlfcp_state.set('age', age);
 
-        // 3) 나이에 따른 자동 세팅 (이 안에서 plan_type_id, insurance_type 등이 바뀜)
-        //this.setDefaultByAge(age);
-
-        // 4) [핵심 추가] setDefaultByAge 이후, 바뀐 조건에 맞는 실제 plan_id를 매칭해야 함
+        // [핵심 추가] setDefaultByAge 이후, 바뀐 조건에 맞는 실제 plan_id를 매칭해야 함
         this.updatePlanIdByCurrentState();
 
         // 3) 최신화된 State에서 다시 값 수집
-        const insurance_type = mmlfcp_state.get('insurance_type') || 'F';
+        const insurance_type = mmlfcp_state.get('insurance_type');
         const plan_id = mmlfcp_state.get('plan_id');
         const genderSel = document.getElementById('gender');
         const gender = genderSel?.value || mmlfcp_state.get('gender') || '';
@@ -1654,6 +1693,7 @@ export const Controller = {
                 this.setSimplifiDetailMenu();
 
                 this.render_coverage_bojang();
+
 
                 //화면보이기
                 this.show_content();
@@ -2122,6 +2162,9 @@ export const Controller = {
 
                 // 보험료 최대, 최소값, 보험료 합계 정렬
                 this.setCoverageSortPremium();
+
+                //li 태그 활성화-비활성화
+                this.setPrintliMenu();
 
                 //1. 보장정보
                 this.renderPlanCoverages();
