@@ -79,7 +79,7 @@ namespace mmlfcp.Repository
         public Task<Boolean> SaveAccesslog(String agency_company_cd, String consultant_id, string ipaddr, string plan_id, string gender, int age);
 
 
-        public Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id);
+        public Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id, string event_detail);
 
         public Task<Boolean> IsUserRestricted(string ga_id, String consultant_id, String app_id);
     }
@@ -2042,7 +2042,7 @@ namespace mmlfcp.Repository
         }
 
 
-        public async Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id,string event_detail = "1")
+        public async Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id,string event_detail = "0")
         {
             try
             {
