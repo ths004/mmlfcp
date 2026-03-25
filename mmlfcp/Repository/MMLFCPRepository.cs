@@ -2042,15 +2042,15 @@ namespace mmlfcp.Repository
         }
 
 
-        public async Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id)
+        public async Task<Boolean> SaveEventlog(String agency_company_cd, String consultant_id, string event_id,string event_detail = "1")
         {
             try
             {
                 String qry = @"
                      SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
                      SET NOCOUNT ON
-                        insert into tb_mmlfcp_event_log(consultant_id,ga_id,event_id)   
-                                       values (@consultant_id,@ga_id,@event_id) 
+                        insert into tb_mmlfcp_event_log(consultant_id,ga_id,event_id,event_detail)   
+                                       values (@consultant_id,@ga_id,@event_id,@event_detail) 
                 ";
                 using (var connection = _context.CreateConnection())
                 {
@@ -2059,7 +2059,8 @@ namespace mmlfcp.Repository
                             {
                                 consultant_id = consultant_id,
                                 ga_id = agency_company_cd,
-                                event_id = event_id
+                                event_id = event_id,
+                                event_detail = event_detail
                             });
                 }
 
