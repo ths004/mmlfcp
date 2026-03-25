@@ -36,12 +36,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         mmlfcp_state.set('ga_id', authResult.ga_id);
         mmlfcp_state.set('upload_date', authResult.upload_date);
 
-        console.log({ upload_date: authResult.upload_date });
+        //console.log({ upload_date: authResult.upload_date });
 
 
         // ⭐ 추가: URL에서 받은 path 값을 state에 저장
         if (path) {
             mmlfcp_state.set('url_path', path);
+        }
+        else {
+            mmlfcp_state.set('url_path', 'lifefire');
         }
 
         //localstorage 일부 제거
