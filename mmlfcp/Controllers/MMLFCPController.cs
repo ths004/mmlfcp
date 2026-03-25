@@ -134,7 +134,7 @@ namespace mmlfcp.Controllers
                 response.upload_date = await _repository.GetUploadDateAsync();
 
 
-                await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id);
+                await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id,"WEB");
 
                 return Ok(response);
 
@@ -584,7 +584,7 @@ namespace mmlfcp.Controllers
 
                 response.pdf_uri = _reportService.MakePDFReport(authResult.AgencyCompanyCD, authResult.ConsultantID, request, coverage_list);
                 
-                await _repository.SaveEventlog(authResult.AgencyCompanyCD, authResult.ConsultantID, event_id);
+                await _repository.SaveEventlog(authResult.AgencyCompanyCD, authResult.ConsultantID, event_id, request.print_gubun.ToString());
 
                 response.is_success = true;
                 return Ok(response);
