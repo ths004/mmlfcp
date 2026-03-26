@@ -3,13 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
     <!-- 모바일 기기에서 화면 배율 조정 스크립트 -->
     <meta name="viewport" content="
-        device-width,
-        user-scalable=yes" />
+            device-width,
+            user-scalable=yes">
     <title>한장으로 보는 보험료 비교</title>
-    <link rel="stylesheet" href="./css/common.css?v=26.02.25.1">
+    <link rel="stylesheet" href="./css/common.css?v=26.03.26.1">
 
     <style>
         /* 1. 모달 배경 (공통) */
@@ -60,6 +60,168 @@
             color: #bbb;
             text-decoration: none;
             cursor: pointer;
+        }
+
+        .header-precautions-row {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-left: -130px;
+        }
+
+        .top-header .header-notice-btn {
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: inherit;
+            background-color: #efefef;
+            color: #3f434a;
+            padding: 5px 20px;
+            border-radius: 100px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+
+        .top-header .header-notice-btn:hover {
+            background-color: #e4e4e4;
+        }
+
+        .top-header .header-notice-btn:focus-visible {
+            outline: 2px solid #2f88ff;
+            outline-offset: 2px;
+        }
+
+        /* 생손보 유형 통합 안내 (비침습·닫기 후 localStorage로 숨김) */
+        .merge-tip-host {
+            position: relative;
+            z-index: 15;
+        }
+
+        .merge-screen-notice {
+            position: absolute;
+            left: 0;
+            top: 100%;
+            margin-top: 14px;
+            width: min(460px, max(280px, calc(100vw - 56px)));
+            padding: 18px 40px 18px 26px;
+            box-sizing: border-box;
+            background: #ffffff;
+            border: 2px solid #c62828;
+            border-radius: 12px;
+            box-shadow:
+                0 4px 6px rgba(0, 0, 0, 0.06),
+                0 10px 24px rgba(0, 0, 0, 0.1),
+                0 16px 40px rgba(198, 40, 40, 0.12);
+            font-size: 15px;
+            line-height: 1.6;
+            color: #3d3d3d;
+            text-align: left;
+            animation: mergeNoticeReveal 0.28s ease-out;
+        }
+
+        .merge-screen-notice::before {
+            content: "";
+            position: absolute;
+            left: 19px;
+            top: -11px;
+            width: 14px;
+            height: 14px;
+            background: #ffffff;
+            border-left: 2px solid #c62828;
+            border-top: 2px solid #c62828;
+            transform: rotate(45deg);
+        }
+
+        @keyframes mergeNoticeReveal {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* common.css의 .top-header section.bottom button(210×66, 파란 배경) 무력화 */
+        .top-header section.bottom .merge-screen-notice__close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 30px;
+            height: 30px;
+            min-width: 0;
+            min-height: 0;
+            padding: 0;
+            margin: 0;
+            border: none;
+            border-radius: 50%;
+            background: #c62828;
+            color: transparent;
+            font-size: 0;
+            line-height: 0;
+            letter-spacing: 0;
+            text-align: center;
+            cursor: pointer;
+            display: block;
+            flex: none;
+            box-shadow: 0 2px 6px rgba(198, 40, 40, 0.35);
+            overflow: visible;
+        }
+
+        .top-header section.bottom .merge-screen-notice__close::before,
+        .top-header section.bottom .merge-screen-notice__close::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 14px;
+            height: 2px;
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            border-radius: 1px;
+            pointer-events: none;
+        }
+
+        .top-header section.bottom .merge-screen-notice__close::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .top-header section.bottom .merge-screen-notice__close::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .top-header section.bottom .merge-screen-notice__close:hover,
+        .top-header section.bottom .merge-screen-notice__close:focus {
+            background: #b71c1c;
+            outline: none;
+            box-shadow: 0 3px 10px rgba(198, 40, 40, 0.45);
+        }
+
+        .top-header section.bottom .merge-screen-notice__close:focus-visible {
+            outline: 2px solid #2f88ff;
+            outline-offset: 2px;
+        }
+
+        .merge-screen-notice__title {
+            font-weight: 700;
+            font-size: 17px;
+            color: #7a1f1f;
+            margin: 0;
+            line-height: 1.55;
+        }
+
+        .merge-screen-notice__body {
+            margin: 0;
+        }
+
+        .merge-screen-notice__body strong {
+            font-weight: 600;
+            color: #7a1f1f;
         }
     </style>
 </head>
@@ -200,7 +362,7 @@
 
     <div class="wrap">
         <form>
-            <div id="popup" class="popup">
+            <div id="popup" class="popup" role="region" aria-label="공지사항" aria-hidden="true">
                 <div class="popup-content">
                     <span class="close" onclick="closePopup()"
                         style="margin-left: -10px; cursor: pointer; background-color: rgba(0,0,0,0.0); padding: 5px 7px; margin-top: 0px; border-radius: 6px; font-weight: 500;">×</span>
@@ -208,9 +370,10 @@
                     <span class="close" onclick="closePopup()"
                         style="margin-left: 15px; cursor: pointer; padding: 5px 7px; margin-top: 0px; font-weight: 500;">닫기</span>
 
-                    <label class="close"
+                    <input type="checkbox" id="popupSkipDay" class="popup-skip-day-input">
+                    <label for="popupSkipDay" class="close"
                         style="font-weight: 400; cursor: pointer; font-size: 12px; background-color: rgba(0,0,0,0.0); padding: 7px;  margin-top: 2px; color: rgba(255,255,255,0.8);">
-                        하루 동안 열지 않기 ◻︎
+                        하루 동안 열지 않기
                     </label>
                     <iframe src="https://www.ohmymanager.com/mmcp_notice.html" width="600px" height="60px"
                         frameborder="0" scrolling="no"
@@ -223,7 +386,7 @@
                         <span style="margin-left: 50px; font-size: 16px; font-weight: 400; cursor: pointer;"><a
                                 href="https://drive.google.com/file/d/1fUxF10UOKH464opRJ4ldIwEHO96PXHZR/preview"
                                 target="_blank">이달의 한장보험료 업데이트 보기<span
-                                    style="margin-left: 15px; cursor: pointer; padding: 5px 10px; margin-top: -5px; border-radius: 6px; font-weight: 500;">></span></a></span>
+                                    style="margin-left: 15px; cursor: pointer; padding: 5px 10px; margin-top: -5px; border-radius: 6px; font-weight: 500;">&gt;</span></a></span>
                     </div>
                 </div>
             </div>
@@ -236,15 +399,14 @@
                         style="color: #666; margin-left: 270px; font-size: 0.6rem; font-weight: 400; position: absolute;">
                     </div>
 
-
-                    <span
-                        style="margin-left: -130px; font-size: 0.8rem; font-weight: 600; background-color: #efefef; padding: 5px 25px; border-radius: 100px;">
-                        [조회할때 주의 사항]
-                        <span id="selected_result" style="font-weight: 400; margin-left: 10px;"></span>
-                    </span>
-
-
-
+                    <div class="header-precautions-row">
+                        <span
+                            style="font-size: 0.8rem; font-weight: 600; background-color: #efefef; padding: 5px 25px; border-radius: 100px;">
+                            [조회할때 주의 사항]
+                            <span id="selected_result" style="font-weight: 400; margin-left: 10px;"></span>
+                        </span>
+                        <button type="button" id="btnNoticePopup" class="header-notice-btn">공지</button>
+                    </div>
                 </section>
 
                 <section class="bottom">
@@ -269,13 +431,21 @@
                             </select>
                         </li>
 
-                        <li>
+                        <li class="merge-tip-host">
                             <span style="font-size: 11px; color: #2f88ff;">생손보 유형</span>
                             <select id="selInsuranceType">
                                 <option value="LF">생손보</option>
                                 <option value="F">손보</option>
                                 <option value="L">생보</option>
                             </select>
+                            <aside id="mergeScreenNotice" class="merge-screen-notice" role="status" aria-live="polite"
+                                aria-label="&quot;생손보 보험료와 한장 보험료 비교&quot; 통합에 따른 생,손보 유형 선택기능이 추가되었습니다.">
+                                <button type="button" class="merge-screen-notice__close" id="mergeScreenNoticeClose"
+                                    aria-label="안내 닫기"></button>
+                                <p class="merge-screen-notice__title">"생손보 보험료와 한장 보험료 비교" 통합에 따른<br>생,손보 유형 선택기능이
+                                    추가되었습니다.</p>
+                            </aside>
+                        </li>
 
 
                         <li>
@@ -457,9 +627,77 @@
     <!-- ExcelJS-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script type="module" src="./js/src/main.js?v=26.03.26"></script>
+    <script type="module" src="./js/src/main.js?v=26.03.26.1"></script>
 
     <script>
+        (function initTopNoticePopup() {
+            var hideKey = "mmcp_notice_hide_until";
+            /** 자동 닫힘까지 대기 시간(ms). 필요 시 숫자만 조정하세요. */
+            var AUTO_CLOSE_MS = 4000;
+            var popup = document.getElementById("popup");
+            var skipEl = document.getElementById("popupSkipDay");
+            var btnNotice = document.getElementById("btnNoticePopup");
+            var autoCloseTimer = null;
+            if (!popup) return;
+
+            function scheduleAutoClose() {
+                if (autoCloseTimer !== null) {
+                    clearTimeout(autoCloseTimer);
+                    autoCloseTimer = null;
+                }
+                autoCloseTimer = setTimeout(function () {
+                    autoCloseTimer = null;
+                    window.closePopup();
+                }, AUTO_CLOSE_MS);
+            }
+
+            window.closePopup = function () {
+                if (autoCloseTimer !== null) {
+                    clearTimeout(autoCloseTimer);
+                    autoCloseTimer = null;
+                }
+                try {
+                    if (skipEl && skipEl.checked) {
+                        var end = new Date();
+                        end.setHours(23, 59, 59, 999);
+                        localStorage.setItem(hideKey, String(end.getTime()));
+                    }
+                } catch (e) { /* ignore */ }
+                popup.classList.remove("popup--open");
+                popup.setAttribute("aria-hidden", "true");
+            };
+
+            window.openNoticePopup = function () {
+                popup.setAttribute("aria-hidden", "false");
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        popup.classList.add("popup--open");
+                        scheduleAutoClose();
+                    });
+                });
+            };
+
+            function shouldShowNoticeOnLoad() {
+                try {
+                    var v = localStorage.getItem(hideKey);
+                    if (!v) return true;
+                    return Date.now() > parseInt(v, 10);
+                } catch (e) {
+                    return true;
+                }
+            }
+
+            if (btnNotice) {
+                btnNotice.addEventListener("click", function () {
+                    window.openNoticePopup();
+                });
+            }
+
+            if (shouldShowNoticeOnLoad()) {
+                window.openNoticePopup();
+            }
+        })();
+
         const modal = document.getElementById("detailmodal");
         const iframe = document.getElementById("detail_modal_iframe");
         const closeBtn = document.getElementById("unifiedCloseBtn");
@@ -484,6 +722,39 @@
                 closeModal();
             }
         };
+
+        (function () {
+            var storageKey = "mmcp_merge_notice_dismissed_v1";
+            var notice = document.getElementById("mergeScreenNotice");
+            var closeBtn = document.getElementById("mergeScreenNoticeClose");
+            if (!notice || !closeBtn) return;
+            function dismissNotice() {
+                if (!notice.parentNode) return;
+                notice.remove();
+                try {
+                    localStorage.setItem(storageKey, "1");
+                } catch (e) { /* ignore */ }
+            }
+            try {
+                if (localStorage.getItem(storageKey) === "1") {
+                    notice.remove();
+                    return;
+                }
+            } catch (e) {
+                /* private mode 등 */
+            }
+            notice.removeAttribute("hidden");
+            function onDocKey(ev) {
+                if (ev.key !== "Escape") return;
+                document.removeEventListener("keydown", onDocKey);
+                dismissNotice();
+            }
+            closeBtn.addEventListener("click", function () {
+                document.removeEventListener("keydown", onDocKey);
+                dismissNotice();
+            });
+            document.addEventListener("keydown", onDocKey);
+        })();
     </script>
 </body>
 
