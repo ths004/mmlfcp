@@ -150,6 +150,80 @@ namespace mmlfcp.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("api/Mobile-Auth")]
+        public async Task<ActionResult<AuthResponse>> AuthenticateAPPUser(
+            [FromQuery] string token)
+        {
+            AuthResponse response = new AuthResponse();
+            string event_id = "LOGINAPP"; //접근경로
+            try
+            {
+                _logger.LogInformation($"사용자 인증 요청 - AccessPath:{event_id}");
+
+                response.is_success = true;
+                response.error_message = "";
+                response.plans = new List<PlanEntity>();
+
+                // TODO: 실제 토큰 검증 로직 구현 필요
+                // 현재는 임시로 토큰이 존재하면 인증 성공으로 처리
+                if (string.IsNullOrEmpty(token))
+                {
+                    return BadRequest(new CommonErrorResponse
+                    {
+                        code = "1001",
+                        message = "토큰 누락"
+                    });
+                }
+                string remoteip = Utility.GetIPAddress(HttpContext);
+                AuthEntity AuthEntity = Utility.JWTVerifying(token, remoteip);
+
+                if (AuthEntity.ErrorCode != 0)
+                {
+                    return Unauthorized(new CommonErrorResponse
+                    {
+                        code = AuthEntity.ErrorCode.ToString(),
+                        message = AuthEntity.ErrorMessage
+                    });
+
+                }
+                if (String.IsNullOrEmpty(AuthEntity.ConsultantID) == true || String.IsNullOrEmpty(AuthEntity.AgencyCompanyCD) == true)
+                {
+                    return Unauthorized(new CommonErrorResponse
+                    {
+                        code = "2002",
+                        message = "사용자 확인 불가."
+                    });
+                }
+
+                //consultant_id, ga_id 추가
+                response.consultant_id = AuthEntity.ConsultantID;
+                response.ga_id = AuthEntity.AgencyCompanyCD;
+
+
+                // 플랜 목록 조회
+                var plans = await _repository.GetPlansAsync();
+                response.plans = plans.Where(x => !x.insu_compy_type.Contains("LF")).ToList();
+
+                response.upload_date = await _repository.GetUploadDateAsync();
+
+
+                await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id, "APP");
+
+                return Ok(response);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 인증 중 오류 발생");
+                return StatusCode(500, new CommonErrorResponse
+                {
+                    code = "9999",
+                    message = "사용자 인증 중 오류 발생"
+                });
+            }
+        }
+
         /// <summary>
         /// 플랜 기준 상품 보험료 조회
         /// </summary>
