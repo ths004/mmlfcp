@@ -45,6 +45,7 @@ export const apiService = {
         const query = new URLSearchParams({
             token: appConstants.jwt,
             access_path: appConstants.access_path,
+            device: appConstants.device
         }).toString();
 
         const url = `${BASE_URL}${API_MMLFCP_URL.API_AUTH}?${query}`;

@@ -8,18 +8,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         //1. URL에서 token 파라미터 추출
         const token = app.getUrlParameter("token");
-        const path = app.getUrlParameter("path"); // ⭐ path 파라미터 추출 추가
+        const path = app.getUrlParameter("path"); // ⭐ 생손보(lifefire / fire) 파라미터 추출 추가
+        const device = app.getUrlParameter("device"); //APP, WEB 구분
         if (!token) {
             alert('접속 토큰이 존재하지 않습니다.');
             return;
+        }
+        if (!device) {
+            appConstants.device = 'APP';
         }
 
         //2. 전역 appConstants 에 토큰과 접근경로 저장
         appConstants.jwt = token;
         appConstants.access_path = 'MMLFCP_WEB';
-
-        // console.log('[Init] JWT:', appConstants.jwt);
-        // console.log('[Init] ACCESS PATH:', appConstants.access_path);
 
         // 3. 인증 요청
         const authResult = await apiService.auth();
