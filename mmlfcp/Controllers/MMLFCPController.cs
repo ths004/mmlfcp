@@ -79,10 +79,11 @@ namespace mmlfcp.Controllers
         [HttpGet]
         [Route("api/Auth")]
         public async Task<ActionResult<AuthResponse>> AuthenticateUser(
-            [FromQuery] string token)
+            [FromQuery] string token, [FromQuery] string device = null)
         {
             AuthResponse response = new AuthResponse();
-            string event_id = "LOGINWEB"; //접근경로
+            string event_id = "LOGINWEB";   //접근경로
+            string event_detail = device?.ToUpper() == "APP" ? "APP" : "WEB";
             try
             {
                 _logger.LogInformation($"사용자 인증 요청 - AccessPath:{event_id}");
@@ -134,7 +135,7 @@ namespace mmlfcp.Controllers
                 response.upload_date = await _repository.GetUploadDateAsync();
 
 
-                await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id,"WEB");
+                await _repository.SaveEventlog(AuthEntity.AgencyCompanyCD, AuthEntity.ConsultantID, event_id, event_detail);
 
                 return Ok(response);
 
@@ -203,7 +204,7 @@ namespace mmlfcp.Controllers
 
                 // 플랜 목록 조회
                 var plans = await _repository.GetPlansAsync();
-                response.plans = plans.Where(x => !x.insu_compy_type.Contains("LF")).ToList();
+                response.plans = plans.Where(x => !x.insurance_type.Contains("LF")).ToList();
 
                 response.upload_date = await _repository.GetUploadDateAsync();
 
