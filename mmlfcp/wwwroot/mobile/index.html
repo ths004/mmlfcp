@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"
+	name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+
+<head>
+	<meta charset="UTF-8">
+	<title>한장 보험료 비교</title>
+	<link href="./css/reset.css" rel="stylesheet" type="text/css" />
+	<link href="./css/ui.css" rel="stylesheet" type="text/css" />
+	<link href="./css/style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+	<div class="container">
+		<header class="page-header">
+			<div class="header-wrap">
+				<div class="header-option-box left">
+					<a href="#none" class="header-option-btn">
+						<i class="ic ic-back"></i>
+					</a>
+				</div>
+
+				<div class="page-box">
+					<span class="page-txt">한장 보험료 비교</span>
+				</div>
+
+			</div>
+		</header>
+
+		<div class="wrapper">
+
+
+			<article class="search-form-layout1">
+
+				<div class="inner wrap">
+					<div class="search-item-list">
+						<div class="search-item-box">
+							<div class="item-head-box">생년월일 / 성별</div>
+							<div class="item-body-box">
+								<div class="old-group-box">
+
+									<div class="old-box">
+										<div class="old-input-box">
+											<input type="number" id="birth_date" inputmode="numeric" pattern="[0-9]*"
+												maxlength="8" onkeyup="regexp.number(this);" value="19800101">
+										</div>
+										<div class="old-view-box"></div>
+									</div>
+
+									<div class="gender-box">
+
+										<div class="label-box">
+											<label>
+												<input type="radio" name="gender" value="M" checked>
+												<span class="txt">남자</span>
+											</label>
+										</div>
+
+										<div class="label-box">
+											<label>
+												<input type="radio" name="gender" value="F">
+												<span class="txt">여자</span>
+											</label>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="search-item-box">
+							<div class="item-head-box">상품유형 / 만기</div>
+							<div class="item-body-box">
+								<div class="input-group-box">
+									<div class="sbox w60">
+										<a href="#none" id="selected_product" class="set-btn"
+											onclick="selectOpen(this)">종합(무해지형)</a>
+										<div id="productsgroupList" class="select-menu">
+										</div>
+									</div>
+									<div class="sbox w40">
+										<a href="#none" id="selected_expiration" class="set-btn"
+											onclick="selectOpen(this)">20년/100세</a>
+										<div id="paymentgroupList" class="select-menu">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="search-menu-box">
+						<button type="button" id="product-retrieve" class="search-menu-btn">
+							<span>조회</span>하기
+						</button>
+					</div>
+
+					<article class="popup3">
+						<div class="popup-wrapper">
+							<div class="popup-contents">
+								<div class="popup-body-box">
+									<article class="popup3-setting-layout1">
+										<div class="setting-body-box">
+											<div class="setting-category-list">
+												<div class="list-box">
+													<ul>
+														<li>
+															<a href="#none" id="all" value="전체"
+																class="item-menu-box type-all active">
+																<div class="img-box">
+																	<img src="./img/ic_category_all.png" alt="이미지">
+																</div>
+																<div class="txt-box">전체</div>
+															</a>
+														</li>
+
+														<li>
+															<a href="#none" id="cancer" value="암" class="item-menu-box">
+																<div class="img-box">
+																	<img src="./img/ic_category1.png" alt="암">
+																</div>
+																<div class="txt-box">암</div>
+															</a>
+														</li>
+
+														<li>
+															<a href="#none" id="brain" value="뇌" class="item-menu-box">
+																<div class="img-box">
+																	<img src="./img/ic_category2.png" alt="뇌">
+																</div>
+																<div class="txt-box">뇌</div>
+															</a>
+														</li>
+
+														<li>
+															<a href="#none" id="heart" value="심" class="item-menu-box">
+																<div class="img-box">
+																	<img src="./img/ic_category3.png" alt="심장">
+																</div>
+																<div class="txt-box">심</div>
+															</a>
+														</li>
+
+														<li>
+															<a href="#none" id="diagnosis" value="진단비"
+																class="item-menu-box">
+																<div class="img-box">
+																	<img src="./img/ic_category4.png" alt="진단비">
+																</div>
+																<div class="txt-box">진단</div>
+															</a>
+														</li>
+
+														<li>
+															<a href="#none" id="surgery" value="수술입원"
+																class="item-menu-box">
+																<div class="img-box">
+																	<img src="./img/ic_category5.png" alt="수술">
+																</div>
+																<div class="txt-box">수술/입원</div>
+															</a>
+														</li>
+
+														<li>
+															<button type="button" id="change-bojang"
+																onclick="popupOpen('setting')"
+																style="background-color: #ebff07; color:#000000; border: 0px #aaaaaa solid; padding: 6px 15px; border-radius: 0.5rem; width: 100%; height: 80px;">
+																<span style="font-weight: 600;">보장<br> 변경하기</span>
+
+															</button>
+														</li>
+
+													</ul>
+												</div>
+											</div>
+										</div>
+									</article>
+								</div>
+							</div>
+						</div>
+					</article>
+				</div>
+
+
+
+
+			</article>
+
+
+
+
+
+			<article class="list-filter-layout1 mt40">
+				<div class="filter-wrap">
+					<div class="filter-input-box">
+						<div class="label-box">
+							<label>
+								<input type="radio" name="filter" id="low_premium" value="low_premium" checked>
+								<span class="txt">낮은순</span>
+							</label>
+						</div>
+						<div class="label-box">
+							<label>
+								<input type="radio" name="filter" id="high_premium" value="high_premium">
+								<span class="txt">높은순</span>
+							</label>
+						</div>
+					</div>
+
+
+				</div>
+
+
+			</article>
+
+			<article class="result-list-layout1">
+				<div id="productList" class="list-wrap">
+				</div>
+			</article>
+
+			<article class="popup popup-detail">
+				<div id="productDetailList" class="popup-wrapper">
+				</div>
+			</article>
+
+			<article id="product-all-list" class="popup popup-setting">
+				<div class="popup-wrapper">
+					<div class="popup-contents">
+						<div class="popup-head-box">
+							<a href="javascript:popupClose('setting')" class="popup-back-btn"></a>
+						</div>
+						<div class="popup-body-box">
+							<article class="popup-setting-layout1">
+								<div class="setting-head-box">
+								</div>
+
+								<div class="setting-body-box">
+									<div class="setting-category-list2">
+										<div class="list-box">
+											<ul>
+												<li>
+													<a href="#none" id="all-product" value="전체"
+														class="item-menu-box2 type-all active">
+														<div class="txt-box">전체</div>
+													</a>
+												</li>
+
+												<li>
+													<a href="#none" id="assign" value="가입"
+														class="item-menu-box2 type-all">
+														<div class="txt-box">가입</div>
+													</a>
+												</li>
+
+												<li>
+													<a href="#none" id="not-assign" value="미가입"
+														class="item-menu-box2 type-all">
+
+														<div class="txt-box">미가입</div>
+													</a>
+												</li>
+											</ul>
+										</div>
+									</div>
+
+									<div id="allProductsDetailList" class="setting-check-list">
+									</div>
+								</div>
+							</article>
+						</div>
+					</div>
+				</div>
+			</article>
+
+
+			<!-- terms -->
+			<article class="bottom-layer bottom-layer-terms">
+				<div id="insurproductDetailList" class="layer-wrapper">
+				</div>
+			</article>
+		</div>
+
+		<div class="loader-container">
+			<div class="loader"></div>
+			<!-- <strong>조회중입니다...</strong> -->
+		</div>
+
+	</div>
+
+	<script src="./js/jquery.min.js"></script>
+	<script src="./js/ui.js"></script>
+	<script src="./js/common.js"></script>
+	<script src="./js/mmcp_main.js"></script>
+	<script src="./js/mmcp_detail.js"></script>
+
+
+</body>
+
+
+
+</html>

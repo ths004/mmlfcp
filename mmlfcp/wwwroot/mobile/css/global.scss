@@ -1,0 +1,210 @@
+/*
+AUTH : ssooya
+VERSION : version 2
+*/
+
+
+// 사용하는 폰트
+$font1 : "SpoqaHanSansNeo"; // 기본폰트
+
+
+// 컬러셋
+$colPrimary : #2963d1;
+$colSecond : #45567E;
+$colError : #FF6565;
+$colSuccess : #1E88E5;
+
+// 텍스트
+$text_col1 : #212121;
+$text_col2 : #4A5056;
+
+
+
+
+
+/**********
+펑션
+***********/
+@mixin pseudo($display: block, $pos: absolute, $content: '') {
+	content: $content;
+	display: $display;
+	position: $pos;
+}
+
+
+// 모바일
+
+// 모바일
+@mixin m{
+	@media (max-width: 768px) {
+		@content
+	}
+}
+
+
+// 부모 찾기
+
+@function str-to-list($string, $separator: ' ', $startAt: 1) {
+	$workStr: str-slice($string, $startAt);
+	$list: ();
+	$indexOfFirstSpace: str-index($workStr, $separator);
+	@if $indexOfFirstSpace==null {
+		$list: ($workStr);
+	}
+	@else {
+		$list: (str-slice($workStr, 1, $indexOfFirstSpace - 1));
+		$list: join($list, str-to-list($workStr, $startAt: $indexOfFirstSpace + 1));
+	}
+	@return $list;
+}
+
+
+@function parent-append ($appendix, $parent, $at-start) {
+	$parentSelector: str-to-list(#{&});
+	$lenght: length($parentSelector);
+	@if $parent >=$lenght or $parent < 0 {
+		@error "Index '#{$parent}' is out of range";
+	}
+	$pos: $lenght - $parent;
+	@if $at-start == false {
+		$selector: set-nth($parentSelector, $pos, nth($parentSelector, $pos) + $appendix);
+		@return $selector;
+	}
+	@if $at-start == true {
+		$selector: set-nth($parentSelector, $pos, $appendix + nth($parentSelector, $pos));
+		@return $selector;
+	}
+
+}
+
+@mixin parent-append ($appendix, $parent: 1, $at-start: false) {
+	@at-root #{parent-append($appendix, $parent, $at-start)} {
+		@content;
+	}
+}
+
+
+
+
+/**********
+텍스트 자간
+***********/
+@mixin lsPx($letterSpacing, $fontSize) {
+	letter-spacing: #{($letterSpacing * $fontSize) / 1000}px;
+}
+
+@mixin lsRem($letterSpacing, $fontSize) {
+	letter-spacing: #{($letterSpacing * $fontSize) / 10000}rem;
+
+}
+
+/**********
+텍스트 말줄임
+***********/
+@mixin text_ellipsis {
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	word-wrap: normal;
+	width: 100%;
+	max-width:100%;
+}
+
+@mixin text_ellipsis_multi($line,$lh) {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: $line;
+	-webkit-box-orient: vertical;
+	word-wrap: break-word;
+	line-height: #{$lh}px;
+	height: #{$lh * $line}px;
+	max-width: 100%;
+}
+
+
+/**********
+아이콘
+***********/
+@mixin ic($name , $w , $h) {
+	$url: "../img/#{$name}.png";
+	background: url($url) no-repeat center / cover;
+	width: #{$w}px;
+	height: #{$h}px;
+	@content
+}
+
+@mixin appear {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	-ms-appearance: none;
+	appearance: none;
+}
+
+@mixin imgDynamic{
+	position: absolute;
+	left:0;
+	right:0;
+	top:0;
+	bottom:0;
+	max-width:100%;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+// 레이아웃
+@mixin itemCenter{
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+@mixin spaceLine($left , $width, $height , $col, $radius: 0){
+	&:after{
+		content:'';
+		position: absolute;
+		top:50%;
+		transform: translateY(-50%);
+		left:#{$left}px;
+		width:#{$width}px;
+		height:#{$height}px;
+		background-color: $col;
+		border-radius: $radius;
+	}
+}
+
+//
+@mixin scrollHide{
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
+
+	&::-webkit-scrollbar{
+		display: none; /* Chrome, Safari, Opera*/
+	}
+}
+
+
+// 반응형 (2배)
+@function d($value , $divide : 2) {
+	@return (#{($value/$divide)}px);
+}
+
+// 반응형 (2배)
+@function dn($value , $divide : 2) {
+	@return ($value/$divide);
+}
+
+
+
+@function str-replace($source, $substring, $replacement, $fail-silently: false) {
+	$start: str-index($source, $substring);
+	@if $start {
+		@return str-slice($source, 1, $start - 1)  + $replacement + str-slice($source, $start + str-length($substring))
+	}
+	@if $fail-silently {
+		@return $source;
+	} @else {
+		@error "'#{$substring}' was not found in '#{$source}'";
+	}
+}
