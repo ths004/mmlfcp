@@ -3,13 +3,13 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
     <!-- 모바일 기기에서 화면 배율 조정 스크립트 -->
     <meta name="viewport" content="
-        device-width,
-        user-scalable=yes" />
+            device-width,
+            user-scalable=yes">
     <title>한장으로 보는 보험료 비교</title>
-    <link rel="stylesheet" href="./css/common.css?v=26.03.25.1">
+    <link rel="stylesheet" href="./css/common.css?v=26.03.26.1">
 
     <style>
         /* 1. 모달 배경 (공통) */
@@ -264,7 +264,6 @@
             user-select: none;
         }
         /* ===== END MMCP_TEMP_CACHE_RELOAD_HINT ===== */
-
         /* 생손보 유형 통합 안내 (비침습·닫기 후 localStorage로 숨김) */
         .merge-tip-host {
             position: relative;
@@ -558,7 +557,7 @@
                         <span style="margin-left: 50px; font-size: 16px; font-weight: 400; cursor: pointer;"><a
                                 href="https://drive.google.com/file/d/1fUxF10UOKH464opRJ4ldIwEHO96PXHZR/preview"
                                 target="_blank">이달의 한장보험료 업데이트 보기<span
-                                    style="margin-left: 15px; cursor: pointer; padding: 5px 10px; margin-top: -5px; border-radius: 6px; font-weight: 500;">></span></a></span>
+                                    style="margin-left: 15px; cursor: pointer; padding: 5px 10px; margin-top: -5px; border-radius: 6px; font-weight: 500;">&gt;</span></a></span>
                     </div>
                 </div>
             </div>
@@ -571,7 +570,6 @@
                         style="color: #666; margin-left: 270px; font-size: 0.6rem; font-weight: 400; position: absolute;">
                     </div>
 
-
                     <div class="header-precautions-row">
                         <span
                             style="font-size: 0.8rem; font-weight: 600; background-color: #efefef; padding: 5px 25px; border-radius: 100px;">
@@ -580,8 +578,6 @@
                         </span>
                         <button type="button" id="btnNoticePopup" class="header-notice-btn">공지</button>
                     </div>
-
-
                 </section>
 
                 <div class="product-update-notice-2026" role="region"
@@ -623,6 +619,7 @@
                                 <option value="F">손보</option>
                                 <option value="L">생보</option>
                             </select>
+
                             <aside id="mergeScreenNotice" class="merge-screen-notice" role="status"
                                 aria-live="polite"
                                     aria-label='"생손보 보험료와 한장 보험료 비교" 통합에 따른 생,손보 유형 선택기능이 추가되었습니다.'
@@ -632,6 +629,7 @@
                                 <p class="merge-screen-notice__title">"생손보 보험료와 한장 보험료 비교" 통합에 따른<br>생,손보 유형 선택기능이 추가되었습니다.</p>
                             </aside>
                         </li>
+
                         <li>
                             <span style="font-size: 11px; color: #2f88ff;">상품 유형</span>
                             <select id="selProductsGroupCD">
@@ -697,7 +695,7 @@
                     </div>
                 </section>
 
-         
+
 
                 <section class="product-table-wrap">
                     <div class="company-area"
@@ -825,6 +823,7 @@
     <!-- ExcelJS-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <script type="module" src="./js/src/main.js?v=26.03.27.1"></script>
 
     <script>
@@ -881,6 +880,7 @@
             }
         })();
         // ===== END MMCP_TEMP_CACHE_RELOAD_HINT =====
+
 
         (function initTopNoticePopup() {
             var hideKey = "mmcp_notice_hide_until";

@@ -19,4 +19,5 @@ export const API_MMLFCP_URL = {
 export const appConstants = {
     jwt: '',
     access_path: '',
+    device: '',
 };

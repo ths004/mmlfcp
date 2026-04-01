@@ -1,10 +1,10 @@
 
 
-const popupOpen = (name, compy_cd) => {
+const popupOpen = (name, company_code) => {
 
 	//회사별 상세정보
 	if (name == "detail") {
-		product_detail.company_products_detail(compy_cd);
+		product_detail.renderCompanyProductDetail(company_code);
 		$('article.popup.popup-' + name + '').show();
 	}
 
@@ -20,7 +20,7 @@ const popupOpen = (name, compy_cd) => {
 
 		// scrollTop은 상단이기 때문에 0, duration은 애니메이션 속도입니다 (ms)
 		$('div').animate({ scrollTop: 0 });
-		product_detail.all_bojang_detail();
+		product_detail.renderAllCoverageList();
 		$('article.popup.popup-' + name + '').show();
 	}
 }
@@ -29,11 +29,14 @@ const popupClose = (name) => {
 	if (name == "detail") {
 		$('article.popup.popup-' + name + '').hide();
 		$("#low_premium").prop("checked", true);
-		state.get_product_all_premium_lists();
+		// 낮은 보험료순 랜더링 호출
+		state.renderPremiumAsc();
 	}
 	else if (name == "setting") {
 		$('article.popup.popup-' + name + '').hide();
-		product_detail.get_selected_insur_products();
+		// 선택된 보장의 총 보험료 재계산 및 리스트 갱신
+		product_detail.refreshCoverageTotalPremium();
+		state.renderPremiumAsc();
 	}
 
 
@@ -53,9 +56,9 @@ const listToggle = (e) => {
 
 }
 
-const termsLayerOpen = (compy_cd, bojang_cd) => {
+const termsLayerOpen = (company_code, coverage_cd) => {
 
-	product_detail.selected_company_insurproducts_detail_list(compy_cd, bojang_cd);
+	product_detail.renderCoverageDetailTerms(company_code, coverage_cd);
 	$('article.bottom-layer-terms').show();
 }
 
@@ -86,13 +89,14 @@ const selectProduct = (e) => {
 	_wrap.removeClass('active');
 	$('.container').removeClass('overlay');
 
-	var prdt_cd = $(e).context.attributes.prdt_cd.value;
-	state.prdt_cd = prdt_cd;
 
-	state.selected_product = "";
-	state.selected_product = $(e).context.innerText;
-	state.init_setting();
-	state.setPaymentExpirationCD(prdt_cd);
+	// 사용자 정의 속성(plan_type)을 안전하게 가져옵니다.
+	const plan_type = e.getAttribute('plan_type');
+	state.plan_type = plan_type;
+
+	if (typeof state.reset_menu === 'function') state.reset_menu();
+	if (typeof state.setPaymentExpirationCD === 'function') state.setPaymentExpirationCD(plan_type);
+	if (typeof state.setPlanIdByCurrentState === 'function') state.setPlanIdByCurrentState();
 }
 
 const selectExpiration = (e) => {
@@ -107,17 +111,21 @@ const selectExpiration = (e) => {
 
 	$('.container').removeClass('overlay');
 
-	var expiration_cd = $(e).context.attributes.expiration_cd.value;
-	state.expiration_cd = expiration_cd;
+	// 데이터 추출 및 전역 상태(state) 반영
+	const plan_payterm_type = e.getAttribute('plan_payterm_type');
+	state.plan_payterm_type = plan_payterm_type;
 
-	state.selected_expiration = "";
-	state.selected_expiration = $(e).context.innerText;
+	// 전역 선택 요소(#selected_expiration) 정보 갱신
+	const selectedExpirationEl = document.getElementById("selected_expiration");
+	if (selectedExpirationEl) {
+		// 기존 속성을 덮어쓰므로 removeAttribute 없이 바로 설정합니다.
+		selectedExpirationEl.setAttribute("plan_payterm_type", plan_payterm_type);
+		selectedExpirationEl.textContent = e.textContent.trim();
+	}
 
-	//expiration_cd 속성 갱신
-	$("#selected_expiration").removeAttr("expiration_cd");
-	$("#selected_expiration").attr("expiration_cd", expiration_cd);
-
-	state.init_setting();
+	// 후속 설정 초기화 (함수 존재 여부 체크 후 호출)
+	if (typeof state.reset_menu === 'function') state.reset_menu();
+	if (typeof state.setPlanIdByCurrentState === 'function') state.setPlanIdByCurrentState();
 }
 
 
