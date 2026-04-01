@@ -137,16 +137,16 @@ export const Controller = {
     },
 
 
-    //가입 상태로 최초 setting
-    setDefaultAssginFilter() {
-        const assignChk = document.getElementById("assign");
+    //모두보기 상태로 최초 setting
+    setDefaultAllFilter() {
         const allChk = document.getElementById("all");
+        const assignChk = document.getElementById("assign");
         const notAssignChk = document.getElementById("not-assign");
         const all_coverageChk = document.getElementById("all_checked");
 
-        if (assignChk) {
-            assignChk.checked = true;
-            if (allChk) allChk.checked = false;
+        if (allChk) {
+            allChk.checked = true;
+            if (assignChk) assignChk.checked = false;
             if (notAssignChk) notAssignChk.checked = false;
             if (all_coverageChk) all_coverageChk.checked = false;
 
@@ -2178,11 +2178,11 @@ export const Controller = {
                     modal.style.display = "block";
                 }
 
-                //가입으로 강제 "설정"
-                this.setDefaultAssginFilter();
+                //모두보기로 강제 "설정"
+                this.setDefaultAllFilter();
 
-                //최초 가입상태로 setting
-                this.setPlanCoverage_Display("assign");
+                //최초에 모두보기 상태로 setting
+                this.setPlanCoverage_Display("all");
 
                 // 보험료 최대, 최소값, 보험료 합계 정렬
                 this.setCoverageSortPremium();

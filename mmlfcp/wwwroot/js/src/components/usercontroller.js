@@ -122,8 +122,8 @@ export const userController = {
 
 
         // ✅ 복원 후 필터 및 렌더링 재설정
-        Controller.setDefaultAssginFilter();                 // 전체/가입/미가입 필터 초기화
-        Controller.setPlanCoverage_Display("assign");        // 기본 '가입' 기준으로 표시
+        Controller.setDefaultAllFilter();                 // 전체/가입/미가입 필터 초기화
+        Controller.setPlanCoverage_Display("all");        // 기본 '모두보기' 기준으로 표시
         Controller.setCoverageSortPremium();                 // 보험료 정렬
         Controller.bindSharedPager(Math.ceil((mmlfcp_state.get('coverage_premiums').length || 0) / 10) || 1, 1);
 
@@ -374,8 +374,8 @@ export const userController = {
         }
 
         // 이하 기존 동일 ↓↓↓
-        Controller.setDefaultAssginFilter();
-        Controller.setPlanCoverage_Display("assign");
+        Controller.setDefaultAllFilter();
+        Controller.setPlanCoverage_Display("all");
         Controller.setCoverageSortPremium();
         Controller.bindSharedPager(Math.ceil((mmlfcp_state.get('coverage_premiums').length || 0) / 10) || 1, 1);
         Controller.renderPlanCoverages();
