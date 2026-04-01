@@ -87,29 +87,41 @@ builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
-//
+// 1. 로깅
 app.UseSerilogRequestLogging();
 
-// Configure the HTTP request pipeline.
+// 2. Swagger (개발환경)
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+// 3. HTTPS 리다이렉션
 app.UseHttpsRedirection();
 
-// 정적 파일 지원 추가
-app.UseStaticFiles();
-
-// 기본 파일 설정 (index.html을 기본 파일로 설정)
+// 4. 기본 파일 설정 - UseStaticFiles() 보다 반드시 앞에
 app.UseDefaultFiles();
 
+// 5. 정적 파일 - 캐시 1일로 설정
+var staticFileOptions = new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        // 기존 헤더를 덮어쓰기 (중복 방지)
+        context.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+    }
+};
+app.UseStaticFiles(staticFileOptions);
+
+
+// 6. 인증/인가
 app.UseAuthorization();
 
+// 7. 컨트롤러
 app.MapControllers();
 
-// 기본 페이지 설정 (루트 경로에서 index.html로 리다이렉트)
+
+// 8. 루트 리다이렉트 (UseDefaultFiles가 정상 동작하면 사실상 불필요)
 app.MapGet("/", () => Results.Redirect("/index.html"));
 
 app.Run();
