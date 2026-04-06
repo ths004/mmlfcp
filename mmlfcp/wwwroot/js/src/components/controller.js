@@ -11,6 +11,8 @@ export const Controller = {
     init() {
         if (!this.ensurePlans()) return;
 
+        this.ensurePlansType();
+
         // 1. 기초 데이터 동기화 (기존 데이터나 input의 생년월일로부터 나이 계산 포함)
         this.syncStateAndUI();
 
@@ -68,6 +70,35 @@ export const Controller = {
         }
         return true;
     },
+
+    //생손보 ,손보일때마다 type 정해주기
+    ensurePlansType() {
+        const url_path = mmlfcp_state.get('url_path');
+        // console.log({ url_path: url_path });
+
+        //lifefire -> 생손보일때
+        if (url_path === 'lifefire') {
+            _state.plan_id = "921081111041";
+            _state.plan_type_id = "01";
+            _state.plan_type_name = "생손보 건강(무해지)";
+            _state.plan_payment_expiration_cd = "06";
+            _state.plan_payment_expiration_name = "20년/100세,종신";
+            _state.insurance_type = "LF";
+
+
+        }
+        //fire- > 손보일때
+        else if (url_path === 'fire') {
+            _state.plan_id = "000000111041";
+            _state.plan_type_id = "06";
+            _state.plan_type_name = "손보 종합(무해지)";
+            _state.plan_payment_expiration_cd = "01";
+            _state.plan_payment_expiration_name = "20년/100세";
+            _state.insurance_type = "F";
+        }
+    },
+
+
 
     //0) 공통 유틸 : 페이징
     paginate(arr = [], page = 1, size = 10) {
@@ -622,15 +653,15 @@ export const Controller = {
 
         if (path === 'fire') {
             // 🔥 path=fire (손보) 우선 세팅
-            mmlfcp_state.set('insurance_type', 'F');
-            mmlfcp_state.set('plan_type_id', '06'); // 손보 종합(무해지)
-            mmlfcp_state.set('plan_payment_expiration_cd', '01'); // 20년/100세
+            mmlfcp_state.set('insurance_type', _state.insurance_type);
+            mmlfcp_state.set('plan_type_id', _state.plan_type_id); // 손보 종합(무해지)
+            mmlfcp_state.set('plan_payment_expiration_cd', _state.plan_payment_expiration_cd); // 20년/100세
         }
         else if (path === 'lifefire') {
             // 🌿 path=lifefire (생손보) 우선 세팅
-            mmlfcp_state.set('insurance_type', 'LF');
-            mmlfcp_state.set('plan_type_id', '01'); // 생손보 건강(무해지)
-            mmlfcp_state.set('plan_payment_expiration_cd', '01'); // 20년/100세
+            mmlfcp_state.set('insurance_type', _state.insurance_type);
+            mmlfcp_state.set('plan_type_id', _state.plan_type_id); // 생손보 건강(무해지)
+            mmlfcp_state.set('plan_payment_expiration_cd', _state.plan_payment_expiration_cd); // 20년/100세,종신
         }
         else if (age > 0) {
             // 경로 정보가 없을 때만 나이 기반 기본값 세팅
@@ -848,8 +879,9 @@ export const Controller = {
 
         // 1️⃣ 조건에 맞는 플랜을 정확히 하나만 찾음
         const selectedPlan = plans.find(p => p.plan_id == plan_id && p.plan_type == plan_type && p.plan_payterm_type == plan_payterm_type);
-        //console.log({ plans: plans });
-
+        // console.log({ plans: plans });
+        // console.log({ selectedPlan: selectedPlan });
+        // console.log({ plan_id: plan_id, plan_type: plan_type, plan_payterm_type: plan_payterm_type, gender: gender });
 
         // 찾지 못하면 그냥 리턴
         if (!selectedPlan) {
