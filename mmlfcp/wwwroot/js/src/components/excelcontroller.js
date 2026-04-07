@@ -65,7 +65,7 @@ export const excelController = {
             return {
                 coverage_name: planCoverage.coverage_name,
                 coverage_cd: planCoverage.coverage_cd,
-                guide_coverage_amount: planCoverage.guide_coverage_amount,
+                guide_coverage_amount: planCoverage.coverage_cd === 'aa00' ? "-" : planCoverage.guide_coverage_amount,
                 details: details // 이 배열의 순서는 selectedCompanies의 순서와 동일하게 유지돼!
             };
         });
