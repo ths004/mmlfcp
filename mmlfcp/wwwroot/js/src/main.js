@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         if (!device) {
-            appConstants.device = 'APP';
+            appConstants.device = 'WEB';
         }
 
         //2. 전역 appConstants 에 토큰과 접근경로 저장
