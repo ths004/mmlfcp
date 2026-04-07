@@ -61,6 +61,7 @@ export const app = {
         // 4. 점(.)이나 대시(-) 등 원하는 구분자로 결합
         return `${year}.${month}.${day}`;
     },
+
     convertDateFormat(date) {
         if (!(date instanceof Date) || isNaN(date)) {
             console.warn('⚠️ convertDateFormat: 유효하지 않은 날짜입니다.', date);
@@ -73,6 +74,13 @@ export const app = {
         return `${year}.${month}.${day}`;
     },
 
+    getToday() {
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = ("0" + (1 + date.getMonth())).slice(-2);
+        var day = ("0" + date.getDate()).slice(-2);
+        return year + month + day;
+    },
 
     formatNumber(number) {
         return number.toLocaleString('en-US');

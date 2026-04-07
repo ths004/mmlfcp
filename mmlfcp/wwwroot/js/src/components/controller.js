@@ -3,6 +3,8 @@ import { apiService } from '../services/apiService.js';
 import { app } from '../utils/app.js';
 import { appConstants } from '../constants/constants.js';
 import { userController } from './userController.js';
+import { excelController } from './excelcontroller.js';
+
 
 export const Controller = {
     /**
@@ -1880,8 +1882,15 @@ export const Controller = {
         const sortBtn = document.getElementById('sort_total_premium');
 
         const printBtn = document.getElementById('coverage_btn_print');
+
+        //엑셀로 출력하기
+        const printExcelBtn = document.getElementById('print-excel');
+
         const printDispOpen = document.getElementById('btn_print');
         const printDispClose = document.getElementById('btn_print_close');
+
+
+
 
         const detailModalBtn = document.getElementById("openDetailModalBtn");
         const detailPaymentModalBtn = document.getElementById("openPaymentModalBtn");
@@ -2251,6 +2260,19 @@ export const Controller = {
                 this._closeModal();
             });
         }
+
+        //엑셀로 출력하기 클릭
+        if (printExcelBtn) {
+            printExcelBtn.addEventListener("click", async () => {
+
+                //엑셀 출력
+                excelController.exportToExcel();
+
+                //모달창 닫기
+                this._closeModal();
+            });
+        }
+
 
         //보험료 최저 vs 최대
         if (detailModalBtn) {
