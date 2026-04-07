@@ -83,6 +83,21 @@ export const excelController = {
         const coverageResults = this.extractCoverageData(); // 본문용 담보 데이터
         const fileName = this.generateExcelFileName(); //파일명
 
+        // --- [도움 함수: 인덱스를 엑셀 열 문자로 변환] ---
+        // index 0 -> C, 1 -> D, ... 24 -> Z, 25 -> AA
+        const getColumnLetter = (index) => {
+            let n = index + 3; // C열(3번째)부터 시작하도록 offset 3 부여
+            let letter = '';
+            while (n > 0) {
+                let remainder = (n - 1) % 26;
+                letter = String.fromCharCode(65 + remainder) + letter;
+                n = Math.floor((n - 1) / 26);
+            }
+            return letter;
+        };
+
+
+
         // --- [스타일 정의] ---
         const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DCE6F1' } };
         const borderStyle = {
@@ -119,17 +134,13 @@ export const excelController = {
         worksheet.mergeCells('B2:B3');
         worksheet.getCell('B2').value = '가입금액';
 
-        // 회사별 헤더 (C열부터 시작)
-        const COL_LETTERS = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'];
+        // 회사별 헤더 (C열부터 동적 생성)
         selectedCompanies.forEach((comp, index) => {
-            const col = COL_LETTERS[index];
-            if (!col) return;
+            const col = getColumnLetter(index); // 함수 호출!
 
-            // 2행: 회사명, 3행: 상품명(데이터가 있다면)
             const compCell = worksheet.getCell(`${col}2`);
             compCell.value = comp.company_name;
 
-            // 해당 회사의 전체 원본 데이터를 찾아 상품명 출력 (선택 사항)
             const fullData = mmlfcp_state.get('coverage_premiums').find(c => c.company_code === comp.company_code);
             const prodCell = worksheet.getCell(`${col}3`);
             prodCell.value = fullData?.product_name || '-';
@@ -140,7 +151,6 @@ export const excelController = {
             });
         });
 
-        // A2, B2 헤더 스타일 적용
         [worksheet.getCell('A2'), worksheet.getCell('B2')].forEach(cell => {
             cell.fill = headerFill;
             cell.font = { bold: true };
@@ -151,16 +161,13 @@ export const excelController = {
         coverageResults.forEach(row => {
             worksheet.getCell(`A${currentRowIdx}`).value = row.coverage_name;
             worksheet.getCell(`B${currentRowIdx}`).value = row.guide_coverage_amount;
-            worksheet.getCell(`B${currentRowIdx}`).numFmt = '#,##0'; // 숫자 포맷
+            worksheet.getCell(`B${currentRowIdx}`).numFmt = '#,##0';
 
-            // 각 회사별 보험료 매핑
             row.details.forEach((detail, colIdx) => {
-                const col = COL_LETTERS[colIdx];
-                if (col) {
-                    const cell = worksheet.getCell(`${col}${currentRowIdx}`);
-                    cell.value = detail.premium;
-                    cell.numFmt = '#,##0';
-                }
+                const col = getColumnLetter(colIdx); // 함수 호출!
+                const cell = worksheet.getCell(`${col}${currentRowIdx}`);
+                cell.value = detail.premium;
+                cell.numFmt = '#,##0';
             });
             currentRowIdx++;
         });
@@ -174,31 +181,26 @@ export const excelController = {
         totalLabelCell.font = { bold: true };
 
         if (coverageResults.length > 0) {
-            // 첫 번째 담보의 details 구조를 참조하여 회사별 총 합계 입력
             coverageResults[0].details.forEach((detail, colIdx) => {
-                const col = COL_LETTERS[colIdx];
-                if (col) {
-                    const cell = worksheet.getCell(`${col}${totalRowIdx}`);
-                    cell.value = detail.total_premium;
-                    cell.numFmt = '#,##0';
-                    cell.font = { bold: true };
-                }
+                const col = getColumnLetter(colIdx); // 함수 호출!
+                const cell = worksheet.getCell(`${col}${totalRowIdx}`);
+                cell.value = detail.total_premium;
+                cell.numFmt = '#,##0';
+                cell.font = { bold: true };
             });
         }
 
         // --- [5. 전체 스타일 및 너비 조정] ---
-        worksheet.columns.forEach((column, i) => {
-            // i는 0부터 시작 (0: A열, 1: B열, 2: C열...)
-            if (i === 0) {
-                column.width = 45; // A열 (담보명): 가장 길기 때문에 아주 넓게!
-            } else if (i === 1) {
-                column.width = 25; // B열 (가입금액): 숫자 위주이므로 적당히 넓게
-            } else {
-                column.width = 50; // C열 이후 (보험사별 보험료): 전체적으로 시원하게 넓힘
-            }
-        });
+        // 데이터가 들어간 마지막 열까지 너비를 조정하기 위해 columns를 설정함
+        const totalColumnCount = selectedCompanies.length + 2;
+        for (let i = 1; i <= totalColumnCount; i++) {
+            const column = worksheet.getColumn(i);
+            if (i === 1) column.width = 45;
+            else if (i === 2) column.width = 25;
+            else column.width = 50;
+        }
 
-        worksheet.eachRow((row) => {
+        worksheet.eachRow({ includeEmpty: true }, (row) => {
             row.eachCell({ includeEmpty: true }, (cell) => {
                 cell.border = borderStyle;
                 cell.alignment = centerAlign;
@@ -209,7 +211,6 @@ export const excelController = {
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-        // FileSaver.js의 saveAs 사용 (없다면 원본 JS 방식 사용)
         if (typeof saveAs !== 'undefined') {
             saveAs(blob, fileName);
         } else {
