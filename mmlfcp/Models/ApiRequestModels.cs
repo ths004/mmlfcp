@@ -8,6 +8,13 @@ namespace mmlfcp.Models
         public T? data { get; set; }
     }
 
+    public class ExportExcelResponse
+    {
+        public bool is_success { get; set; }
+        public string error_message { get; set; } = string.Empty;
+    }
+
+
     // 사용자 인증 응답 모델
     public class AuthResponse
     {
