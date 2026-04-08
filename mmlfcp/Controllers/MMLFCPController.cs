@@ -800,5 +800,53 @@ namespace mmlfcp.Controllers
         }
 
 
+        /// <summary>
+        /// 엑셀 다운로드 이벤트 로그 저장
+        /// </summary>
+        /// <param name="device">APP 또는 WEB</param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("api/ExportExcelEventLog")]
+        public async Task<ActionResult<AuthResponse>> ExportExcelEventLog(
+           [FromQuery] string device = null)
+        {
+            ExportExcelResponse response = new ExportExcelResponse();
+
+            // JWT 토큰 검증
+            var authResult = ValidateJwtToken();
+            if (authResult.ErrorCode != 0)
+            {
+                return Unauthorized(new CommonErrorResponse
+                {
+                    code = authResult.ErrorCode.ToString(),
+                    message = authResult.ErrorMessage
+                });
+            }
+
+            string event_id = "PRINT";   
+            string event_detail = device?.ToUpper() == "APP" ? "APP" : "WEB";//접근경로
+            try
+            {
+                _logger.LogInformation($"엑셀 다운로드 로그 - AccessPath:{event_id}");
+
+                response.is_success = true;
+                response.error_message = "";
+
+
+                await _repository.SaveEventlog(authResult.AgencyCompanyCD, authResult.ConsultantID, event_id, event_detail);
+
+                return Ok(response);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "엑셀 다운로드 로그 저장 중 오류 발생");
+                return StatusCode(500, new CommonErrorResponse
+                {
+                    code = "9999",
+                    message = "엑셀 다운로드 로그 저장 중 오류 발생"
+                });
+            }
+        }
     }
 }
