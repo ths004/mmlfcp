@@ -823,7 +823,7 @@ namespace mmlfcp.Controllers
                 });
             }
 
-            string event_id = "PRINT";   
+            string event_id = "EXCEL";   
             string event_detail = device?.ToUpper() == "APP" ? "APP" : "WEB";//접근경로
             try
             {
