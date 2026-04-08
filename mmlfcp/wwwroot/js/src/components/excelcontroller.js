@@ -1,5 +1,8 @@
+import { appConstants } from '../constants/constants.js';
 import { mmlfcp_state } from '../core/state.js';
+import { apiService } from '../services/apiService.js';
 import { app } from '../utils/app.js';
+import { Controller } from './controller.js';
 
 export const excelController = {
 
@@ -219,5 +222,35 @@ export const excelController = {
             link.download = fileName;
             link.click();
         }
+    },
+
+    //6. 엑셀 로그 생성
+    async exportExcelLog() {
+        const device = app.getUrlParameter("device");
+        const excel_checked = false;
+
+        if (!device) {
+            appConstants.device = "WEB";
+        }
+        try {
+            const res = await apiService.ExcelLog();
+            if (res.is_success === true) {
+                excel_checked = true;
+            }
+            else {
+                // 서버에서 정의한 비즈니스 에러 메시지 처리
+                alert(res.error_message || "엑셀 로그 생성 중 오류가 발생하였습니다.");
+            }
+        }
+        catch (err) {
+            console.error("[엑셀 로그 생성 중 오류 발생]", err);
+            alert(err.message);
+            return;
+        }
+        finally {
+            //모달창 닫기
+            Controller._closeModal();
+            excel_checked = false;
+        }
     }
-};
+}

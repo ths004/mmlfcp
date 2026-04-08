@@ -153,7 +153,7 @@ export const apiService = {
 
     /*
     플랜별 기준보장, 상품별 담보별, 필수보험료 정보 한장출력
-*/
+    */
     async PrintProducts({ print_gubun, cust_name, age, gender, birth_date, plan_id, plan_type_id, plan_type_name, plan_payment_expiration_cd, plan_payment_expiration_name, is_required_coverage, company_codes, coverages }) {
         const body = {
             cust_name: String(cust_name ?? ''),
@@ -230,7 +230,25 @@ export const apiService = {
             body: JSON.stringify(userCoverage)
         });
         return handleResponse(res);
-    }
+    },
+
+    /**
+     엑셀 로그 생성
+     */
+    async ExcelLog() {
+        const query = new URLSearchParams({
+            token: appConstants.jwt,
+            access_path: appConstants.access_path,
+            device: appConstants.device
+        }).toString();
+
+        const url = `${BASE_URL}${API_MMLFCP_URL.API_EXCEL_LOG}?${query}`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: defaultHeaders(),
+        });
+        return handleResponse(res);
+    },
 
 
 };

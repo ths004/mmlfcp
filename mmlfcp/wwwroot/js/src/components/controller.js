@@ -1781,7 +1781,6 @@ export const Controller = {
             if (response.is_success == true) {
                 const printUrl = `${location.protocol}//${location.host}/${response.pdf_uri}`;
                 window.open(printUrl, '_blank');
-                this._closeModal();
             }
 
         }
@@ -2268,8 +2267,8 @@ export const Controller = {
                 //엑셀 출력
                 excelController.exportToExcel();
 
-                //모달창 닫기
-                this._closeModal();
+                //엑셀 로그 남기기
+                excelController.exportExcelLog();
             });
         }
 

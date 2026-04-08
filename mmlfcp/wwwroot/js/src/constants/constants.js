@@ -11,7 +11,8 @@ export const API_MMLFCP_URL = {
 
     API_PRINT_PRODUCTS: "api/PrintProducts", // 플랜별 기준보장, 상품별 담보별, 필수보험료 정보 한장출력
     API_ADD_USER_COVERAGES: "api/AddUserCoverages", //사용자 플랜 추가
-    API_UPDATE_USER_COVERAGES: "api/UpdateUserCoverages" //사용자 플랜 수정
+    API_UPDATE_USER_COVERAGES: "api/UpdateUserCoverages", //사용자 플랜 수정
+    API_EXCEL_LOG: "api/ExportExcelEventLog" //엑셀 로그
 
 };
 
