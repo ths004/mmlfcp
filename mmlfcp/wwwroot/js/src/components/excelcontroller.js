@@ -227,7 +227,7 @@ export const excelController = {
     //6. 엑셀 로그 생성
     async exportExcelLog() {
         const device = app.getUrlParameter("device");
-        const excel_checked = false;
+        let excel_checked = false;
 
         if (!device) {
             appConstants.device = "WEB";
