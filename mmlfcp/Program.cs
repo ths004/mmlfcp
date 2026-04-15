@@ -105,10 +105,22 @@ app.UseDefaultFiles();
 // 5. 정적 파일 - 캐시 1일로 설정
 var staticFileOptions = new StaticFileOptions
 {
-    OnPrepareResponse = context =>
+    OnPrepareResponse = ctx =>
     {
-        // 기존 헤더를 덮어쓰기 (중복 방지)
-        context.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+        var path = ctx.File.Name;
+
+        // .js, .css 파일만 노캐시
+        if (path.EndsWith(".js") || path.EndsWith(".css"))
+        {
+            ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            ctx.Context.Response.Headers["Pragma"] = "no-cache";
+            ctx.Context.Response.Headers["Expires"] = "0";
+        }
+        else
+        {
+            // 이미지 등은 캐시 허용 (1일)
+            ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+        }
     }
 };
 app.UseStaticFiles(staticFileOptions);

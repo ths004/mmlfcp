@@ -14,13 +14,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('접속 토큰이 존재하지 않습니다.');
             return;
         }
-        if (!device) {
-            appConstants.device = 'WEB';
-        }
 
         //2. 전역 appConstants 에 토큰과 접근경로 저장
         appConstants.jwt = token;
         appConstants.access_path = 'MMLFCP_WEB';
+        appConstants.device = device || "APP";
 
         // 3. 인증 요청
         const authResult = await apiService.auth();
