@@ -735,15 +735,16 @@
 
                 </section>
 
-                <div class="product-update-notice-2026" role="region"
-                    aria-label="2026년 4월 신상품 업데이트 공지">
+                <!-- 신상품 업데이트 공지 -->
+                <!-- <div class="product-update-notice-2026" role="region" aria-label="2026년 4월 신상품 업데이트 공지">
                     <p class="product-update-notice-2026__line">
                         <strong>2026년 4월 신상품 업데이트 일정</strong><span class="product-update-notice-2026__sep"
                             aria-hidden="true">|</span>4월 1일 자 보험료 변동 사항과 관련하여, 시스템 반영 일정을 아래와 같이 안내드립니다.<span
-                            class="product-update-notice-2026__sep" aria-hidden="true">|</span><strong>1차 반영 예정일:</strong>
+                            class="product-update-notice-2026__sep" aria-hidden="true">|</span><strong>1차 반영
+                            예정일:</strong>
                         4월 5일(일)
                     </p>
-                </div>
+                </div> -->
 
                 <section class="bottom">
                     <ul>
@@ -954,9 +955,10 @@
     <div class="loader-container">
         <div class="loader"></div>
     </div>
-
-    <!-- ===== BEGIN MMCP_TEMP_CACHE_RELOAD_HINT (한시 운영 · 종료 시 이 HTML 블록 전체 삭제) ===== -->
-    <div id="cacheReloadHintModal" class="cache-hint-modal" role="dialog" aria-modal="true"
+    <!--  PDF 다운로드용 링크 -->
+    <a id="pdfDownloadLink" href="#" download="document.pdf" target="_blank" style="display:none;"></a>
+    <!-- ===== BEGIN MMCP_TEMP_CACHE_RELOAD_HINT (한시 운영 · 종료 시 이 HTML 블록 전체 삭제) -->
+    <!-- <div id="cacheReloadHintModal" class="cache-hint-modal" role="dialog" aria-modal="true"
         aria-labelledby="cacheHintTitle" aria-hidden="true">
         <div class="cache-hint-modal__panel">
             <h2 id="cacheHintTitle" class="cache-hint-modal__title">생손보 통합 작업으로 일부 브라우저에서 생손보 유형등의<br>데이터가 보이지 않을 때 <kbd class="cache-hint-modal__title-kbd">Ctrl</kbd> + <kbd class="cache-hint-modal__title-kbd">F5</kbd>를 눌러 새로고침을 하세요</h2>
@@ -966,7 +968,7 @@
                 <label for="cacheHintSkipDay">하루 동안 열지 않음</label>
             </div>
         </div>
-    </div>
+    </div> -->
     <!-- ===== END MMCP_TEMP_CACHE_RELOAD_HINT ===== -->
 
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -980,57 +982,57 @@
 
     <script>
         // ===== BEGIN MMCP_TEMP_CACHE_RELOAD_HINT (한시 운영 · 종료 시 이 IIFE 전체 삭제) =====
-        (function showCacheReloadHintOnOpen() {
-            var hideKey = "mmcp_cache_hint_hide_until";
-            var HIDE_FOR_MS = 24 * 60 * 60 * 1000;
-            var modal = document.getElementById("cacheReloadHintModal");
-            var btn = document.getElementById("cacheReloadHintClose");
-            var skipDayEl = document.getElementById("cacheHintSkipDay");
-            if (!modal || !btn) return;
+        // (function showCacheReloadHintOnOpen() {
+        //     var hideKey = "mmcp_cache_hint_hide_until";
+        //     var HIDE_FOR_MS = 24 * 60 * 60 * 1000;
+        //     var modal = document.getElementById("cacheReloadHintModal");
+        //     var btn = document.getElementById("cacheReloadHintClose");
+        //     var skipDayEl = document.getElementById("cacheHintSkipDay");
+        //     if (!modal || !btn) return;
 
-            function openModal() {
-                modal.classList.add("is-open");
-                modal.setAttribute("aria-hidden", "false");
-                if (skipDayEl) skipDayEl.checked = false;
-                btn.focus();
-            }
+        //     function openModal() {
+        //         modal.classList.add("is-open");
+        //         modal.setAttribute("aria-hidden", "false");
+        //         if (skipDayEl) skipDayEl.checked = false;
+        //         btn.focus();
+        //     }
 
-            function closeModal() {
-                try {
-                    if (skipDayEl && skipDayEl.checked) {
-                        localStorage.setItem(hideKey, String(Date.now() + HIDE_FOR_MS));
-                    }
-                } catch (e) { /* ignore */ }
-                modal.classList.remove("is-open");
-                modal.setAttribute("aria-hidden", "true");
-            }
+        //     function closeModal() {
+        //         try {
+        //             if (skipDayEl && skipDayEl.checked) {
+        //                 localStorage.setItem(hideKey, String(Date.now() + HIDE_FOR_MS));
+        //             }
+        //         } catch (e) { /* ignore */ }
+        //         modal.classList.remove("is-open");
+        //         modal.setAttribute("aria-hidden", "true");
+        //     }
 
-            btn.addEventListener("click", closeModal);
-            modal.addEventListener("click", function (ev) {
-                if (ev.target === modal) closeModal();
-            });
-            document.addEventListener("keydown", function (ev) {
-                if (!modal.classList.contains("is-open")) return;
-                if (ev.key === "Escape") {
-                    ev.preventDefault();
-                    closeModal();
-                }
-            });
+        //     btn.addEventListener("click", closeModal);
+        //     modal.addEventListener("click", function (ev) {
+        //         if (ev.target === modal) closeModal();
+        //     });
+        //     document.addEventListener("keydown", function (ev) {
+        //         if (!modal.classList.contains("is-open")) return;
+        //         if (ev.key === "Escape") {
+        //             ev.preventDefault();
+        //             closeModal();
+        //         }
+        //     });
 
-            function showHint() {
-                try {
-                    var hiddenUntil = parseInt(localStorage.getItem(hideKey) || "0", 10);
-                    if (hiddenUntil && Date.now() < hiddenUntil) return;
-                } catch (e) { /* ignore */ }
-                openModal();
-            }
+        //     function showHint() {
+        //         try {
+        //             var hiddenUntil = parseInt(localStorage.getItem(hideKey) || "0", 10);
+        //             if (hiddenUntil && Date.now() < hiddenUntil) return;
+        //         } catch (e) { /* ignore */ }
+        //         openModal();
+        //     }
 
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", showHint);
-            } else {
-                showHint();
-            }
-        })();
+        //     if (document.readyState === "loading") {
+        //         document.addEventListener("DOMContentLoaded", showHint);
+        //     } else {
+        //         showHint();
+        //     }
+        // })();
         // ===== END MMCP_TEMP_CACHE_RELOAD_HINT =====
 
         (function initTopNoticePopup() {

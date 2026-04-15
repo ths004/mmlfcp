@@ -1779,8 +1779,22 @@ export const Controller = {
             const response = await apiService.PrintProducts(printData);
 
             if (response.is_success == true) {
-                const printUrl = `${location.protocol}//${location.host}/${response.pdf_uri}`;
-                window.open(printUrl, '_blank');
+                const printUrl = `${location.protocol}//${location.host}/${response.pdf_uri}`;                
+                if (appConstants.device == 'APP') {
+                    // 모바일: 다운로드 처리
+                    // PDF를 Blob으로 fetch 후 Object URL 생성
+                    const res = await fetch(printUrl);
+                    const blob = await res.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    const link = document.getElementById('pdfDownloadLink');
+                    link.href = blobUrl;
+                    link.click();
+                     // 메모리 해제
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                }else{
+                    window.open(printUrl, '_blank');                    
+                }
             }
 
         }
