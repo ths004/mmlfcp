@@ -263,6 +263,7 @@
             cursor: pointer;
             user-select: none;
         }
+
         /* ===== END MMCP_TEMP_CACHE_RELOAD_HINT ===== */
 
         /* 생손보 유형 통합 안내 (비침습·닫기 후 localStorage로 숨김) */
@@ -545,6 +546,7 @@
         body.theme-quote .cache-hint-modal__btn:focus-visible {
             outline-color: #1A73E8 !important;
         }
+
         /* ===== END MMCP_TEMP_CACHE_RELOAD_HINT — theme-quote ===== */
     </style>
 </head>
@@ -775,13 +777,12 @@
                                 <option value="F">손보</option>
                                 <option value="L">생보</option>
                             </select>
-                            <aside id="mergeScreenNotice" class="merge-screen-notice" role="status"
-                                aria-live="polite"
-                                    aria-label='"생손보 보험료와 한장 보험료 비교" 통합에 따른 생,손보 유형 선택기능이 추가되었습니다.'
-                                    hidden>
+                            <aside id="mergeScreenNotice" class="merge-screen-notice" role="status" aria-live="polite"
+                                aria-label='"생손보 보험료와 한장 보험료 비교" 통합에 따른 생,손보 유형 선택기능이 추가되었습니다.' hidden>
                                 <button type="button" class="merge-screen-notice__close" id="mergeScreenNoticeClose"
                                     aria-label="안내 닫기"></button>
-                                <p class="merge-screen-notice__title">"생손보 보험료와 한장 보험료 비교" 통합에 따른<br>생,손보 유형 선택기능이 추가되었습니다.</p>
+                                <p class="merge-screen-notice__title">"생손보 보험료와 한장 보험료 비교" 통합에 따른<br>생,손보 유형 선택기능이
+                                    추가되었습니다.</p>
                             </aside>
                         </li>
                         <li>
@@ -849,7 +850,7 @@
                     </div>
                 </section>
 
-         
+
 
                 <section class="product-table-wrap">
                     <div class="company-area"
@@ -978,7 +979,7 @@
     <!-- ExcelJS-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script type="module" src="./js/src/main.js?v=26.03.26.1"></script>
+    <script type="module" src="./js/src/main.js?v=26.04.28.1"></script>
 
     <script>
         // ===== BEGIN MMCP_TEMP_CACHE_RELOAD_HINT (한시 운영 · 종료 시 이 IIFE 전체 삭제) =====
