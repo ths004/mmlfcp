@@ -817,7 +817,6 @@ namespace mmlfcp.Repository
                 where 
                 a.sex = @gender
                 and a.age = @age
-                and a.use_yn='Y'
             order by a.compy_cd,a.prdt_cd,a.insur_cd";
                 using (var connection = _context.CreateConnection())
                 {
@@ -1049,7 +1048,6 @@ namespace mmlfcp.Repository
                                     where 
                                     a.sex = @gender
                                     and a.age in @ages_in_clause -- Dapper가 컬렉션을 IN 절로 자동 확장
-                                    and a.use_yn='Y'
                                 order by a.compy_cd,a.prdt_cd,a.age,a.insur_cd";
 
                 using (var connection = _context.CreateConnection())
@@ -1322,7 +1320,6 @@ namespace mmlfcp.Repository
                                         and a.product_code = c.prdt_cd
                                         and c.sex = @gender
                                         and c.age = @age
-                                        and c.use_yn = 'Y'
 
                                     -- 상품 상세 마스터
                                     join TB_TIC_PRDT d 
@@ -1588,7 +1585,6 @@ namespace mmlfcp.Repository
                                         and c.insur_cd = d.insur_cd
                                         and d.sex = @gender 
                                         and d.age = @age
-                                        and d.use_yn = 'Y'
 
                                     -- 4. 마스터 테이블들 (e, f, g, h)
                                     join TB_TIC_PRDT e 
