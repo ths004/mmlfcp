@@ -817,7 +817,7 @@ namespace mmlfcp.Repository
                 where 
                 a.sex = @gender
                 and a.age = @age
-            order by a.compy_cd,a.prdt_cd,a.insur_cd";
+               order by a.compy_cd,a.prdt_cd,a.insur_cd";
                 using (var connection = _context.CreateConnection())
                 {
                     var premiums = (await connection.QueryAsync<RequiredInsurCDPremiumEntity>(
