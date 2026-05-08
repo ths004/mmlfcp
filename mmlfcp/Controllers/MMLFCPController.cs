@@ -1,6 +1,7 @@
 using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using mmlfcp.Common;
 using mmlfcp.Models;
 using mmlfcp.Repository;
@@ -14,14 +15,37 @@ namespace mmlfcp.Controllers
         private readonly IMMLFCPRepository _repository;
         private readonly ILogger<MMLFCPController> _logger;
         private readonly ReportSevice _reportService; // Inject
+        private readonly IMemoryCache _cache;
 
+        private const int RateLimitPerMinute = 10;
 
-
-        public MMLFCPController(IMMLFCPRepository repository, ReportSevice Ssrvice,ILogger<MMLFCPController> logger)
+        public MMLFCPController(IMMLFCPRepository repository, ReportSevice Ssrvice, ILogger<MMLFCPController> logger, IMemoryCache cache)
         {
             _repository = repository;
             _logger = logger;
             _reportService = Ssrvice;
+            _cache = cache;
+        }
+
+        private bool IsRateLimited(string gaId, string consultantId)
+        {
+            var key = $"ratelimit:{gaId}:{consultantId}";
+            var now = DateTimeOffset.UtcNow;
+
+            if (_cache.TryGetValue(key, out (int count, DateTimeOffset expireAt) entry))
+            {
+                if (now >= entry.expireAt)
+                {
+                    _cache.Set(key, (1, now.AddMinutes(1)), TimeSpan.FromMinutes(1));
+                    return false;
+                }
+                if (entry.count >= RateLimitPerMinute) return true;
+                _cache.Set(key, (entry.count + 1, entry.expireAt), entry.expireAt - now);
+                return false;
+            }
+
+            _cache.Set(key, (1, now.AddMinutes(1)), TimeSpan.FromMinutes(1));
+            return false;
         }
 
         /// <summary>
@@ -250,6 +274,16 @@ namespace mmlfcp.Controllers
                     });
                 }
 
+                if (IsRateLimited(authResult.AgencyCompanyCD, authResult.ConsultantID))
+                {
+                    _logger.LogWarning("Rate limit 초과 - GA: {ga_id}, Consultant: {consultant_id}", authResult.AgencyCompanyCD, authResult.ConsultantID);
+                    return StatusCode(429, new CommonErrorResponse
+                    {
+                        code = "4290",
+                        message = "요청 한도를 초과하였습니다. 1분 후 다시 시도해 주세요."
+                    });
+                }
+
                 _logger.LogInformation("상품 보험료 조회 요청 - PlanId: {plan_id}, Age: {age}, Gender: {gender}", plan_id, age, gender);
 
                 // 입력값 검증
@@ -262,14 +296,7 @@ namespace mmlfcp.Controllers
                     });
                 }
                 string remoteip = Utility.GetIPAddress(HttpContext);
-                if ("115.138.36.112".Equals(remoteip))
-                {
-                    return Unauthorized(new CommonErrorResponse
-                    {
-                        code = "2004",
-                        message = "매크로, 스크래핑 등과 같은 자동화된 프로그램을 이용해 데이터를 수집할 경우 할 경우, 서비스 이용이 제한되거나 계정이 중지 또는 차단될 수 있습니다. 상기와 같은 사유로 사용이 제한되었으니 문의사항이 있으시면 당사 고객센터(010-4796-5284)로 문의 부탁드립니다."
-                    });
-                }
+
 
                 if (await _repository.IsUserRestricted(authResult.AgencyCompanyCD, authResult.ConsultantID, "MMLFCP") == true)
                 {

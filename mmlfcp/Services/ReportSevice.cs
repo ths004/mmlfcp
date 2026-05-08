@@ -136,7 +136,7 @@ namespace mmlfcp.Services
 
 
 
-            String prt_fileNm = getFileName(String.Format("{0}님_한장비교", cust_name));
+            String prt_fileNm = getFileName(String.Format("{0}님_한장비교", cust_name.Replace("*", "_")));
             string Prt_No = prt_fileNm.Substring(5, 16);
             string prt_fullFileNm = String.Format(@"{0}\{1}", reportSavePath, prt_fileNm);
 
@@ -487,7 +487,7 @@ namespace mmlfcp.Services
                 }
             }
 
-            String prt_fileNm = getFileName(String.Format("{0}님_만기별보험료비교", cust_name));
+            String prt_fileNm = getFileName(String.Format("{0}님_만기별보험료비교", cust_name.Replace("*", "_")));
             string Prt_No = prt_fileNm.Substring(5, 16);
             string prt_fullFileNm = String.Format(@"{0}\{1}", reportSavePath, prt_fileNm);
 
@@ -634,7 +634,7 @@ namespace mmlfcp.Services
                 }
             }
 
-            String prt_fileNm = getFileName(String.Format("{0}님_연령대별보험료비교", cust_name));
+            String prt_fileNm = getFileName(String.Format("{0}님_연령대별보험료비교", cust_name.Replace("*", "_")));
             string Prt_No = prt_fileNm.Substring(5, 16);
             string prt_fullFileNm = String.Format(@"{0}\{1}", reportSavePath, prt_fileNm);
 
@@ -793,7 +793,7 @@ namespace mmlfcp.Services
                 }
             }
 
-            String prt_fileNm = getFileName(String.Format("{0}님_상품유형별보험료비교", cust_name));
+            String prt_fileNm = getFileName(String.Format("{0}님_상품유형별보험료비교", cust_name.Replace("*", "_")));
             string Prt_No = prt_fileNm.Substring(5, 16);
             string prt_fullFileNm = String.Format(@"{0}\{1}", reportSavePath, prt_fileNm);
 
