@@ -1,6 +1,6 @@
 // /js/components/mmcp/userController.js
 
-import { mmlfcp_state, _state } from '../core/state.js';
+import { mmlfcp_state, _state, deepCopy } from '../core/state.js';
 import { Controller } from './controller.js';
 import { app } from '../utils/app.js';
 
@@ -114,12 +114,17 @@ export const userController = {
         const snapshot = mmlfcp_state.get('default_plan_snapshot');
         if (!snapshot) return;
 
-        mmlfcp_state.set('plan_coverages', structuredClone(snapshot.plan_coverages));
-        mmlfcp_state.set('required_premiums', structuredClone(snapshot.required_premiums));
-        mmlfcp_state.set('coverage_premiums', structuredClone(snapshot.coverage_premiums));
-        mmlfcp_state.set('product_insur_premiums', structuredClone(snapshot.product_insur_premiums));
-        mmlfcp_state.set('coverage_ratio_map', {});
+        //mmlfcp_state.set('plan_coverages', structuredClone(snapshot.plan_coverages));
+        // mmlfcp_state.set('required_premiums', structuredClone(snapshot.required_premiums));
+        // mmlfcp_state.set('coverage_premiums', structuredClone(snapshot.coverage_premiums));
+        // mmlfcp_state.set('product_insur_premiums', structuredClone(snapshot.product_insur_premiums));
+        // mmlfcp_state.set('coverage_ratio_map', {});
 
+        mmlfcp_state.set('plan_coverages', deepCopy(snapshot.plan_coverages));
+        mmlfcp_state.set('required_premiums', deepCopy(snapshot.required_premiums));
+        mmlfcp_state.set('coverage_premiums', deepCopy(snapshot.coverage_premiums));
+        mmlfcp_state.set('product_insur_premiums', deepCopy(snapshot.product_insur_premiums));
+        mmlfcp_state.set('coverage_ratio_map', {});
 
         // ✅ 복원 후 필터 및 렌더링 재설정
         Controller.setDefaultAllFilter();                 // 전체/가입/미가입 필터 초기화

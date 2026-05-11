@@ -38,6 +38,32 @@ export const _state =
     company_code_checked: {},
 }
 
+/**
+ * 객체나 배열을 깊은 복사하는 함수
+ * @param {*} obj - 복사할 대상
+ * @returns {*} 복사된 새로운 객체/배열
+ */
+export const deepCopy = (obj) => {
+    if (obj === null || typeof obj !== 'object') return obj;
+
+
+    // 배열인 경우
+    if (Array.isArray(obj)) {
+        return obj.map(item => deepCopy(item));
+    }
+
+    // 객체인 경우
+    const clonedObj = {};
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            clonedObj[key] = deepCopy(obj[key]);
+        }
+    }
+    return clonedObj;
+};
+
+
+
 export const mmlfcp_state = {
     /**
     * 상태 저장

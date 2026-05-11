@@ -1,4 +1,4 @@
-import { mmlfcp_state, _state } from '../core/state.js';
+import { mmlfcp_state, _state, deepCopy } from '../core/state.js';
 import { apiService } from '../services/apiService.js';
 import { app } from '../utils/app.js';
 import { appConstants } from '../constants/constants.js';
@@ -442,13 +442,22 @@ export const Controller = {
 
     //원본 리스트 따로 저장
     saveOriginalPlanSnapshot() {
+
         const snapshot = {
-            plan_coverages: structuredClone(mmlfcp_state.get('plan_coverages') || []),
-            required_premiums: structuredClone(mmlfcp_state.get('required_premiums') || []),
-            coverage_premiums: structuredClone(mmlfcp_state.get('coverage_premiums') || []),
-            product_insur_premiums: structuredClone(mmlfcp_state.get('product_insur_premiums') || []),
+            plan_coverages: deepCopy(mmlfcp_state.get('plan_coverages') || []),
+            required_premiums: deepCopy(mmlfcp_state.get('required_premiums') || []),
+            coverage_premiums: deepCopy(mmlfcp_state.get('coverage_premiums') || []),
+            product_insur_premiums: deepCopy(mmlfcp_state.get('product_insur_premiums') || []),
         };
         mmlfcp_state.set('default_plan_snapshot', snapshot);
+
+        // const snapshot = {
+        //     plan_coverages: structuredClone(mmlfcp_state.get('plan_coverages') || []),
+        //     required_premiums: structuredClone(mmlfcp_state.get('required_premiums') || []),
+        //     coverage_premiums: structuredClone(mmlfcp_state.get('coverage_premiums') || []),
+        //     product_insur_premiums: structuredClone(mmlfcp_state.get('product_insur_premiums') || []),
+        // };
+        //mmlfcp_state.set('default_plan_snapshot', snapshot);
     },
 
     //출력 데이터 만들기
@@ -1779,7 +1788,7 @@ export const Controller = {
             const response = await apiService.PrintProducts(printData);
 
             if (response.is_success == true) {
-                const printUrl = `${location.protocol}//${location.host}/${response.pdf_uri}`;                
+                const printUrl = `${location.protocol}//${location.host}/${response.pdf_uri}`;
                 if (appConstants.device == 'APP') {
                     // 모바일: 다운로드 처리
                     // PDF를 Blob으로 fetch 후 Object URL 생성
@@ -1790,10 +1799,10 @@ export const Controller = {
                     const link = document.getElementById('pdfDownloadLink');
                     link.href = blobUrl;
                     link.click();
-                     // 메모리 해제
+                    // 메모리 해제
                     setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                }else{
-                    window.open(printUrl, '_blank');                    
+                } else {
+                    window.open(printUrl, '_blank');
                 }
             }
 
