@@ -288,7 +288,10 @@ namespace mmlfcp.Repository
                        a.insu_compy_type as insurance_type
                 from TB_MMLFCP_PLAN a
                 where use_yn = 'Y'
-                order by a.plan_type";
+                --order by a.plan_type 
+                -- ⭐ [여기만 수정!] ORDER BY 절에 서브쿼리를 넣어 공통코드의 ORDER_SEQ 기준으로 정렬합니다.
+               order by ISNULL((select ORDER_SEQ from TB_COMM_CD where cd_id = a.plan_type and upp_cd_id = 'MMLFCP_A'), 999), a.plan_type
+            ";
 
                 using (var connection = _context.CreateConnection())
                 {
