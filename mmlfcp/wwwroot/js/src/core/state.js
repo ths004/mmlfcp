@@ -124,6 +124,21 @@ export const mmlfcp_state = {
     getPlans() {
         return this.get('mmlfcp_plans') || [];
     },
+
+    /**
+     * ga_id에 따른 cust_name 기본값 초기화 및 가져오기
+     */
+    initCustName() {
+        const gaId = this.get('ga_id');
+        if (gaId === 'A210') {
+            this.set('cust_name', '김토스');
+            return '김토스';
+        } else {
+            this.set('cust_name', '홍길동');
+            return '홍길동';
+        }
+    },
+
     getAll() {
         return { ..._state }; // 복사해서 반환
     }

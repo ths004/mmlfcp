@@ -28,12 +28,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-
         // ✅ 4. plans를 상태에 저장
         mmlfcp_state.set('mmlfcp_plans', authResult.plans);
         mmlfcp_state.set('consultant_id', authResult.consultant_id);
         mmlfcp_state.set('ga_id', authResult.ga_id);
         mmlfcp_state.set('upload_date', authResult.upload_date);
+
+        // ⭐ [추가] ga_id가 저장된 후, cust_name의 기본값을 판단하고 반영합니다.
+        const defaultCustName = mmlfcp_state.initCustName();
+        const custNameInput = document.getElementById('cust_name');
+        if (custNameInput) {
+            custNameInput.value = defaultCustName; // HTML 인풋 값 변경
+        }
 
         // ⭐ 추가: URL에서 받은 path 값을 state에 저장
         if (path) {
