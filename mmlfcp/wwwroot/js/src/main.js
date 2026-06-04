@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const custNameInput = document.getElementById('cust_name');
         if (custNameInput) {
             custNameInput.value = defaultCustName; // HTML 인풋 값 변경
+            custNameInput.readOnly = (authResult.ga_id === 'A210');
         }
 
         // ⭐ 추가: URL에서 받은 path 값을 state에 저장
