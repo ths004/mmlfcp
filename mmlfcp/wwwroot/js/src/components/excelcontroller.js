@@ -114,17 +114,17 @@ export const excelController = {
         // --- [1. 상단 고객 정보 영역] ---
         // mmlfcp_state나 global state에서 정보를 가져온다고 가정
 
-
+        const ga_id = mmlfcp_state.get('ga_id') || '';
         const cust_name = mmlfcp_state.get('cust_name'); //홍길동님
         const gender = mmlfcp_state.get('gender') === 'M' ? "남" : "여"; //남
         const birth_date = mmlfcp_state.get('birth_date'); //19800101
+        const birthStr = ga_id === 'A210' ? '' : `${birth_date},`;
         const age = "보험연령:" + mmlfcp_state.get('age') + "세"; //보험연령:46세
         const plan_type_name = mmlfcp_state.get('plan_type_name'); // 종합(무해지형)
         const plan_payment_expiration_name = mmlfcp_state.get('plan_payment_expiration_name'); //20년/100세
 
-        // 요렇게 조립하면 주석이랑 똑같이 나와!
-        const custInfo = `${cust_name}님 (${gender},${birth_date},${age}) ${plan_type_name}-${plan_payment_expiration_name}`;  //홍길동님 (남,19800101,보험연령:46세) 종합(무해지형)-20년/100세
-        // console.log({ custInfo: custInfo });
+        const custInfo = `${cust_name}님 (${gender},${birthStr}${age}) ${plan_type_name}-${plan_payment_expiration_name}`;
+
 
         worksheet.mergeCells('A1:B1');
         const titleCell = worksheet.getCell('A1');
