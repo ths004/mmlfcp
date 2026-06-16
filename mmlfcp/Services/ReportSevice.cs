@@ -83,7 +83,7 @@ namespace mmlfcp.Services
                     request.coverages.Insert(0, new PrintCoverage { coverage_cd = "aa00", coverage_name = "필수담보", coverage_amount = 0 });
                 }
 
-                rtnString = MakePDFReportbyOnePage(request.cust_name, request.age, request.gender, insur_birth_date.ToString("yyyy.MM.dd"), request.plan_type_name, request.plan_payment_expiration_name, request.company_codes, request.coverages, coverage_list);
+                rtnString = MakePDFReportbyOnePage(ga_cd,request.cust_name, request.age, request.gender, insur_birth_date.ToString("yyyy.MM.dd"), request.plan_type_name, request.plan_payment_expiration_name, request.company_codes, request.coverages, coverage_list);
             }
 
 
@@ -92,7 +92,7 @@ namespace mmlfcp.Services
             return rtnString;
         }
 
-        public String MakePDFReportbyOnePage(String cust_name, int age, String gender, String insur_birth_date, String plan_type_name, String plan_payment_expiration_name, List<string> company_codes,List<PrintCoverage> coverages,  List<PrintProductCoverage> coverage_list)
+        public String MakePDFReportbyOnePage(String ga_cd, String cust_name, int age, String gender, String insur_birth_date, String plan_type_name, String plan_payment_expiration_name, List<string> company_codes,List<PrintCoverage> coverages,  List<PrintProductCoverage> coverage_list)
         {
             //문서 생성
             Document document = new Document();
@@ -106,7 +106,8 @@ namespace mmlfcp.Services
 
             //한장 대표담보 비교
             string gender_name = gender == "M" ? "남성" : "여성";
-            string title = String.Format("{0} (보험나이 {1}세,{2},생년월일 : {3})고객님의 {4} - {5} 보험료 비교입니다.", cust_name, age, gender_name, insur_birth_date, plan_type_name, plan_payment_expiration_name);
+            string title = ga_cd == "A210" ? String.Format("{0} (보험나이 {1}세,{2})고객님의 {3} - {4} 보험료 비교입니다.", cust_name, age, gender_name,  plan_type_name, plan_payment_expiration_name)
+                                           : String.Format("{0} (보험나이 {1}세,{2},생년월일 : {3})고객님의 {4} - {5} 보험료 비교입니다.", cust_name, age, gender_name, insur_birth_date, plan_type_name, plan_payment_expiration_name);
             int coverage_page_count = coverages.Count / 22;
             coverage_page_count = (coverages.Count % 22) > 0 ? coverage_page_count + 1 : coverage_page_count;
 
