@@ -2,7 +2,7 @@ import { app } from './utils/app.js';
 import { appConstants } from './constants/constants.js'
 import { apiService } from './services/apiService.js';
 import { mmlfcp_state, _state } from './core/state.js';
-import { Controller } from './components/controller.js';
+import { Controller } from './components/controller.js?v=26.07.23.2';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
