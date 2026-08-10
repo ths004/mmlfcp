@@ -1277,51 +1277,440 @@ export const Controller = {
     },
 
 
-    //플랜 상품담보별보험료 상세보기 랜더링
+    /** company_code → 보험사명 맵 (coverage_premiums / required_premiums 기준) */
+    _getCompanyNameMap() {
+        const map = {};
+        const sources = [
+            ...(mmlfcp_state.get('coverage_premiums') || []),
+            ...(mmlfcp_state.get('required_premiums') || []),
+            ...(mmlfcp_state.get('required_premiums_grouped') || []),
+        ];
+        sources.forEach((item) => {
+            if (item?.company_code && item?.company_name && !map[item.company_code]) {
+                map[item.company_code] = item.company_name;
+            }
+        });
+        return map;
+    },
+
+    /** 담보 상세 비교 — 해당 coverage_cd 데이터가 있는 보험사 목록 */
+    _getCompaniesWithCoverageDetail(coverage_cd) {
+        const products = mmlfcp_state.get('product_insur_premiums') || [];
+        const nameMap = this._getCompanyNameMap();
+        const map = new Map();
+        products.forEach((p) => {
+            const hasDetail = (p.detailList || []).some((d) => String(d.coverage_cd) === String(coverage_cd));
+            if (hasDetail && !map.has(p.company_code)) {
+                map.set(p.company_code, {
+                    company_code: p.company_code,
+                    company_name: nameMap[p.company_code] || p.company_name || p.company_code,
+                    product_name: (p.product_name || '').trim(),
+                });
+            }
+        });
+        return Array.from(map.values());
+    },
+
+    _getCompanyMeta(company_code, companies) {
+        const nameMap = this._getCompanyNameMap();
+        return companies.find((c) => c.company_code === company_code) || {
+            company_code,
+            company_name: nameMap[company_code] || company_code,
+            product_name: '',
+        };
+    },
+
+    /** 메인 그리드와 동일한 방식으로 보험사·보별 보험료 합계 */
+    _getCoveragePremiumByCompany(company_code, coverage_cd) {
+        if (!company_code || !coverage_cd) return 0;
+        const coverage_premiums = mmlfcp_state.get('coverage_premiums') || [];
+        const product = coverage_premiums.find((p) => p.company_code == company_code);
+        if (!product) return 0;
+
+        const coverageKey = company_code + coverage_cd;
+        const idxList = _state.guide_coverage_item?.[coverageKey] || [];
+        if (idxList.length) {
+            return idxList.reduce((sum, idx) => {
+                const detail = product.detailList?.[idx];
+                return sum + Math.floor(detail?.base_premium ?? detail?.premium ?? 0);
+            }, 0);
+        }
+
+        return (product.detailList || [])
+            .filter((d) => String(d.coverage_cd) === String(coverage_cd))
+            .reduce((sum, d) => sum + Math.floor(d.base_premium ?? d.premium ?? 0), 0);
+    },
+
+    _formatPremiumLabel(premium) {
+        return `${app.formatNumber(premium || 0)}원`;
+    },
+
+    _getDetailCompareSortedCompanies(companies, coverage_cd) {
+        return [...companies]
+            .map((c) => ({
+                ...c,
+                premium: this._getCoveragePremiumByCompany(c.company_code, coverage_cd),
+            }))
+            .sort((a, b) => {
+                const aPremium = Number(a.premium) || 0;
+                const bPremium = Number(b.premium) || 0;
+                if (aPremium !== bPremium) return aPremium - bPremium;
+                return String(a.company_name || '').localeCompare(String(b.company_name || ''), 'ko');
+            });
+    },
+
+    _getDetailCompareOptionLabel(company, maxNameLen, withPremium) {
+        const name = company.company_name || company.company_code || '';
+        if (!withPremium) return name;
+
+        const nameLen = Array.from(String(name)).length;
+        const padCount = Math.max(0, maxNameLen - nameLen);
+        const paddedName = `${name}${'　'.repeat(padCount)}`;
+        const namePremiumGap = '　　　　';
+        return `${paddedName}${namePremiumGap}${this._formatPremiumLabel(company.premium)}`;
+    },
+
+    _buildDetailCompareSelectOptions(companies, selectedCode, coverage_cd, withPremium = false, excludedCodes = []) {
+        const options = ['<option value="">보험사를 선택하세요</option>'];
+        const sorted = this._getDetailCompareSortedCompanies(companies, coverage_cd);
+        const maxNameLen = sorted.reduce((max, c) => Math.max(max, Array.from(String(c.company_name || '')).length), 0);
+        const excluded = new Set(
+            (excludedCodes || []).filter((code) => code && String(code) !== String(selectedCode || ''))
+        );
+
+        sorted.forEach((c) => {
+            const selected = c.company_code === selectedCode ? ' selected' : '';
+            const disabled = excluded.has(c.company_code) ? ' disabled' : '';
+            const label = this._getDetailCompareOptionLabel(c, maxNameLen, withPremium);
+            options.push(`<option value="${c.company_code}"${selected}${disabled}>${label}</option>`);
+        });
+        return options.join('');
+    },
+
+    _setDetailCompareSelectLabels(select, withPremium) {
+        if (!select) return;
+        const coverage_cd = mmlfcp_state.get('detail_compare_coverage_cd');
+        const companies = this._getCompaniesWithCoverageDetail(coverage_cd);
+        const sorted = this._getDetailCompareSortedCompanies(companies, coverage_cd);
+        const maxNameLen = sorted.reduce((max, c) => Math.max(max, Array.from(String(c.company_name || '')).length), 0);
+        const byCode = new Map(sorted.map((c) => [c.company_code, c]));
+        const currentValue = select.value;
+
+        Array.from(select.options).forEach((opt) => {
+            if (!opt.value) {
+                opt.textContent = '보험사를 선택하세요';
+                return;
+            }
+            const company = byCode.get(opt.value);
+            if (!company) return;
+            opt.textContent = this._getDetailCompareOptionLabel(company, maxNameLen, withPremium);
+        });
+
+        select.value = currentValue;
+        this._refreshDetailCompareSelectAvailability();
+    },
+
+    /** 다른 카드에서 이미 선택된 보험사는 선택 불가 */
+    _refreshDetailCompareSelectAvailability() {
+        const slots = [1, 2, 3];
+        const selectedBySlot = {};
+        slots.forEach((slot) => {
+            selectedBySlot[slot] = mmlfcp_state.get(`detail_compare_company_${slot}`) || '';
+        });
+
+        slots.forEach((slot) => {
+            const select = document.querySelector(`.detail-compare-select[data-slot="${slot}"]`);
+            if (!select) return;
+
+            const ownCode = selectedBySlot[slot];
+            const taken = new Set(
+                slots
+                    .filter((s) => s !== slot)
+                    .map((s) => selectedBySlot[s])
+                    .filter(Boolean)
+            );
+
+            Array.from(select.options).forEach((opt) => {
+                if (!opt.value) {
+                    opt.disabled = false;
+                    return;
+                }
+                opt.disabled = taken.has(opt.value) && opt.value !== ownCode;
+            });
+        });
+    },
+
+    _getDetailComparePremiumText(company_code, coverage_cd) {
+        if (!company_code) return '-';
+        return this._formatPremiumLabel(this._getCoveragePremiumByCompany(company_code, coverage_cd));
+    },
+
+    _getDetailComparePremiumValue(company_code, coverage_cd) {
+        if (!company_code) return null;
+        return this._getCoveragePremiumByCompany(company_code, coverage_cd);
+    },
+
+    _refreshDetailCompareMinHighlight() {
+        const coverage_cd = mmlfcp_state.get('detail_compare_coverage_cd');
+        const slots = [1, 2, 3];
+        const selectedCode = mmlfcp_state.get('detail_compare_company_1');
+        const companies = this._getCompaniesWithCoverageDetail(coverage_cd);
+        const expected = this._pickDetailCompareCompanies(selectedCode, companies, coverage_cd);
+        const premiums = slots.map((slot) => {
+            const code = mmlfcp_state.get(`detail_compare_company_${slot}`);
+            const value = this._getDetailComparePremiumValue(code, coverage_cd);
+            return { slot, code, value };
+        });
+
+        slots.forEach((slot) => {
+            const col = document.getElementById(`detail_compare_col_${slot}`);
+            if (!col) return;
+            const item = premiums.find((p) => p.slot === slot);
+            const hasSelection = !!(item?.code);
+            const isMin = hasSelection && !!expected.compare2 && item.code === expected.compare2;
+            const isMax = hasSelection && !!expected.compare3 && item.code === expected.compare3;
+            const conditionType = isMin ? 'min' : (isMax ? 'max' : null);
+
+            col.classList.toggle('is-empty', !hasSelection);
+            col.classList.toggle('is-selected', hasSelection);
+            col.classList.remove('is-lowest', 'is-condition-match');
+            col.classList.toggle('is-condition-min', isMin);
+            col.classList.toggle('is-condition-max', isMax);
+
+            if (slot === 2 || slot === 3) {
+                const columnTitle = this._getDetailCompareColumnTitle(slot, conditionType);
+                const titleEl = document.getElementById(`detail_compare_col_${slot}_title`);
+                const noteEl = document.getElementById(`detail_compare_col_${slot}_note`);
+                if (titleEl) titleEl.textContent = columnTitle.title;
+                if (noteEl) {
+                    noteEl.textContent = columnTitle.note;
+                    noteEl.hidden = !columnTitle.note;
+                }
+            }
+        });
+
+        this._refreshDetailCompareSelectAvailability();
+    },
+
+    _renderCoverageDetailColumnBody(company_code, coverage_cd) {
+        if (!company_code) {
+            return `
+                <div class="detail-compare-empty">
+                    <strong>보험사를 선택해 주세요</strong>
+                    <span>상단 목록에서 비교할 보험사를 고르면<br>담보 상세 내용이 표시됩니다.</span>
+                </div>
+            `;
+        }
+
+        const products = (mmlfcp_state.get('product_insur_premiums') || []).filter((r) => r.company_code == company_code);
+        const items = [];
+
+        products.forEach((insu_product) => {
+            (insu_product.detailList || [])
+                .filter((detail) => String(detail.coverage_cd) === String(coverage_cd))
+                .forEach((detail) => {
+                    items.push(`
+                        <article class="detail-compare-item">
+                            <h3 class="detail-compare-item__title">${detail.insur_nm || '담보'}</h3>
+                            <div class="detail-compare-item__meta">
+                                <span class="detail-compare-chip">가입금액 <b>${app.formatNumber(detail.contract_amount)}만원</b></span>
+                                <span class="detail-compare-chip detail-compare-chip--accent">보험료 <b>${app.formatNumber(detail.premium)}원</b></span>
+                                <span class="detail-compare-chip">납기 <b>${detail.pay_term || '-'}</b></span>
+                            </div>
+                            <div class="detail-compare-item__body">
+                                ${(detail.insur_bojang || '보장 내용이 없습니다.').replace(/(?:\r\n|\r|\n)/g, '<br />')}
+                            </div>
+                        </article>
+                    `);
+                });
+        });
+
+        if (!items.length) {
+            return `
+                <div class="detail-compare-empty">
+                    <strong>해당 담보 정보가 없습니다</strong>
+                    <span>선택한 보험사에 이 담보의 상세 내역이 없습니다.</span>
+                </div>
+            `;
+        }
+        return items.join('');
+    },
+
+    _getDetailCompareColumnTitle(slot, conditionType = null) {
+        if (slot === 1) {
+            return { title: '선택 특약 보험료', note: '' };
+        }
+        if (slot === 2 || slot === 3) {
+            if (conditionType === 'min') {
+                return { title: '최저 특약 보험료', note: '(선택한 특약 제외)' };
+            }
+            if (conditionType === 'max') {
+                return { title: '최고 특약 보험료', note: '(선택한 특약 제외)' };
+            }
+            return {
+                title: slot === 2 ? '비교 상품 1' : '비교 상품 2',
+                note: ''
+            };
+        }
+        return { title: '비교 상품', note: '' };
+    },
+
+    _renderDetailCompareColumnHeader(slot, companies, selectedCode, coverage_cd, selectedBySlot = {}) {
+        const meta = selectedCode ? this._getCompanyMeta(selectedCode, companies) : null;
+        const premiumText = this._getDetailComparePremiumText(selectedCode, coverage_cd);
+        const initialCondition = slot === 2 ? 'min' : (slot === 3 ? 'max' : null);
+        const columnTitle = this._getDetailCompareColumnTitle(slot, initialCondition);
+        const excludedCodes = [1, 2, 3]
+            .filter((s) => s !== slot)
+            .map((s) => selectedBySlot[s])
+            .filter(Boolean);
+        const noteHtml = (slot === 2 || slot === 3)
+            ? `<span class="detail-compare-col-note" id="detail_compare_col_${slot}_note"${columnTitle.note ? '' : ' hidden'}>${columnTitle.note || ''}</span>`
+            : '';
+        return `
+            <div class="detail-compare-header">
+                <div class="detail-compare-col-heading">
+                    <h3 class="detail-compare-col-title" id="detail_compare_col_${slot}_title">${columnTitle.title}</h3>
+                    ${noteHtml}
+                </div>
+                <div class="detail-compare-select-row">
+                    <select class="detail-compare-select" data-slot="${slot}" aria-label="${columnTitle.title} 보험사 선택">
+                        ${this._buildDetailCompareSelectOptions(companies, selectedCode, coverage_cd, false, excludedCodes)}
+                    </select>
+                    <strong class="detail-compare-premium" id="detail_compare_col_${slot}_premium">${premiumText}</strong>
+                </div>
+                <p class="detail-compare-product" id="detail_compare_col_${slot}_product">${selectedCode ? (meta?.product_name || '-') : '보험사를 선택해 주세요'}</p>
+            </div>
+        `;
+    },
+
+    _syncDetailCompareColumnTone(slot, company_code) {
+        const col = document.getElementById(`detail_compare_col_${slot}`);
+        if (!col) return;
+        const hasSelection = !!company_code;
+        col.classList.toggle('is-empty', !hasSelection);
+        col.classList.toggle('is-selected', hasSelection);
+    },
+
+    _syncDetailCompareSelectValue(slot, company_code) {
+        const select = document.querySelector(`.detail-compare-select[data-slot="${slot}"]`);
+        if (!select) return;
+        select.value = company_code || '';
+        this._setDetailCompareSelectLabels(select, false);
+    },
+
+    _updateDetailCompareColumn(slot, company_code) {
+        const body = document.getElementById(`detail_compare_col_${slot}_body`);
+        if (!body) return;
+        const coverage_cd = mmlfcp_state.get('detail_compare_coverage_cd');
+        body.innerHTML = this._renderCoverageDetailColumnBody(company_code, coverage_cd);
+
+        const meta = this._getCompanyMeta(company_code, this._getCompaniesWithCoverageDetail(coverage_cd));
+        const productEl = document.getElementById(`detail_compare_col_${slot}_product`);
+        if (productEl) {
+            productEl.textContent = company_code ? (meta.product_name || '-') : '보험사를 선택해 주세요';
+        }
+        const premiumEl = document.getElementById(`detail_compare_col_${slot}_premium`);
+        if (premiumEl) {
+            premiumEl.textContent = this._getDetailComparePremiumText(company_code, coverage_cd);
+        }
+        this._syncDetailCompareColumnTone(slot, company_code);
+        this._refreshDetailCompareMinHighlight();
+    },
+
+    _getDetailCompareColumnClass(company_code, slot) {
+        const tone = company_code ? 'is-selected' : 'is-empty';
+        return `detail-compare-col detail-compare-col--${slot} ${tone}`;
+    },
+
+    /**
+     * 비교상품 자동 선정
+     * - 비교상품1: 가장 저렴한 보험료 (선택 상품이 최저면 차순위)
+     * - 비교상품2: 가장 비싼 보험료 (선택 상품이 최고면 차순위)
+     */
+    _pickDetailCompareCompanies(selectedCode, companies, coverage_cd) {
+        const ranked = [...companies]
+            .map((c) => ({
+                company_code: c.company_code,
+                premium: Number(this._getCoveragePremiumByCompany(c.company_code, coverage_cd)) || 0,
+            }))
+            .sort((a, b) => {
+                if (a.premium !== b.premium) return a.premium - b.premium;
+                return String(a.company_code).localeCompare(String(b.company_code));
+            });
+
+        const selected = ranked.find((c) => c.company_code === selectedCode)?.company_code
+            || ranked[0]?.company_code
+            || '';
+
+        const cheapest = ranked.find((c) => c.company_code !== selected)?.company_code || '';
+        const expensive = [...ranked]
+            .reverse()
+            .find((c) => c.company_code !== selected && c.company_code !== cheapest)
+            ?.company_code || '';
+
+        return {
+            compare1: selected,
+            compare2: cheapest,
+            compare3: expensive,
+        };
+    },
+
+    //플랜 상품보별보험료 상세보기 — 3개 보험사 담보 비교
     renderInsurPremiumsDetail(company_code, coverage_cd, page = 1) {
         const container = document.getElementById('priceList');
         if (!container) return;
 
-        const product_insur_premiums = mmlfcp_state.get('product_insur_premiums') || [];
+        const companies = this._getCompaniesWithCoverageDetail(coverage_cd);
+        const picked = this._pickDetailCompareCompanies(company_code, companies, coverage_cd);
+        const compare1 = picked.compare1;
+        const compare2 = picked.compare2;
+        const compare3 = picked.compare3;
 
-        let targetList = [];
-        let product_name = '';
+        mmlfcp_state.set('detail_compare_company_1', compare1);
+        mmlfcp_state.set('detail_compare_coverage_cd', coverage_cd);
+        mmlfcp_state.set('detail_compare_company_2', compare2);
+        mmlfcp_state.set('detail_compare_company_3', compare3);
 
-        targetList = product_insur_premiums.filter(r => r.company_code == company_code);
-        product_name = targetList[0]?.product_name.trim() || '';
+        const planCoverages = mmlfcp_state.get('plan_coverages') || [];
+        const coverageName = planCoverages.find((c) => String(c.coverage_cd) === String(coverage_cd))?.coverage_name || '담보 상세';
+        const selectedBySlot = { 1: compare1, 2: compare2, 3: compare3 };
 
         container.innerHTML = `
-        <div style="font-size: 1.6rem; margin: 35px 0px 10px 0px; font-weight: 500;">${product_name}</div>
-        <div style="margin: 0; overflow: scroll; height: 200px;">
-        <table>
-            <tbody>
-            ${targetList.map(insu_product =>
-            insu_product.detailList
-                // ✅ coverage_cd 조건 추가
-                .filter(detail => detail.coverage_cd == coverage_cd)
-                .map(detail => `
-                            <tr>
-                                <td style="font-size: 1.0rem; padding: 25px 0px 10px 0px;">
-                                    <h3 id="${company_code}_${detail.coverage_cd}" style="color: #2f88ff;">
-                                        ${detail.insur_nm} : ${app.formatNumber(detail.contract_amount)}만원
-                                        (${app.formatNumber(detail.premium)}원)(${detail.pay_term})
-                                    </h3>
-                                    <br />
-                                    ${(detail.insur_bojang || "").replace(/(?:\r\n|\r|\n)/g, '<br />')}
-                                </td>
-                            </tr>
-                        `).join('')
-        ).join('')}
-         </tbody>
-    </table>
+        <div class="detail-compare-modal">
+            <div class="detail-compare-toolbar">
+                <div class="detail-compare-heading">
+                    <span class="detail-compare-kicker">보험사별 담보 비교</span>
+                    <h2 class="detail-compare-title">${coverageName}</h2>
+                    <p class="detail-compare-desc">보험사를 바꿔 가며 같은 담보의 보험료와 보장내용을 나란히 비교하세요.</p>
+                </div>
+                <button type="button" class="btn-priceList-cancel">닫기</button>
+            </div>
+            <div class="detail-compare-grid">
+                <section class="${this._getDetailCompareColumnClass(compare1, 1)}" id="detail_compare_col_1">
+                    ${this._renderDetailCompareColumnHeader(1, companies, compare1, coverage_cd, selectedBySlot)}
+                    <div class="detail-compare-body" id="detail_compare_col_1_body">
+                        ${this._renderCoverageDetailColumnBody(compare1, coverage_cd)}
+                    </div>
+                </section>
+                <section class="${this._getDetailCompareColumnClass(compare2, 2)}" id="detail_compare_col_2">
+                    ${this._renderDetailCompareColumnHeader(2, companies, compare2, coverage_cd, selectedBySlot)}
+                    <div class="detail-compare-body" id="detail_compare_col_2_body">
+                        ${this._renderCoverageDetailColumnBody(compare2, coverage_cd)}
+                    </div>
+                </section>
+                <section class="${this._getDetailCompareColumnClass(compare3, 3)}" id="detail_compare_col_3">
+                    ${this._renderDetailCompareColumnHeader(3, companies, compare3, coverage_cd, selectedBySlot)}
+                    <div class="detail-compare-body" id="detail_compare_col_3_body">
+                        ${this._renderCoverageDetailColumnBody(compare3, coverage_cd)}
+                    </div>
+                </section>
+            </div>
         </div>
+        `;
 
-    <div class="button-area">
-        <button type="button" class="btn-priceList-cancel">닫기</button>
-    </div>
-    `;
+        this._refreshDetailCompareMinHighlight();
     },
-
 
     //플랜별 가입금액 변경
     updatePlanCoverageAmount(coverage_cd, change_coverage_amount) {
@@ -2492,8 +2881,8 @@ export const Controller = {
                 const premium = em.textContent;
                 if (premium == 0) return;
 
-                this.show_layer();
                 this.renderInsurPremiumsDetail(company_code, coverage_cd, _state.current_page || 1);
+                this.show_layer();
             });
         }
 
@@ -2553,19 +2942,83 @@ export const Controller = {
 
 
 
+        // 담보 상세 비교 — 목록 열 때 보험료 표시 / 닫히면 보험사명만
+        container.addEventListener("focusin", (e) => {
+            const select = e.target.closest('.detail-compare-select');
+            if (!select) return;
+            this._setDetailCompareSelectLabels(select, true);
+        });
+
+        container.addEventListener("mousedown", (e) => {
+            const select = e.target.closest('.detail-compare-select');
+            if (!select) return;
+            this._setDetailCompareSelectLabels(select, true);
+        });
+
+        container.addEventListener("focusout", (e) => {
+            const select = e.target.closest('.detail-compare-select');
+            if (!select) return;
+            requestAnimationFrame(() => {
+                if (document.activeElement === select) return;
+                this._setDetailCompareSelectLabels(select, false);
+            });
+        });
+
+        // 담보 상세 비교 — 보험사 선택
+        container.addEventListener("change", (e) => {
+            const select = e.target.closest('.detail-compare-select');
+            if (!select) return;
+            const slot = Number(select.dataset.slot);
+            const company_code = select.value;
+
+            // 다른 카드에서 이미 선택된 보험사는 선택 불가
+            if (company_code) {
+                const taken = [1, 2, 3]
+                    .filter((s) => s !== slot)
+                    .map((s) => mmlfcp_state.get(`detail_compare_company_${s}`) || '')
+                    .filter(Boolean);
+                if (taken.includes(company_code)) {
+                    select.value = mmlfcp_state.get(`detail_compare_company_${slot}`) || '';
+                    this._refreshDetailCompareSelectAvailability();
+                    return;
+                }
+            }
+
+            if (slot === 1) {
+                const coverage_cd = mmlfcp_state.get('detail_compare_coverage_cd');
+                const companies = this._getCompaniesWithCoverageDetail(coverage_cd);
+                const picked = this._pickDetailCompareCompanies(company_code, companies, coverage_cd);
+                mmlfcp_state.set('detail_compare_company_1', picked.compare1);
+                mmlfcp_state.set('detail_compare_company_2', picked.compare2);
+                mmlfcp_state.set('detail_compare_company_3', picked.compare3);
+                this._updateDetailCompareColumn(1, picked.compare1);
+                this._syncDetailCompareSelectValue(2, picked.compare2);
+                this._syncDetailCompareSelectValue(3, picked.compare3);
+                this._updateDetailCompareColumn(2, picked.compare2);
+                this._updateDetailCompareColumn(3, picked.compare3);
+                this._setDetailCompareSelectLabels(select, false);
+                document.querySelectorAll('.detail-compare-select').forEach((el) => {
+                    this._setDetailCompareSelectLabels(el, false);
+                });
+                return;
+            }
+
+            if (slot === 2) mmlfcp_state.set('detail_compare_company_2', company_code);
+            if (slot === 3) mmlfcp_state.set('detail_compare_company_3', company_code);
+            this._updateDetailCompareColumn(slot, company_code);
+            this._setDetailCompareSelectLabels(select, false);
+        });
+
         //닫기 버튼 클릭 이벤트
         container.addEventListener("click", (e) => {
             const closeBtn = e.target.closest('.btn-priceList-cancel');
             if (closeBtn) {
                 const modal = document.querySelector('.modal02');
-                const bottomContent = document.querySelector(".bottom-content .bottom");
                 if (!modal) {
                     console.warn("modal02 요소가 아직 없습니다.");
                     return;
                 }
-                modal.style.display = 'none';
-                if (bottomContent) bottomContent.style.display = "block";
-                document.body.classList.remove('modal');
+                this._closeModal02(modal);
             }
         });
 
@@ -2574,18 +3027,21 @@ export const Controller = {
             const bgEl = e.target.closest('.modal02 .bg, .modal03 .bg');
             if (!bgEl) return;
 
-            const contentList = bgEl.querySelector('.content_list');
-            const content = bgEl.querySelector('.content');
-            if ((contentList && contentList.contains(e.target)) || (content && content.contains(e.target))) {
-                return;
-            }
+            // modal02는 전체화면 content가 area 안에 있으므로 bg 클릭만 닫기
+            if (e.target !== bgEl && !e.target.classList.contains('bg')) return;
 
             const modal = bgEl.closest('.modal02, .modal03');
-            if (modal) modal.style.display = 'none';
+            if (!modal) return;
 
-            const bottomContent = document.querySelector('.bottom-content .bottom');
-            if (bottomContent) bottomContent.style.display = 'block';
-            document.body.classList.remove('modal');
+            if (modal.classList.contains('modal02')) {
+                this._closeModal02(modal);
+            } else {
+                modal.style.display = 'none';
+                const bottomContent = document.querySelector('.bottom-content .bottom');
+                if (bottomContent) bottomContent.style.display = 'block';
+                document.body.classList.remove('modal');
+                document.body.style.overflow = '';
+            }
         });
     },
 
@@ -2713,35 +3169,58 @@ export const Controller = {
     show_layer() {
         this.wrapWindowByMask();
         const modal = document.querySelector('.modal02');
-        const contentList = document.querySelector('.content_list');
-        if (!modal || !contentList) return;
+        if (!modal) return;
+
+        const bg = modal.querySelector('.bg');
+        const area = modal.querySelector('.area');
+        const contentList = modal.querySelector('.content_list');
 
         modal.style.display = 'block';
         modal.style.opacity = '1';
+        modal.style.zIndex = '1000000';
 
-        const windowHeight = window.innerHeight;
-        const windowWidth = window.innerWidth;
-        const scrollTop = window.scrollY;
-        const scrollLeft = window.scrollX;
-
-        contentList.style.position = 'absolute';
-        contentList.style.top = `${Math.max(0, ((windowHeight - contentList.offsetHeight) / 2) + scrollTop - 100)}px`;
-        contentList.style.left = `${Math.max(0, ((windowWidth - contentList.offsetWidth) / 2) + scrollLeft)}px`;
-        contentList.style.display = 'block';
+        if (bg) {
+            bg.style.zIndex = '1';
+        }
+        if (area) {
+            area.style.zIndex = '2';
+            area.style.pointerEvents = 'none';
+        }
+        if (contentList) {
+            contentList.style.zIndex = '3';
+            contentList.style.pointerEvents = 'auto';
+            contentList.style.position = 'relative';
+            contentList.style.width = '100%';
+            contentList.style.height = '100%';
+            contentList.style.display = 'flex';
+            contentList.style.flexDirection = 'column';
+        }
 
         document.body.classList.add('modal');
+        document.body.style.overflow = 'hidden';
+    },
 
+    _closeModal02(modal) {
+        if (!modal) return;
+
+        modal.style.display = 'none';
+
+        const bottomContent = document.querySelector('.bottom-content .bottom');
+        if (bottomContent) bottomContent.style.display = 'block';
+
+        document.body.classList.remove('modal');
+        document.body.style.overflow = '';
     },
 
     wrapWindowByMask() {
         const mask = document.querySelector('.modal02');
         if (!mask) return;
 
-        const maskHeight = document.documentElement.scrollHeight;
-        const maskWidth = window.innerWidth;
-
-        mask.style.width = `${maskWidth}px`;
-        mask.style.height = `${maskHeight}px`;
+        mask.style.width = '100vw';
+        mask.style.height = '100vh';
+        mask.style.position = 'fixed';
+        mask.style.top = '0';
+        mask.style.left = '0';
     },
 
     show_content() {
