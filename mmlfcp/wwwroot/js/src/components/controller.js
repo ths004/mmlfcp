@@ -15,6 +15,9 @@ export const Controller = {
 
         this.ensurePlansType();
 
+        //미래에셋 생명 ui 관련 추가
+        this.ensureSelectRules();
+
         // 1. 기초 데이터 동기화 (기존 데이터나 input의 생년월일로부터 나이 계산 포함)
         this.syncStateAndUI();
 
@@ -100,6 +103,24 @@ export const Controller = {
         }
     },
 
+    ensureSelectRules() {
+        const ga_id = mmlfcp_state.set('ga_id');
+
+        if (ga_id !== 'A266') return;
+        const selInsuranceType = document.getElementById('selInsuranceType');
+
+        if (selInsuranceType) {
+            // 1) 손보(F)로 값 강제 고정
+            selInsuranceType.value = 'F';
+            // 2) LF(생손보), L(생보) 옵션을 찾아 선택 불가능하게(disabled) 처리
+            Array.from(selInsuranceType.options).forEach(option => {
+                if (option.value === 'LF' || option.value === 'L') {
+                    //option.disabled = true;
+                    option.style.display = 'none'; // 아예 숨기고 싶을 경우
+                }
+            });
+        }
+    },
 
 
     //0) 공통 유틸 : 페이징
@@ -587,11 +608,30 @@ export const Controller = {
         mmlfcp_state.set('plan_coverages', planCoverages);
     },
 
+
+    setPlanRules() {
+        const insurance_type = mmlfcp_state.get('insurance_type') || '';
+        //생손보
+        if (insurance_type === 'LF') {
+            mmlfcp_state.set('plan_type_id', '01');
+        }
+        //손보
+        else if (insurance_type === 'F') {
+            mmlfcp_state.set('plan_type_id', '06');
+        }
+        //생보
+        else if (insurance_type === 'L') {
+            mmlfcp_state.set('plan_type_id', '09');
+        }
+
+    },
+
     /**
      * 상품유형 셀렉트 박스 렌더링
      * - plan_type 기준으로 중복 제거
      * - 각 option에 data-plan_id 부여
      */
+
     renderPlanOptions() {
         const selectEl = document.getElementById('selProductsGroupCD');
         if (!selectEl) return;
@@ -2401,6 +2441,8 @@ export const Controller = {
 
             //생손보 유형 타입 저장
             mmlfcp_state.set('insurance_type', insurSel.value);
+
+            this.setPlanRules();
 
             // 1) 옵션을 그리면서 알아서 첫 번째꺼 선택 & State 업데이트까지 함
             this.renderPlanOptions();
