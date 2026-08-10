@@ -43,12 +43,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // ⭐ 추가: URL에서 받은 path 값을 state에 저장
-        if (path) {
-            mmlfcp_state.set('url_path', path);
-        }
-        else {
-            mmlfcp_state.set('url_path', 'lifefire');
-        }
+        const finalPath = (authResult.ga_id === 'A266') ? 'fire' : (path || 'lifefire');
+        mmlfcp_state.set('url_path', finalPath);
+
 
         //localstorage 일부 제거
         Controller.resetBeforeSearch();
