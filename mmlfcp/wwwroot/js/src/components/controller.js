@@ -104,8 +104,7 @@ export const Controller = {
     },
 
     ensureSelectRules() {
-        const ga_id = mmlfcp_state.set('ga_id');
-
+        const ga_id = mmlfcp_state.get('ga_id') || '';
         if (ga_id !== 'A266') return;
         const selInsuranceType = document.getElementById('selInsuranceType');
 
