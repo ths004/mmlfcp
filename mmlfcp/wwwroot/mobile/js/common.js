@@ -1,4 +1,4 @@
-﻿var app = {
+var app = {
   _monthDiff: function (birthDate, nowdate) {
     var months = nowdate.getMonth() - birthDate.getMonth() + (12 * (nowdate.getFullYear() - birthDate.getFullYear()));
 
@@ -78,6 +78,21 @@
 
   _removeSpaces(str) {
     return str.replace(/\s/g, "");
+  },
+
+  /** YYYYMMDD 또는 YYYY-MM-DD → YYYYMMDD */
+  _toYyyymmdd: function (value) {
+    const s = String(value ?? "").trim();
+    if (/^\d{8}$/.test(s)) return s;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(/-/g, "");
+    return "";
+  },
+
+  /** YYYYMMDD → date input 값(YYYY-MM-DD) */
+  _toDateInputValue: function (yyyymmdd) {
+    const s = this._toYyyymmdd(yyyymmdd);
+    if (!s || !this._isValidDate(s)) return "";
+    return s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6, 8);
   },
 
 };

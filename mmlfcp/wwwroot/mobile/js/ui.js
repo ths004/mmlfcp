@@ -84,19 +84,47 @@ const selectProduct = (e) => {
 
 	_wrap.find('.select-btn').removeClass('selected');
 	$(e).addClass('selected')
-
-	_wrap.find('.set-btn').text($(e).text());
 	_wrap.removeClass('active');
 	$('.container').removeClass('overlay');
 
 
-	// 사용자 정의 속성(plan_type)을 안전하게 가져옵니다.
 	const plan_type = e.getAttribute('plan_type');
 	state.plan_type = plan_type;
+
+	if (typeof state.getUniquePlanTypes === 'function') {
+		const matched = state.getUniquePlanTypes().find((p) => String(p.plan_type) === String(plan_type));
+		if (matched) {
+			state.plan_name = matched.plan_name;
+			state.plan_category = matched.categoryKey;
+			if (matched.insurance_type) {
+				const t = typeof state.normalizeInsuranceType === "function"
+					? state.normalizeInsuranceType(matched.insurance_type)
+					: String(matched.insurance_type).trim().toUpperCase();
+				if (t === "L" || t === "F") state.insurance_type = t;
+			}
+		}
+	}
+
+	const selectedProductEl = document.getElementById("selected_product");
+	const label = (typeof state.formatPlanPickerTriggerText === 'function' && state.plan_name)
+		? state.formatPlanPickerTriggerText(
+			state.plan_category,
+			typeof state.formatPlanTypeLabel === 'function'
+				? state.formatPlanTypeLabel(state.plan_name)
+				: $(e).text().trim()
+		)
+		: $(e).text().trim();
+
+	_wrap.find('.set-btn').text(label);
+	if (selectedProductEl) {
+		selectedProductEl.setAttribute("plan_type", plan_type);
+		selectedProductEl.textContent = label;
+	}
 
 	if (typeof state.reset_menu === 'function') state.reset_menu();
 	if (typeof state.setPaymentExpirationCD === 'function') state.setPaymentExpirationCD(plan_type);
 	if (typeof state.setPlanIdByCurrentState === 'function') state.setPlanIdByCurrentState();
+	if (typeof state.scheduleAutoSearch === 'function') state.scheduleAutoSearch({ delay: 160 });
 }
 
 const selectExpiration = (e) => {
@@ -126,6 +154,7 @@ const selectExpiration = (e) => {
 	// 후속 설정 초기화 (함수 존재 여부 체크 후 호출)
 	if (typeof state.reset_menu === 'function') state.reset_menu();
 	if (typeof state.setPlanIdByCurrentState === 'function') state.setPlanIdByCurrentState();
+	if (typeof state.scheduleAutoSearch === 'function') state.scheduleAutoSearch({ delay: 160 });
 }
 
 

@@ -1,9 +1,10 @@
 import { mmlfcp_state, _state, deepCopy } from '../core/state.js';
 import { apiService } from '../services/apiService.js';
-import { app } from '../utils/app.js';
+import { app } from '../utils/app.js?v=26.08.26.26';
 import { appConstants } from '../constants/constants.js';
-import { userController } from './userController.js';
+import { userController } from './userController.js?v=26.08.26.25';
 import { excelController } from './excelcontroller.js';
+import { compareView } from '../utils/compareView.js';
 
 
 export const Controller = {
@@ -15,11 +16,11 @@ export const Controller = {
 
         this.ensurePlansType();
 
-        //미래에셋 생명 ui 관련 추가
-        this.ensureSelectRules();
-
         // 1. 기초 데이터 동기화 (기존 데이터나 input의 생년월일로부터 나이 계산 포함)
         this.syncStateAndUI();
+
+        // GA별 생손보 유형 제한 (A266 → 손보만)
+        this.applyGaInsuranceTypeRestriction();
 
         // 2. 세팅된 State를 바탕으로 UI 렌더링
         this.renderPlanOptions();           // 상품유형 리스트
@@ -79,7 +80,16 @@ export const Controller = {
     //생손보 ,손보일때마다 type 정해주기
     ensurePlansType() {
         const url_path = mmlfcp_state.get('url_path');
-        // console.log({ url_path: url_path });
+        // GA A266: 손보 전용 (path와 무관)
+        if (this.isFireOnlyGa()) {
+            _state.plan_id = "000000111041";
+            _state.plan_type_id = "06";
+            _state.plan_type_name = "손보 종합(무해지)";
+            _state.plan_payment_expiration_cd = "01";
+            _state.plan_payment_expiration_name = "20년/100세";
+            _state.insurance_type = "F";
+            return;
+        }
 
         //lifefire -> 생손보일때
         if (url_path === 'lifefire') {
@@ -103,23 +113,56 @@ export const Controller = {
         }
     },
 
-    ensureSelectRules() {
-        const ga_id = mmlfcp_state.get('ga_id') || '';
-        if (ga_id !== 'A266') return;
-        const selInsuranceType = document.getElementById('selInsuranceType');
-
-        if (selInsuranceType) {
-            // 1) 손보(F)로 값 강제 고정
-            selInsuranceType.value = 'F';
-            // 2) LF(생손보), L(생보) 옵션을 찾아 선택 불가능하게(disabled) 처리
-            Array.from(selInsuranceType.options).forEach(option => {
-                if (option.value === 'LF' || option.value === 'L') {
-                    //option.disabled = true;
-                    option.style.display = 'none'; // 아예 숨기고 싶을 경우
-                }
-            });
-        }
+    /** GA 코드가 손보 전용인지 (A266) */
+    isFireOnlyGa() {
+        return String(mmlfcp_state.get('ga_id') || '').trim().toUpperCase() === 'A266';
     },
+
+    /**
+     * GA A266: 생손보 유형 셀렉트에 손보(F)만 표시하고 강제 적용
+     * @returns {boolean} 제한이 적용되었으면 true
+     */
+    applyGaInsuranceTypeRestriction() {
+        if (!this.isFireOnlyGa()) return false;
+
+        const insurSel = document.getElementById('selInsuranceType');
+        if (insurSel) {
+            Array.from(insurSel.options).forEach((opt) => {
+                if (opt.value !== 'F') opt.remove();
+            });
+            if (![...insurSel.options].some((o) => o.value === 'F')) {
+                const opt = document.createElement('option');
+                opt.value = 'F';
+                opt.textContent = '손보';
+                insurSel.appendChild(opt);
+            }
+            insurSel.value = 'F';
+            insurSel.disabled = true;
+            insurSel.title = '해당 GA는 손보만 조회할 수 있습니다.';
+            const insuranceTrigger = document.getElementById('insurancePickerTrigger');
+            if (insuranceTrigger) {
+                insuranceTrigger.disabled = true;
+                insuranceTrigger.title = insurSel.title;
+            }
+            this.syncHeaderSelectPicker('insurance');
+        }
+
+        mmlfcp_state.set('insurance_type', 'F');
+        // 손보 기본 상품/만기가 아니면 손보 기본으로 맞춤
+        if (mmlfcp_state.get('insurance_type') === 'F') {
+            const planType = mmlfcp_state.get('plan_type_id') || '';
+            // 생손보/생보 플랜 코드가 남아 있으면 손보 종합(무해지)로 교체
+            if (!planType || ['01', '02', '03', '04', '33', '34'].includes(planType)) {
+                mmlfcp_state.set('plan_type_id', _state.plan_type_id || '06');
+                mmlfcp_state.set('plan_type_name', _state.plan_type_name || '손보 종합(무해지)');
+                mmlfcp_state.set('plan_payment_expiration_cd', _state.plan_payment_expiration_cd || '01');
+                mmlfcp_state.set('plan_payment_expiration_name', _state.plan_payment_expiration_name || '20년/100세');
+                mmlfcp_state.set('plan_id', _state.plan_id || '');
+            }
+        }
+        return true;
+    },
+
 
 
     //0) 공통 유틸 : 페이징
@@ -136,20 +179,188 @@ export const Controller = {
         const area = document.getElementById('companyInfo');
         if (!area) return;
 
-        area.addEventListener("click", (e) => {
-            const openBtn = e.target.closest('.btn__product-info');
-            const closeBtn = e.target.closest('.btn-close__alert');
+        const BOX_SEL = '.alert__product-info, .alert__product_info';
 
-            if (openBtn) {
-                const box = openBtn.parentElement.querySelector('.alert__product_info, .alert__product-info');
-                if (box) box.classList.toggle("show");
-            } else if (closeBtn) {
-                const box = closeBtn.closest('.alert__product_info, .alert__product-info');
-                if (box) box.classList.remove("show");// 숨기기
+        const restoreProductInfoHome = (box) => {
+            if (!box) return;
+            const homeId = box.dataset.homeParentId;
+            const home = homeId ? document.getElementById(homeId) : null;
+            box.classList.remove('show');
+            box.style.top = '';
+            box.style.left = '';
+            box.style.visibility = '';
+            box.style.removeProperty('display');
+            box.removeAttribute('data-anchor-btn');
+            delete box.dataset.homeParentId;
+
+            // 원본 부모가 있으면 복귀, 없으면(재렌더 후 orphan) 제거
+            if (home && document.contains(home)) {
+                if (box.parentElement !== home) home.appendChild(box);
+            } else if (box.parentElement === document.body) {
+                box.remove();
+            }
+        };
+
+        const closeAllProductInfo = (except = null) => {
+            document.querySelectorAll(`${BOX_SEL}.show`).forEach((el) => {
+                if (except && el === except) return;
+                restoreProductInfoHome(el);
+            });
+            // body에 남은 비정상 orphan 정리
+            document.querySelectorAll(`body > ${BOX_SEL}`).forEach((el) => {
+                if (except && el === except) return;
+                if (!el.classList.contains('show')) {
+                    const homeId = el.dataset.homeParentId;
+                    const home = homeId ? document.getElementById(homeId) : null;
+                    if (!home || !document.contains(home)) el.remove();
+                }
+            });
+        };
+
+        const placeProductInfoBelow = (box, anchorBtn) => {
+            if (!box || !anchorBtn || !document.contains(anchorBtn)) return;
+
+            // Escape sticky stacking contexts (toolbar z-index) by mounting on body
+            const home = anchorBtn.parentElement;
+            if (home && !home.id) {
+                home.id = `product_info_home_${anchorBtn.id || Math.random().toString(36).slice(2, 8)}`;
+            }
+            if (home) box.dataset.homeParentId = home.id;
+            box.dataset.anchorBtn = anchorBtn.id || '';
+            if (box.parentElement !== document.body) {
+                document.body.appendChild(box);
+            }
+
+            box.classList.add('show');
+            box.style.visibility = 'hidden';
+
+            // Chrome: html zoom 과 fixed top/left 좌표계 불일치 보정
+            const placed = app.placeFixedBelowAnchor(box, anchorBtn, { gap: 6 });
+            if (!placed) {
+                restoreProductInfoHome(box);
+                return;
+            }
+
+            box.style.visibility = '';
+        };
+
+        area.addEventListener('click', (e) => {
+            const openBtn = e.target.closest('.btn__product-info');
+            if (!openBtn) return;
+
+            e.stopPropagation();
+            let box = openBtn.parentElement.querySelector(BOX_SEL);
+            // already moved to body from a previous open
+            if (!box && openBtn.id) {
+                box = document.querySelector(`body > ${BOX_SEL}[data-anchor-btn="${openBtn.id}"]`);
+            }
+            if (!box) return;
+
+            const willOpen = !box.classList.contains('show');
+            closeAllProductInfo(willOpen ? box : null);
+            if (willOpen) {
+                placeProductInfoBelow(box, openBtn);
+            } else {
+                restoreProductInfoHome(box);
             }
         });
 
+        // body로 옮겨진 팝오버의 닫기/바깥클릭 처리
+        document.addEventListener('click', (e) => {
+            const closeBtn = e.target.closest('.btn-close__alert');
+            if (closeBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const box = closeBtn.closest(BOX_SEL);
+                if (box) restoreProductInfoHome(box);
+                return;
+            }
+            if (e.target.closest(BOX_SEL) || e.target.closest('.btn__product-info')) return;
+            closeAllProductInfo();
+        });
+
+        // 리사이즈/스크롤 시에는 재배치하지 않고 닫기
+        // (재배치 시 앵커 유실 → 다른 버튼에 붙어 잘못 보이는 오류 방지)
+        const onViewportChange = () => closeAllProductInfo();
+        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('orientationchange', onViewportChange);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', onViewportChange);
+            window.visualViewport.addEventListener('scroll', onViewportChange);
+        }
+        area.addEventListener('scroll', onViewportChange, true);
+        document.addEventListener('scroll', onViewportChange, true);
+
         mmlfcp_state.set('companyInfoEventsBound', true);
+    },
+
+    /** body에 남은 상품정보 팝오버 전부 제거 */
+    cleanupOrphanProductInfo() {
+        document.querySelectorAll('body > .alert__product-info, body > .alert__product_info').forEach((el) => {
+            el.classList.remove('show');
+            el.remove();
+        });
+        document.querySelectorAll('#companyInfo .alert__product-info.show, #companyInfo .alert__product_info.show').forEach((el) => {
+            el.classList.remove('show');
+            el.style.top = '';
+            el.style.left = '';
+            el.style.visibility = '';
+        });
+    },
+
+    /**
+     * 상단 보험사 헤더(#companyInfo) ↔ 하단 보험료 목록(.table-area) 가로 스크롤 동기화
+     */
+    ensureCompanyTableScrollSync() {
+        if (mmlfcp_state.get('companyTableScrollSyncBound')) return;
+        const company = document.getElementById('companyInfo');
+        const table = document.querySelector('.product-table-wrap .table-area');
+        if (!company || !table) return;
+
+        let locking = false;
+        const syncFrom = (source, target) => {
+            if (locking) return;
+            if (target.scrollLeft === source.scrollLeft) return;
+            locking = true;
+            target.scrollLeft = source.scrollLeft;
+            locking = false;
+        };
+
+        table.addEventListener('scroll', () => syncFrom(table, company), { passive: true });
+        company.addEventListener('scroll', () => syncFrom(company, table), { passive: true });
+
+        // 헤더 위에서 가로 휠/트랙패드 → 하단 목록과 함께 이동
+        company.addEventListener('wheel', (e) => {
+            const absX = Math.abs(e.deltaX);
+            const absY = Math.abs(e.deltaY);
+            if (absX <= absY && !(e.shiftKey && absY > 0)) return;
+            const delta = absX > absY ? e.deltaX : e.deltaY;
+            if (!delta) return;
+            e.preventDefault();
+            table.scrollLeft += delta;
+            company.scrollLeft = table.scrollLeft;
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+            requestAnimationFrame(() => {
+                company.scrollLeft = table.scrollLeft;
+            });
+        });
+
+        mmlfcp_state.set('companyTableScrollSyncBound', true);
+    },
+
+    /** 렌더 후 가로 스크롤 위치 맞춤 (reset=true면 맨 앞으로) */
+    syncCompanyTableScroll(reset = false) {
+        const company = document.getElementById('companyInfo');
+        const table = document.querySelector('.product-table-wrap .table-area');
+        if (!company || !table) return;
+        if (reset) {
+            company.scrollLeft = 0;
+            table.scrollLeft = 0;
+            return;
+        }
+        company.scrollLeft = table.scrollLeft;
     },
 
     /**
@@ -195,14 +406,13 @@ export const Controller = {
         const allChk = document.getElementById("all");
         const assignChk = document.getElementById("assign");
         const notAssignChk = document.getElementById("not-assign");
-        const all_coverageChk = document.getElementById("all_checked");
+        const bulkSelect = document.getElementById("coverage_bulk_select");
 
         if (allChk) {
             allChk.checked = true;
             if (assignChk) assignChk.checked = false;
             if (notAssignChk) notAssignChk.checked = false;
-            if (all_coverageChk) all_coverageChk.checked = false;
-
+            if (bulkSelect) bulkSelect.value = "";
         }
     },
 
@@ -395,12 +605,13 @@ export const Controller = {
         //console.log('product_insur_premiums,', productList);
     },
 
-    sortCoverageProductList(productList, checkedId) {
+    sortCoverageProductList(productList, checkedId, direction = 'asc') {
 
         if (!Array.isArray(productList)) return false;
 
         // 🔥 기존 순서 복사 (변경 여부 비교용)
         const originalOrder = productList.map(p => p.company_code);
+        const dir = direction === 'desc' ? -1 : 1;
 
         productList.sort((a, b) => {
             const aChecked = a.DispValue === true;
@@ -426,8 +637,8 @@ export const Controller = {
                 // all이면 표시 여부 무시
             }
 
-            // 3️⃣ 표시된 것끼리는 보험료 오름차순
-            return aTotal - bTotal;
+            // 3️⃣ 표시된 것끼리는 보험료 합계 정렬 (오름/내림)
+            return (aTotal - bTotal) * dir;
         });
 
         // 🔥 실제 순서 변경 여부 체크
@@ -439,24 +650,58 @@ export const Controller = {
         return false;
     },
 
-    //정렬
-    setCoverageSortPremium() {
+    //정렬 (클릭 시 오름차순 ↔ 내림차순 토글)
+    _premiumSortDirection: 'asc',
+
+    setCoverageSortPremium({ toggle = false } = {}) {
         // 1. 기준이 될 체크된 보험사 ID 가져오기
         const checkedId = document.querySelector("input[type=checkbox][name='checked_list']:checked")?.id;
 
-        // 2. 상태값 가져오기 (죠르디러버님이 말씀하신 부분!)
+        // 2. 상태값 가져오기
         const coveragePremiums = mmlfcp_state.get('coverage_premiums') || [];
 
         // 3. 데이터가 없으면 실행 중단
         if (coveragePremiums.length === 0) return;
 
-        // 4. 정렬 실행 (기존 sortCoverageProductList 활용)
-        const isChanged = this.sortCoverageProductList(coveragePremiums, checkedId);
+        // 4. 툴바 정렬 버튼: 토글 / 그 외(출력 등): 현재 방향 유지(기본 오름차순)
+        if (toggle) {
+            this._premiumSortDirection = this._premiumSortDirection === 'asc' ? 'desc' : 'asc';
+        } else if (!this._premiumSortDirection) {
+            this._premiumSortDirection = 'asc';
+        }
 
-        // 5. 변경 사항이 있을 경우에만 상태 업데이트
-        if (isChanged) {
-            mmlfcp_state.set('coverage_premiums', coveragePremiums);
-            //console.log('[✅ 정렬 완료] coverage_premiums 상태가 업데이트되었습니다.');
+        const direction = this._premiumSortDirection;
+
+        // 5. 정렬 실행
+        this.sortCoverageProductList(coveragePremiums, checkedId, direction);
+
+        // 6. 항상 상태 반영 (이미 같은 방향이어도 렌더와 동기화)
+        mmlfcp_state.set('coverage_premiums', coveragePremiums);
+
+        // 7. 버튼 라벨에 정렬 방향 표시
+        const sortBtn = document.getElementById('sort_total_premium');
+        if (sortBtn) {
+            const arrow = direction === 'asc' ? '↑' : '↓';
+            sortBtn.setAttribute('data-sort-dir', direction);
+            sortBtn.setAttribute('aria-label', `보험료 합계 정렬 (${direction === 'asc' ? '낮은순' : '높은순'})`);
+            const label = sortBtn.querySelector('.toolbar-sort-label') || sortBtn;
+            // 버튼 텍스트 노드만 갱신 (아이콘 img 유지)
+            const textNode = Array.from(sortBtn.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+            if (textNode) {
+                textNode.textContent = ` 보험료 합계 정렬 ${arrow} `;
+            } else if (!sortBtn.querySelector('img')) {
+                sortBtn.textContent = `보험료 합계 정렬 ${arrow}`;
+            } else {
+                // img + 텍스트 혼합: 마지막 텍스트 보강
+                let found = false;
+                sortBtn.childNodes.forEach((n) => {
+                    if (n.nodeType === Node.TEXT_NODE && n.textContent.includes('보험료')) {
+                        n.textContent = ` 보험료 합계 정렬 ${arrow} `;
+                        found = true;
+                    }
+                });
+                if (!found) sortBtn.append(` ${arrow}`);
+            }
         }
     },
 
@@ -563,7 +808,7 @@ export const Controller = {
     },
 
 
-    //전체선택 체크 시 setting
+    //전체선택 / 전체해제 setting
     setPlanCoverage_Display_all(checked_val) {
         const planCoverages = mmlfcp_state.get('plan_coverages') || [];
         const coverage_premiums = mmlfcp_state.get('coverage_premiums') || [];
@@ -578,6 +823,49 @@ export const Controller = {
         this.setDetailListSelectedAll(coverage_premiums, checked_val);
 
         // 3️⃣ state 반영
+        mmlfcp_state.set('plan_coverages', planCoverages);
+        mmlfcp_state.set('coverage_premiums', coverage_premiums);
+    },
+
+    //조회 시점(또는 is_selected_coverage) 초기 선택값으로 복원
+    setPlanCoverage_Display_default() {
+        const planCoverages = mmlfcp_state.get('plan_coverages') || [];
+        const coverage_premiums = mmlfcp_state.get('coverage_premiums') || [];
+        const snapshot = mmlfcp_state.get('default_plan_snapshot') || {};
+        const snapCoverages = Array.isArray(snapshot.plan_coverages) ? snapshot.plan_coverages : [];
+        const snapSelectedMap = new Map(
+            snapCoverages.map(cov => [String(cov.coverage_cd), cov.plan_coverage_selected === 'checked'])
+        );
+
+        planCoverages.forEach(cov => {
+            const key = String(cov.coverage_cd);
+            let selected;
+            if (snapSelectedMap.has(key)) {
+                selected = snapSelectedMap.get(key);
+            } else if (cov.coverage_cd === 'aa00') {
+                selected = true;
+            } else {
+                selected = cov.is_selected_coverage === 'Y';
+            }
+            cov.plan_coverage_selected = selected ? 'checked' : '';
+        });
+
+        coverage_premiums.forEach(product => {
+            if (!Array.isArray(product.detailList)) return;
+            product.detailList.forEach(detail => {
+                const key = String(detail.coverage_cd);
+                let selected;
+                if (snapSelectedMap.has(key)) {
+                    selected = snapSelectedMap.get(key);
+                } else if (detail.coverage_cd === 'aa00') {
+                    selected = true;
+                } else {
+                    selected = detail.is_selected_coverage === 'Y';
+                }
+                detail.cover_selected = selected ? 'checked' : '';
+            });
+        });
+
         mmlfcp_state.set('plan_coverages', planCoverages);
         mmlfcp_state.set('coverage_premiums', coverage_premiums);
     },
@@ -607,76 +895,671 @@ export const Controller = {
         mmlfcp_state.set('plan_coverages', planCoverages);
     },
 
+    /**
+     * 상품유형 셀렉트 표시명 — 앞의 '생손보'/'손보'/'생보' 접두어 숨김
+     * (생손보를 생보보다 먼저 매칭해야 '생손보 …'가 '손보 …'로 깨지지 않음)
+     */
+    formatPlanTypeLabel(planName) {
+        return String(planName || '').replace(/^(생손보|손보|생보)\s+/, '');
+    },
 
-    setPlanRules() {
-        const insurance_type = mmlfcp_state.get('insurance_type') || '';
-        //생손보
-        if (insurance_type === 'LF') {
-            mmlfcp_state.set('plan_type_id', '01');
+    /** 상품군 표시 순서 */
+    PLAN_CATEGORY_ORDER: ['종합', '건강', '간편', '어린이·청소년', '기타'],
+
+    /**
+     * 표시용 상품명 → 상품군 키
+     * (간편실손은 '간편'이 아닌 '기타')
+     */
+    getPlanCategoryKey(displayLabel) {
+        const t = String(displayLabel || '').trim();
+        if (!t) return '기타';
+        if (/^간편실손/.test(t)) return '기타';
+        if (/^간편/.test(t)) return '간편';
+        // 여성건강(무해지) → 종합 카테고리
+        if (/^종합|^여성건강/.test(t) || /^\d+(\.\d+)+/.test(t)) return '종합';
+        if (/^건강/.test(t)) return '건강';
+        if (/^어린이|^청소년/.test(t)) return '어린이·청소년';
+        return '기타';
+    },
+
+    /** 세부 목록 표시명 — 간편군에서는 '간편' 접두 생략 */
+    formatPlanDetailLabel(displayLabel, categoryKey) {
+        const t = String(displayLabel || '');
+        if (categoryKey === '간편') {
+            return t.replace(/^간편\s*/, '') || t;
         }
-        //손보
-        else if (insurance_type === 'F') {
-            mmlfcp_state.set('plan_type_id', '06');
-        }
-        //생보
-        else if (insurance_type === 'L') {
-            mmlfcp_state.set('plan_type_id', '09');
+        return t;
+    },
+
+    /** 트리거 표시: 간편은 '군 · 세부', 그 외는 세부명만 */
+    formatPlanPickerTriggerText(categoryKey, displayLabel) {
+        const detail = this.formatPlanDetailLabel(displayLabel, categoryKey);
+        if (!detail) return categoryKey || '상품 선택';
+        if (categoryKey === '간편') return `간편 · ${detail}`;
+        return detail;
+    },
+
+    /** 여성 전용 상품유형 여부 (남성 선택 시 목록에서 숨김) */
+    isFemaleOnlyPlan(plan) {
+        const type = String(plan?.plan_type ?? '');
+        if (type === '08') return true; // 여성건강(무해지)
+        const label = String(
+            plan?.displayLabel
+            || this.formatPlanTypeLabel(plan?.plan_name)
+            || plan?.plan_name
+            || ''
+        ).trim();
+        return /^여성/.test(label);
+    },
+
+    /** 손보(F) 기본 상품유형 — 종합(무해지) */
+    applyFireDefaultPlanType() {
+        const plans = this.getUniquePlansForInsurance();
+        const preferred = plans.find((p) => String(p.plan_type) === '06')
+            || plans.find((p) => /^종합\s*\(무해지\)/.test(String(p.displayLabel || '')));
+
+        if (preferred) {
+            mmlfcp_state.set('plan_type_id', preferred.plan_type);
+            mmlfcp_state.set('plan_type_name', preferred.plan_name || '손보 종합(무해지)');
+            mmlfcp_state.set('plan_category', preferred.categoryKey || '종합');
+            return;
         }
 
+        mmlfcp_state.set('plan_type_id', '06');
+        mmlfcp_state.set('plan_type_name', '손보 종합(무해지)');
+        mmlfcp_state.set('plan_category', '종합');
+    },
+
+    /** 현재 보험유형의 고유 상품유형 목록 */
+    getUniquePlansForInsurance() {
+        const plans = mmlfcp_state.getPlans();
+        const insurance_type = mmlfcp_state.get('insurance_type');
+        const gender = mmlfcp_state.get('gender')
+            || document.getElementById('gender')?.value
+            || '';
+        const filteredPlans = plans.filter(p => p.insurance_type === insurance_type);
+        let unique = [...new Map(filteredPlans.map(p => [p.plan_type, p])).values()].map((plan) => {
+            const label = this.formatPlanTypeLabel(plan.plan_name);
+            return {
+                ...plan,
+                displayLabel: label,
+                categoryKey: this.getPlanCategoryKey(label),
+            };
+        });
+        // 남성: 여성 관련 상품유형 숨김
+        if (gender === 'M') {
+            unique = unique.filter((p) => !this.isFemaleOnlyPlan(p));
+        }
+        return unique;
     },
 
     /**
-     * 상품유형 셀렉트 박스 렌더링
-     * - plan_type 기준으로 중복 제거
-     * - 각 option에 data-plan_id 부여
+     * 상품 유형 단일 피커 렌더링
+     * - 숨은 select 동기화 (기존 로직 호환)
+     * - 가로 상품군 + 세로 세부 목록
      */
-
     renderPlanOptions() {
         const selectEl = document.getElementById('selProductsGroupCD');
+        const valueEl = document.getElementById('planPickerValue');
         if (!selectEl) return;
 
-        const plans = mmlfcp_state.getPlans();
-        const insurance_type = mmlfcp_state.get('insurance_type');
-        let plan_type = mmlfcp_state.get('plan_type_id'); // State의 현재 값
+        const uniquePlanTypes = this.getUniquePlansForInsurance();
+        this._planPickerPlans = uniquePlanTypes;
 
-        // 1) 보험유형 필터링 및 중복 제거
-        const filteredPlans = plans.filter(p => p.insurance_type === insurance_type);
-        const uniquePlanTypes = [...new Map(filteredPlans.map(p => [p.plan_type, p])).values()];
-
-        selectEl.innerHTML = '';
-
-        // 2) ⭐ [보완] 현재 필터링된 목록에 savedPlanTypeId가 실제로 존재하는지 확인
+        let plan_type = mmlfcp_state.get('plan_type_id');
         const isExist = uniquePlanTypes.some(p => p.plan_type == plan_type);
-
-        // 존재하지 않거나 값이 없다면, '무조건 첫 번째' 원칙에 따라 초기화 대상임
         if (!isExist) {
             plan_type = null;
         }
 
+        // 손보: 유효한 선택이 없으면 종합(무해지) 우선
+        if (!plan_type && mmlfcp_state.get('insurance_type') === 'F') {
+            const fireDefault = uniquePlanTypes.find((p) => String(p.plan_type) === '06')
+                || uniquePlanTypes.find((p) => /^종합\s*\(무해지\)/.test(String(p.displayLabel || '')));
+            if (fireDefault) {
+                plan_type = fireDefault.plan_type;
+            }
+        }
+
+        let categoryKey = mmlfcp_state.get('plan_category');
+        if (plan_type) {
+            const matched = uniquePlanTypes.find(p => p.plan_type == plan_type);
+            categoryKey = matched?.categoryKey || categoryKey;
+        }
+        const availableCategories = this.PLAN_CATEGORY_ORDER.filter(
+            (key) => uniquePlanTypes.some((p) => p.categoryKey === key)
+        );
+        if (!categoryKey || !availableCategories.includes(categoryKey)) {
+            categoryKey = availableCategories[0] || '기타';
+        }
+        mmlfcp_state.set('plan_category', categoryKey);
+
+        // 숨은 select: 전체 상품유형 유지 (값 조회용)
+        selectEl.innerHTML = '';
         uniquePlanTypes.forEach((plan, index) => {
             const option = document.createElement('option');
             option.value = plan.plan_type;
-            option.textContent = plan.plan_name; // 필드명 확인 필요!
+            option.dataset.planName = plan.plan_name || '';
+            option.dataset.category = plan.categoryKey;
+            option.textContent = this.formatPlanDetailLabel(plan.displayLabel, plan.categoryKey);
 
-            // 3) 선택 로직 적용
             if (plan_type && plan.plan_type == plan_type) {
                 option.selected = true;
                 mmlfcp_state.set('plan_type_id', plan.plan_type);
                 mmlfcp_state.set('plan_type_name', plan.plan_name);
-            }
-            else if (!plan_type && index === 0) {
-                // 찾는 값이 없거나 처음이면 무조건 첫 번째 항목 선택
+            } else if (!plan_type && index === 0) {
                 option.selected = true;
-                // ⭐ [핵심] 첫 번째가 선택되었음을 State에도 즉시 알려줌 (만기 렌더링 등을 위해)
                 mmlfcp_state.set('plan_type_id', plan.plan_type);
-                mmlfcp_state.set('plan_type_name', option.textContent);
+                mmlfcp_state.set('plan_type_name', plan.plan_name);
+                categoryKey = plan.categoryKey;
+                mmlfcp_state.set('plan_category', categoryKey);
             }
             selectEl.appendChild(option);
         });
 
-        // 4) UI 강제 동기화
         if (selectEl.options.length > 0) {
             selectEl.value = mmlfcp_state.get('plan_type_id');
+        }
+
+        const selected = uniquePlanTypes.find(p => p.plan_type == mmlfcp_state.get('plan_type_id'));
+        if (valueEl && selected) {
+            valueEl.textContent = this.formatPlanPickerTriggerText(selected.categoryKey, selected.displayLabel);
+        } else if (valueEl) {
+            valueEl.textContent = '상품 선택';
+        }
+
+        this.renderPlanPickerList();
+        this.fitProductTypeSelectWidth();
+    },
+
+    /**
+     * 상품군 가로 × 세부 세로 — table로 격자/라인 유지, 항목 1줄·왼쪽 정렬
+     */
+    renderPlanPickerList() {
+        const listEl = document.getElementById('planPickerList');
+        if (!listEl) return;
+
+        const plans = this._planPickerPlans || this.getUniquePlansForInsurance();
+        const categories = this.PLAN_CATEGORY_ORDER.filter(
+            (key) => plans.some((p) => p.categoryKey === key)
+        );
+        const columns = categories.map((category) => ({
+            category,
+            items: plans.filter((p) => p.categoryKey === category),
+        }));
+        const selectedType = String(mmlfcp_state.get('plan_type_id') || '');
+        const maxRows = columns.reduce((max, col) => Math.max(max, col.items.length), 0);
+
+        listEl.innerHTML = '';
+
+        const table = document.createElement('table');
+        table.className = 'plan-picker-table';
+
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        columns.forEach(({ category }) => {
+            const th = document.createElement('th');
+            th.scope = 'col';
+            th.textContent = category;
+            headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        for (let row = 0; row < maxRows; row += 1) {
+            const tr = document.createElement('tr');
+            columns.forEach(({ category, items }) => {
+                const td = document.createElement('td');
+                const plan = items[row];
+                if (plan) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'plan-picker-item'
+                        + (String(plan.plan_type) === selectedType ? ' is-selected' : '');
+                    btn.setAttribute('role', 'option');
+                    btn.setAttribute(
+                        'aria-selected',
+                        String(plan.plan_type) === selectedType ? 'true' : 'false'
+                    );
+                    btn.dataset.planType = plan.plan_type;
+                    btn.dataset.planName = plan.plan_name || '';
+                    btn.dataset.category = plan.categoryKey;
+                    btn.textContent = this.formatPlanDetailLabel(plan.displayLabel, category);
+                    td.appendChild(btn);
+                } else {
+                    td.className = 'is-empty';
+                    td.innerHTML = '&nbsp;';
+                }
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        listEl.appendChild(table);
+
+        const selectedBtn = listEl.querySelector('.plan-picker-item.is-selected');
+        if (selectedBtn) {
+            selectedBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+    },
+
+    ensurePlanPickerBackdrop() {
+        return this.ensureHeaderMenuBackdrop();
+    },
+
+    ensureHeaderMenuBackdrop() {
+        let backdrop = document.getElementById('planPickerBackdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.id = 'planPickerBackdrop';
+            backdrop.className = 'plan-picker-backdrop';
+            backdrop.hidden = true;
+            backdrop.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(backdrop);
+            backdrop.addEventListener('click', () => {
+                this.closeAllHeaderPickers();
+            });
+        }
+        return backdrop;
+    },
+
+    /** 헤더 커스텀 피커 정의 (숨은 select와 동기화) */
+    HEADER_SELECT_PICKERS: [
+        {
+            key: 'gender',
+            selectId: 'gender',
+            pickerId: 'genderPicker',
+            triggerId: 'genderPickerTrigger',
+            valueId: 'genderPickerValue',
+            panelId: 'genderPickerPanel',
+            listId: 'genderPickerList',
+        },
+        {
+            key: 'insurance',
+            selectId: 'selInsuranceType',
+            pickerId: 'insurancePicker',
+            triggerId: 'insurancePickerTrigger',
+            valueId: 'insurancePickerValue',
+            panelId: 'insurancePickerPanel',
+            listId: 'insurancePickerList',
+        },
+        {
+            key: 'payterm',
+            selectId: 'selPaymentExpirationCD',
+            pickerId: 'paytermPicker',
+            triggerId: 'paytermPickerTrigger',
+            valueId: 'paytermPickerValue',
+            panelId: 'paytermPickerPanel',
+            listId: 'paytermPickerList',
+        },
+    ],
+
+    getHeaderSelectPickerConfig(selectIdOrKey) {
+        return this.HEADER_SELECT_PICKERS.find(
+            (c) => c.selectId === selectIdOrKey || c.key === selectIdOrKey
+        ) || null;
+    },
+
+    /**
+     * 헤더 목록 열림 시 배경 블러
+     */
+    setHeaderMenuBackdrop(open, options = {}) {
+        const backdrop = this.ensureHeaderMenuBackdrop();
+        const interactive = options.interactive !== false;
+        const owner = options.owner || '';
+
+        if (open) {
+            this._headerBackdropOwner = owner;
+            backdrop.hidden = false;
+            backdrop.classList.toggle('is-interactive', interactive);
+            backdrop.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('header-menu-open');
+            return;
+        }
+
+        if (owner && this._headerBackdropOwner && this._headerBackdropOwner !== owner) {
+            return;
+        }
+
+        this._headerBackdropOwner = '';
+        backdrop.hidden = true;
+        backdrop.classList.remove('is-interactive');
+        backdrop.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('header-menu-open');
+    },
+
+    closeAllHeaderPickers(exceptKey = '') {
+        this.HEADER_SELECT_PICKERS.forEach((cfg) => {
+            if (exceptKey && cfg.key === exceptKey) return;
+            this.setHeaderSelectPickerOpen(cfg.key, false);
+        });
+        if (exceptKey !== 'planPicker') {
+            this.setPlanPickerOpen(false);
+        }
+        if (!exceptKey) {
+            this.setHeaderMenuBackdrop(false);
+        }
+    },
+
+    /** 숨은 select → 트리거 문구/목록 동기화 */
+    syncHeaderSelectPicker(selectIdOrKey) {
+        const cfg = this.getHeaderSelectPickerConfig(selectIdOrKey);
+        if (!cfg) return;
+
+        const selectEl = document.getElementById(cfg.selectId);
+        const valueEl = document.getElementById(cfg.valueId);
+        const listEl = document.getElementById(cfg.listId);
+        if (!selectEl || !valueEl || !listEl) return;
+
+        const selected = selectEl.selectedOptions[0]
+            || [...selectEl.options].find((o) => !o.disabled)
+            || null;
+        valueEl.textContent = selected ? selected.textContent : '선택';
+
+        const selectedValue = String(selectEl.value || '');
+        listEl.innerHTML = '';
+        Array.from(selectEl.options).forEach((opt) => {
+            const li = document.createElement('li');
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'plan-picker-item'
+                + (String(opt.value) === selectedValue ? ' is-selected' : '')
+                + (opt.disabled ? ' is-disabled' : '');
+            btn.setAttribute('role', 'option');
+            btn.setAttribute('aria-selected', String(opt.value) === selectedValue ? 'true' : 'false');
+            btn.dataset.value = opt.value;
+            btn.textContent = opt.textContent;
+            if (opt.disabled) btn.disabled = true;
+            li.appendChild(btn);
+            listEl.appendChild(li);
+        });
+
+        if (cfg.key === 'payterm') {
+            this.fitPaytermPickerWidth();
+        }
+    },
+
+    syncAllHeaderSelectPickers() {
+        this.HEADER_SELECT_PICKERS.forEach((cfg) => this.syncHeaderSelectPicker(cfg.key));
+    },
+
+    setHeaderSelectPickerOpen(selectIdOrKey, open) {
+        const cfg = this.getHeaderSelectPickerConfig(selectIdOrKey);
+        if (!cfg) return;
+
+        const picker = document.getElementById(cfg.pickerId);
+        const panel = document.getElementById(cfg.panelId);
+        const trigger = document.getElementById(cfg.triggerId);
+        const li = picker?.closest('.header-picker-li');
+        if (!picker || !panel || !trigger) return;
+
+        if (open) {
+            const selectEl = document.getElementById(cfg.selectId);
+            if (selectEl?.disabled || trigger.disabled) return;
+
+            this.closeAllHeaderPickers(cfg.key);
+            this.syncHeaderSelectPicker(cfg.key);
+            panel.style.left = '50%';
+            panel.style.transform = 'translateX(-50%)';
+            panel.hidden = false;
+            this.setHeaderMenuBackdrop(true, { interactive: true, owner: cfg.key });
+            picker.classList.add('is-open');
+            li?.classList.add('is-picker-open');
+            trigger.setAttribute('aria-expanded', 'true');
+            requestAnimationFrame(() => {
+                this.centerHeaderPickerPanel(panel);
+                const selectedBtn = panel.querySelector('.plan-picker-item.is-selected');
+                if (selectedBtn) selectedBtn.scrollIntoView({ block: 'nearest' });
+            });
+        } else {
+            panel.hidden = true;
+            panel.style.left = '';
+            panel.style.transform = '';
+            picker.classList.remove('is-open');
+            li?.classList.remove('is-picker-open');
+            trigger.setAttribute('aria-expanded', 'false');
+            if (this._headerBackdropOwner === cfg.key) {
+                this.setHeaderMenuBackdrop(false, { owner: cfg.key });
+            }
+        }
+    },
+
+    centerHeaderPickerPanel(panel) {
+        if (!panel || panel.hidden) return;
+        panel.style.left = '50%';
+        panel.style.transform = 'translateX(-50%)';
+        const rect = panel.getBoundingClientRect();
+        let shift = 0;
+        if (rect.left < 12) shift += 12 - rect.left;
+        if (rect.right + shift > window.innerWidth - 12) {
+            shift -= (rect.right + shift) - (window.innerWidth - 12);
+        }
+        panel.style.transform = shift
+            ? `translateX(calc(-50% + ${shift}px))`
+            : 'translateX(-50%)';
+    },
+
+    handleHeaderSelectPickerItem(selectIdOrKey, value) {
+        const cfg = this.getHeaderSelectPickerConfig(selectIdOrKey);
+        if (!cfg) return;
+        const selectEl = document.getElementById(cfg.selectId);
+        if (!selectEl) return;
+
+        const opt = [...selectEl.options].find((o) => String(o.value) === String(value));
+        if (!opt || opt.disabled) return;
+
+        selectEl.value = value;
+        this.syncHeaderSelectPicker(cfg.key);
+        this.setHeaderSelectPickerOpen(cfg.key, false);
+
+        const onChange = this._headerSelectPickerHandlers?.[cfg.key];
+        if (typeof onChange === 'function') onChange(value, opt);
+    },
+
+    bindHeaderSelectPickers() {
+        if (this._headerSelectPickersBound) return;
+        this._headerSelectPickersBound = true;
+        this._headerSelectPickerHandlers = this._headerSelectPickerHandlers || {};
+
+        this.HEADER_SELECT_PICKERS.forEach((cfg) => {
+            const trigger = document.getElementById(cfg.triggerId);
+            const listEl = document.getElementById(cfg.listId);
+            const picker = document.getElementById(cfg.pickerId);
+            if (!trigger || !listEl || !picker) return;
+
+            trigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const open = !picker.classList.contains('is-open');
+                this.setHeaderSelectPickerOpen(cfg.key, open);
+            });
+
+            listEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('.plan-picker-item');
+                if (!btn || btn.disabled) return;
+                e.preventDefault();
+                e.stopPropagation();
+                this.handleHeaderSelectPickerItem(cfg.key, btn.dataset.value);
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            const inPicker = e.target.closest('.header-picker, #planPicker');
+            if (inPicker) return;
+            this.closeAllHeaderPickers();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.closeAllHeaderPickers();
+        });
+
+        this.syncAllHeaderSelectPickers();
+    },
+
+    setPlanPickerOpen(open) {
+        const picker = document.getElementById('planPicker');
+        const panel = document.getElementById('planPickerPanel');
+        const trigger = document.getElementById('planPickerTrigger');
+        const li = picker?.closest('.plan-picker-li');
+        if (!picker || !panel || !trigger) return;
+
+        if (open) {
+            this.HEADER_SELECT_PICKERS.forEach((cfg) => {
+                this.setHeaderSelectPickerOpen(cfg.key, false);
+            });
+            this.renderPlanPickerList();
+            panel.style.left = '50%';
+            panel.style.transform = 'translateX(-50%)';
+            panel.hidden = false;
+            this.setHeaderMenuBackdrop(true, { interactive: true, owner: 'planPicker' });
+            picker.classList.add('is-open');
+            li?.classList.add('is-picker-open');
+            trigger.setAttribute('aria-expanded', 'true');
+            requestAnimationFrame(() => {
+                this.centerPlanPickerPanel();
+                const selectedBtn = panel.querySelector('.plan-picker-item.is-selected');
+                if (selectedBtn) {
+                    selectedBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            });
+        } else {
+            panel.hidden = true;
+            panel.style.left = '';
+            panel.style.transform = '';
+            picker.classList.remove('is-open');
+            li?.classList.remove('is-picker-open');
+            trigger.setAttribute('aria-expanded', 'false');
+            if (this._headerBackdropOwner === 'planPicker') {
+                this.setHeaderMenuBackdrop(false, { owner: 'planPicker' });
+            }
+        }
+    },
+
+    /** 패널을 상품유형 버튼 기준 가운데 정렬 (화면 밖으로 나가면 보정) */
+    centerPlanPickerPanel() {
+        const panel = document.getElementById('planPickerPanel');
+        this.centerHeaderPickerPanel(panel);
+    },
+
+    /** 세부 상품 확정 시에만 조회 */
+    handlePlanPickerItemSelect(planType, planName, categoryKey) {
+        const selectEl = document.getElementById('selProductsGroupCD');
+        if (!selectEl || planType == null || planType === '') return;
+
+        if (categoryKey) {
+            mmlfcp_state.set('plan_category', categoryKey);
+        }
+        selectEl.value = planType;
+        if (selectEl.selectedOptions[0]) {
+            selectEl.selectedOptions[0].dataset.planName = planName || selectEl.selectedOptions[0].dataset.planName;
+        }
+
+        const valueEl = document.getElementById('planPickerValue');
+        const displayLabel = this.formatPlanTypeLabel(planName);
+        const cat = categoryKey || this.getPlanCategoryKey(displayLabel);
+        if (valueEl) {
+            valueEl.textContent = this.formatPlanPickerTriggerText(cat, displayLabel);
+        }
+
+        this.setPlanPickerOpen(false);
+        this.handlePlanTypeChange();
+    },
+
+    bindPlanPickerEvents() {
+        if (this._planPickerEventsBound) return;
+        this._planPickerEventsBound = true;
+
+        const picker = document.getElementById('planPicker');
+        const trigger = document.getElementById('planPickerTrigger');
+        const listEl = document.getElementById('planPickerList');
+        if (!picker || !trigger) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const open = !picker.classList.contains('is-open');
+            this.setPlanPickerOpen(open);
+        });
+
+        listEl?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.plan-picker-item');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            this.handlePlanPickerItemSelect(
+                btn.dataset.planType,
+                btn.dataset.planName,
+                btn.dataset.category
+            );
+        });
+    },
+
+    /** 상품유형 피커: 선택 텍스트에 맞춰 너비 설정 */
+    fitProductTypeSelectWidth() {
+        const trigger = document.getElementById('planPickerTrigger');
+        const valueEl = document.getElementById('planPickerValue');
+        const li = document.querySelector('.plan-picker-li') || trigger?.closest('li');
+        if (!trigger || !valueEl) return;
+
+        const style = window.getComputedStyle(trigger);
+        const probe = document.createElement('span');
+        probe.style.cssText = [
+            'position:absolute',
+            'visibility:hidden',
+            'white-space:nowrap',
+            `font:${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+            'letter-spacing:' + style.letterSpacing,
+        ].join(';');
+        probe.textContent = valueEl.textContent || '';
+        document.body.appendChild(probe);
+        const textWidth = probe.offsetWidth;
+        probe.remove();
+
+        const width = Math.min(Math.max(Math.ceil(textWidth) + 52, 180), 320);
+        trigger.style.width = `${width}px`;
+        if (li) {
+            li.style.width = `${width}px`;
+            li.style.flex = `0 0 ${width}px`;
+        }
+    },
+
+    /** 만기 피커: 옵션 중 가장 긴 텍스트에 맞춰 선택창 폭 설정 */
+    fitPaytermPickerWidth() {
+        const trigger = document.getElementById('paytermPickerTrigger');
+        const selectEl = document.getElementById('selPaymentExpirationCD');
+        const valueEl = document.getElementById('paytermPickerValue');
+        const li = document.getElementById('paytermPicker')?.closest('li');
+        if (!trigger || !selectEl) return;
+
+        const style = window.getComputedStyle(trigger);
+        const probe = document.createElement('span');
+        probe.style.cssText = [
+            'position:absolute',
+            'visibility:hidden',
+            'white-space:nowrap',
+            `font:${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+            'letter-spacing:' + style.letterSpacing,
+        ].join(';');
+        document.body.appendChild(probe);
+
+        let maxText = 0;
+        Array.from(selectEl.options).forEach((opt) => {
+            probe.textContent = opt.textContent || '';
+            maxText = Math.max(maxText, probe.offsetWidth);
+        });
+        if (valueEl?.textContent) {
+            probe.textContent = valueEl.textContent;
+            maxText = Math.max(maxText, probe.offsetWidth);
+        }
+        probe.remove();
+
+        const width = Math.min(Math.max(Math.ceil(maxText) + 52, 148), 220);
+        trigger.style.width = `${width}px`;
+        trigger.style.minWidth = `${width}px`;
+        if (li) {
+            li.style.width = `${width}px`;
+            li.style.flex = `0 0 ${width}px`;
         }
     },
 
@@ -692,18 +1575,22 @@ export const Controller = {
             mmlfcp_state.set('cust_name', _state.cust_name);
         }
         if (!mmlfcp_state.get('birth_date')) {
-            mmlfcp_state.set('birth_date', _state.birth_date || birthEl?.value);
+            const fromInput = app.toYyyymmdd(birthEl?.value);
+            mmlfcp_state.set('birth_date', app.toYyyymmdd(_state.birth_date) || fromInput || '19850101');
+        } else {
+            mmlfcp_state.set('birth_date', app.toYyyymmdd(mmlfcp_state.get('birth_date')) || '19850101');
         }
+        this.syncBirthDateInput();
 
         // 2️⃣ 경로(path) 또는 나이에 따른 자동 상품 세팅
         const path = mmlfcp_state.get('url_path'); // main.js에서 저장한 path 값
-        const currentBirthDate = mmlfcp_state.get('birth_date');
+        const currentBirthDate = app.toYyyymmdd(mmlfcp_state.get('birth_date'));
         const age = (currentBirthDate && currentBirthDate.length === 8) ? app.getAgefromString(currentBirthDate) : 0;
         mmlfcp_state.set('age', age);
 
-        if (path === 'fire') {
-            // 🔥 path=fire (손보) 우선 세팅
-            mmlfcp_state.set('insurance_type', _state.insurance_type);
+        if (this.isFireOnlyGa() || path === 'fire') {
+            // 🔥 path=fire 또는 GA A266 (손보 전용)
+            mmlfcp_state.set('insurance_type', _state.insurance_type || 'F');
             mmlfcp_state.set('plan_type_id', _state.plan_type_id); // 손보 종합(무해지)
             mmlfcp_state.set('plan_payment_expiration_cd', _state.plan_payment_expiration_cd); // 20년/100세
         }
@@ -723,14 +1610,25 @@ export const Controller = {
             insurSel.value = mmlfcp_state.get('insurance_type');
         }
 
-        // 상품 유형 UI 반영 (선택된 옵션의 텍스트도 같이 저장)
+        // 상품 유형 UI 반영 (선택된 옵션의 원본 상품명 저장)
         if (planSel) {
             const targetPlanType = mmlfcp_state.get('plan_type_id');
             if (targetPlanType) {
                 planSel.value = targetPlanType;
                 if (planSel.selectedOptions.length > 0) {
-                    mmlfcp_state.set('plan_type_name', planSel.selectedOptions[0].textContent);
+                    const opt = planSel.selectedOptions[0];
+                    mmlfcp_state.set('plan_type_name', opt.dataset.planName || opt.textContent);
+                    if (opt.dataset.category) {
+                        mmlfcp_state.set('plan_category', opt.dataset.category);
+                    }
                 }
+            }
+            const valueEl = document.getElementById('planPickerValue');
+            if (valueEl && planSel.selectedOptions.length > 0) {
+                const opt = planSel.selectedOptions[0];
+                const cat = opt.dataset.category || mmlfcp_state.get('plan_category');
+                const label = this.formatPlanTypeLabel(opt.dataset.planName || opt.textContent);
+                valueEl.textContent = this.formatPlanPickerTriggerText(cat, label);
             }
         }
 
@@ -755,6 +1653,8 @@ export const Controller = {
             mmlfcp_state.set('gender', finalGender);
         }
 
+        this.syncAllHeaderSelectPickers();
+
         // 5️⃣ 최종적으로 결정된 조합에 맞는 plan_id 찾기
         this.updatePlanIdByCurrentState();
     },
@@ -769,6 +1669,52 @@ export const Controller = {
         let html = '';
         html = `생년월일 ( 보험나이 : ${insur_age}세 )`;
         insuEl.innerHTML = html;
+    },
+
+    /** date input ↔ YYYYMMDD 상태 동기화 */
+    syncBirthDateInput() {
+        const birthEl = document.getElementById('birth_date');
+        if (!birthEl) return;
+        const ymd = app.toYyyymmdd(mmlfcp_state.get('birth_date'));
+        const iso = app.toDateInputValue(ymd);
+        if (iso) birthEl.value = iso;
+
+        // 캘린더 선택 가능 범위 (1920 ~ 오늘)
+        birthEl.min = '1920-01-01';
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        birthEl.max = `${yyyy}-${mm}-${dd}`;
+    },
+
+    getBirthDateYmd() {
+        const birthEl = document.getElementById('birth_date');
+        return app.toYyyymmdd(birthEl?.value)
+            || app.toYyyymmdd(mmlfcp_state.get('birth_date'))
+            || '';
+    },
+
+    applyBirthDateChange(rawValue) {
+        const birth_date = app.toYyyymmdd(rawValue);
+        if (!birth_date || !app.isValidDate(birth_date)) {
+            this.hide_content();
+            _state.current_page = 1;
+            return;
+        }
+
+        const age = app.getAgefromString(birth_date);
+        mmlfcp_state.set('birth_date', birth_date);
+        mmlfcp_state.set('age', age);
+        this.syncBirthDateInput();
+
+        this.setDefaultByAge(age);
+        this.renderInsuAge();
+        this.renderPlanOptions();
+        this.renderPayTermBySelectedPlan();
+        this.updatePlanIdByCurrentState();
+        this.renderPayTermSelectedAge();
+        this.scheduleAutoSearch();
     },
 
     /**
@@ -831,6 +1777,8 @@ export const Controller = {
             mmlfcp_state.set('plan_payment_expiration_cd', selectedOption.value);
             mmlfcp_state.set('plan_payment_expiration_name', selectedOption.textContent);
         }
+        this.syncHeaderSelectPicker('payterm');
+        this.fitPaytermPickerWidth();
     },
 
     handlePlanTypeChange() {
@@ -840,11 +1788,22 @@ export const Controller = {
         if (!planSel || planSel.selectedIndex === -1) return;
 
         const selectedPlanType = planSel.value;
-        const selectedText = planSel.selectedOptions[0].textContent;
+        const selectedOpt = planSel.selectedOptions[0];
+        const selectedText = selectedOpt.dataset.planName || selectedOpt.textContent;
 
         // 2. State 반영
         mmlfcp_state.set('plan_type_id', selectedPlanType);
         mmlfcp_state.set('plan_type_name', selectedText);
+        if (selectedOpt.dataset.category) {
+            mmlfcp_state.set('plan_category', selectedOpt.dataset.category);
+        }
+
+        const valueEl = document.getElementById('planPickerValue');
+        if (valueEl) {
+            const cat = selectedOpt.dataset.category || mmlfcp_state.get('plan_category');
+            const label = this.formatPlanTypeLabel(selectedText);
+            valueEl.textContent = this.formatPlanPickerTriggerText(cat, label);
+        }
 
         // 3. 성별 제어 (플랜에 따라 성별 선택 제한 등)
         this.handleGenderByPlan(selectedPlanType);
@@ -859,10 +1818,10 @@ export const Controller = {
 
         // 6️. 하단 조회가능 나이 안내 텍스트 갱신
         this.renderPayTermSelectedAge();
+        this.fitProductTypeSelectWidth();
 
-        // 7️. UI 초기화
-        this.hide_content();
-        _state.current_page = 1;
+        // 7️. 자동 조회
+        this.scheduleAutoSearch();
     },
 
     handleGenderByPlan(selectedPlanType) {
@@ -888,6 +1847,7 @@ export const Controller = {
             // 주의: 여기서 genderSel.value를 건드리지 않아야 
             // 사용자가 선택해둔 성별이 유지됩니다!
         }
+        this.syncHeaderSelectPicker('gender');
     },
 
 
@@ -1049,40 +2009,92 @@ export const Controller = {
         this._toggleMenu("openCoverageDetailModalBtn", menu.simplifi);
     },
 
+    /**
+     * 출력하기 모달 항목 표시 — 툴바(setDetailMenu/setSimplifiDetailMenu)와 동일 조건
+     * 0 한장비교: 항상
+     * 1 만기별: 상품유형·만기 조건
+     * 2 연령별: 상품유형·만기 조건
+     * 3 상품유형별: 대상 상품유형만
+     */
     setPrintliMenu() {
-        const plan_type = mmlfcp_state.get('plan_type_id'); //상품유형 코드
+        const plan_type = String(mmlfcp_state.get('plan_type_id') || '');
+        const plan_payment_expiration_name = String(mmlfcp_state.get('plan_payment_expiration_name') || '');
 
         const menu = {
-            payment: false, //만기별 보험료 비교 출력
+            one: true,       // 한장 비교 출력
+            payment: false,  // 만기별 보험료 비교 출력
+            aging: false,    // 연령별 비교 출력
             simplifi: false, // 상품유형별 비교 출력
         };
 
-        //만기별 비교 상품유형 코드
+        // 만기별 비교 가능 상품유형 (툴바 openPaymentModalBtn 과 동일)
         const BASE_PAYMENT_PRODUCTS = [
             "05", "06", "07", // 종합
-            "14", "15", "16", "17",// 간편 325/335/355/31010
-            "18", "19",// 어린이
-            "20", "21", "22",// 청소년
-            "25", //생보 치매(무해지)
+            "14", "15", "16", "17", // 간편 325/335/355/31010
+            "18", "19", // 어린이
+            "20", "21", "22", // 청소년
+            "25", // 생보 치매(무해지)
         ];
 
-        //상품유형별 비교 상품유형 코드
+        // 상품유형별 비교 (툴바 openCoverageDetailModalBtn 과 동일)
         const BASE_SIMPLIFI_PRODUCTS = [
-            //"01", "02", "03", "04", // 생손보
-            "06", "07", "14", "15", "16", "17", "21", "22",// 손보 종합(무해지), 51010, 간편, 청소년
-            "09", "11", "12", "13",// 생보건강, 생보간편
+            "06", "07", "14", "15", "16", "17", "21", "22", // 손보 종합·간편·청소년
+            "09", "11", "12", "13", // 생보건강·생보간편
         ];
 
-        if (BASE_PAYMENT_PRODUCTS.includes(plan_type)) {
+        const FEMALE_HEALTH = "08";
+
+        // 종신/생손보 만기 → 만기별 비교 제외, 연령별은 표시 (툴바 setDetailMenu 와 동일)
+        const isRenewalExpiration =
+            plan_payment_expiration_name.includes("종신") ||
+            plan_payment_expiration_name.includes("20년/100세,종신");
+
+        if (plan_type === FEMALE_HEALTH) {
             menu.payment = true;
+            menu.aging = true;
+        } else if (isRenewalExpiration) {
+            menu.payment = false;
+            menu.aging = true;
+        } else if (BASE_PAYMENT_PRODUCTS.includes(plan_type)) {
+            menu.payment = true;
+            menu.aging = true;
+        } else {
+            // 그 외(생손보 건강 등): 한장 + 연령별 (+ 대상이면 상품유형별)
+            menu.payment = false;
+            menu.aging = true;
         }
+
         if (BASE_SIMPLIFI_PRODUCTS.includes(plan_type)) {
             menu.simplifi = true;
         }
 
-        // 3. _toggleMenu 함수를 호출하여 실제 DOM 제어
+        this._toggleMenu('one-title', menu.one);
         this._toggleMenu('product-title', menu.payment);
+        this._toggleMenu('age-title', menu.aging);
         this._toggleMenu('plan-type-title', menu.simplifi);
+
+        // 숨겨진 항목이 선택돼 있으면 보이는 첫 항목으로 전환
+        this._ensureVisiblePrintOptionSelected();
+    },
+
+    /** 출력 모달에서 현재 보이는 라디오 중 하나가 선택되도록 보정 */
+    _ensureVisiblePrintOptionSelected() {
+        const radios = Array.from(document.querySelectorAll("input[name='plan_title']"));
+        if (!radios.length) return;
+
+        const isVisible = (radio) => {
+            const row = radio.closest('li');
+            if (!row) return !radio.disabled;
+            if (row.hidden || row.classList.contains('is-toolbar-hidden')) return false;
+            const style = window.getComputedStyle(row);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        };
+
+        const checked = radios.find((r) => r.checked);
+        if (checked && isVisible(checked)) return;
+
+        const firstVisible = radios.find(isVisible);
+        if (firstVisible) firstVisible.checked = true;
     },
 
     render_coverage_bojang() {
@@ -1156,6 +2168,9 @@ export const Controller = {
         const wrap = document.getElementById('companyInfo');
         if (!wrap) return;
 
+        // body로 옮겨둔 상품정보 팝오버 정리 (재렌더 시 orphan 방지)
+        this.cleanupOrphanProductInfo();
+
         const coverage_premiums = mmlfcp_state.get('coverage_premiums') || [];
 
         // ✅ 전체 데이터 기준으로 max/min 계산
@@ -1176,16 +2191,20 @@ export const Controller = {
             const btn_id = `btn_${item.company_code}`;
             const total_id = `total_${item.company_code}`;
             const total_premium = item.DispValue ? item.total_premium : 0;
+            // 생보사명 → 녹색 표시용 클래스
+            const isLifeCompany = this.isLifeInsuranceCompany(item.company_code, item.company_name);
+            const lifeClass = isLifeCompany ? ' company-life' : '';
+            const companyName = item.company_name || item.company_code || '';
             return `
-                    <li>
-                    <div class="inner">
+                    <li class="${isLifeCompany ? 'company-life' : ''}">
+                    <div class="inner${lifeClass}">
                         <div class="checkbox-area">
                         <input type="checkbox" id="${chk_id}" company_code="${item.company_code}" company_name="${item.company_name}" ${item.DispValue == true ? "checked" : ""}>
                         <label for="${chk_id}"></label>
                         </div>
 
-                        <div class="img-area">
-                        <img src="./images/${item.company_code}.png" alt="${item.company_name}">
+                        <div class="img-area${lifeClass}" title="${companyName}">
+                        <span class="company-name">${companyName}</span>
                         </div>
 
                         <div class="price-area">
@@ -1233,6 +2252,8 @@ export const Controller = {
         // 5) 페이징 버튼 & 토글 보장
         this.bindSharedPager(totalPages, current);
         this.ensureCompanyInfoTogglesBound();
+        this.ensureCompanyTableScrollSync();
+        requestAnimationFrame(() => this.syncCompanyTableScroll(true));
     },
 
     //회사별 보장별 보험료 랜더링
@@ -1313,6 +2334,8 @@ export const Controller = {
 
         // 페이징 버튼 바인딩
         this.bindSharedPager(totalPages, current);
+        this.ensureCompanyTableScrollSync();
+        requestAnimationFrame(() => this.syncCompanyTableScroll());
     },
 
 
@@ -1556,9 +2579,9 @@ export const Controller = {
                                 <span class="detail-compare-chip detail-compare-chip--accent">보험료 <b>${app.formatNumber(detail.premium)}원</b></span>
                                 <span class="detail-compare-chip">납기 <b>${detail.pay_term || '-'}</b></span>
                             </div>
-                            <div class="detail-compare-item__body">
-                                ${(detail.insur_bojang || '보장 내용이 없습니다.').replace(/(?:\r\n|\r|\n)/g, '<br />')}
-                            </div>
+                            <div class="detail-compare-item__body">${(detail.insur_bojang || '보장 내용이 없습니다.')
+                                    .replace(/^[\s\u00a0\u3000]+/gm, '')
+                                    .replace(/(?:\r\n|\r|\n)/g, '<br />')}</div>
                         </article>
                     `);
                 });
@@ -1603,9 +2626,8 @@ export const Controller = {
             .filter((s) => s !== slot)
             .map((s) => selectedBySlot[s])
             .filter(Boolean);
-        const noteHtml = (slot === 2 || slot === 3)
-            ? `<span class="detail-compare-col-note" id="detail_compare_col_${slot}_note"${columnTitle.note ? '' : ' hidden'}>${columnTitle.note || ''}</span>`
-            : '';
+        // 3열 상단 높이 통일을 위해 note 슬롯은 항상 렌더 (빈 값이면 hidden으로 공간만 유지)
+        const noteHtml = `<span class="detail-compare-col-note" id="detail_compare_col_${slot}_note"${columnTitle.note ? '' : ' hidden'}>${columnTitle.note || ''}</span>`;
         return `
             <div class="detail-compare-header">
                 <div class="detail-compare-col-heading">
@@ -1942,7 +2964,8 @@ export const Controller = {
             const el = document.querySelector(`em[id="${product.company_code}_${coverage_cd}"][coverage_cd="${coverage_cd}"][company_code="${product.company_code}"]`);
 
             if (el) {
-                this.applyPremiumStyle(el, premiumValue, globalMax, globalMin, flags);
+                // 선택 해제된 담보는 0을 희미하게 표시
+                this.applyPremiumStyle(el, premiumValue, globalMax, globalMin, flags, { muted: !isSelected });
             }
         });
     },
@@ -2102,15 +3125,173 @@ export const Controller = {
     },
 
 
+    /**
+     * 입력폼 변경 시 자동 조회 (연쇄 변경·연타 대비 debounce)
+     * softLoading: 전체 로더 대신 테이블만 살짝 흐리게 → 깜박임 감소
+     */
+    scheduleAutoSearch(delay = 350) {
+        clearTimeout(this._autoSearchTimer);
+        clearTimeout(this._searchStatusClearTimer);
+        // debounce 대기 중에도 즉시 피드백 (전체 로더 없음)
+        this.setSearchFeedback('pending', '조건 반영 중…');
+        this._autoSearchTimer = setTimeout(() => {
+            this.resetBeforeSearch();
+            _state.current_page = 1;
+            this.onClickSearch({ softLoading: true });
+        }, delay);
+    },
+
+    /**
+     * 자동 조회 상태 피드백 (헤더 만기 옆 칩 + 전체 로딩)
+     * 조회 완료는 오른쪽 하단 토스트로 알림
+     * @param {'idle'|'pending'|'loading'|'done'|'error'} state
+     * @param {string} [message]
+     */
+    setSearchFeedback(state, message = '') {
+        const statusEl = document.getElementById('searchStatus');
+        const loaderText = document.getElementById('mainLoaderText');
+        clearTimeout(this._searchStatusClearTimer);
+
+        if (state === 'done') {
+            if (statusEl) {
+                statusEl.hidden = true;
+                statusEl.textContent = '';
+                statusEl.classList.remove('is-pending', 'is-loading', 'is-done', 'is-error');
+            }
+            this.showAppToast(message || '조회 완료', 'success');
+            return;
+        }
+
+        if (statusEl) {
+            statusEl.classList.remove('is-pending', 'is-loading', 'is-done', 'is-error');
+            if (!state || state === 'idle') {
+                statusEl.hidden = true;
+                statusEl.textContent = '';
+            } else {
+                const labels = {
+                    pending: message || '조건 반영 중…',
+                    loading: message || '조회 중…',
+                    error: message || '조회 실패',
+                };
+                statusEl.hidden = false;
+                statusEl.textContent = labels[state] || message || '';
+                statusEl.classList.add(`is-${state}`);
+            }
+        }
+
+        if (loaderText && (state === 'loading' || state === 'pending')) {
+            loaderText.textContent = message || (state === 'pending' ? '조건을 반영하는 중…' : '보험료를 조회하는 중…');
+        }
+    },
+
+    /**
+     * 오른쪽 하단 토스트 알림
+     * @param {string} message
+     * @param {'success'|'error'|'info'} [type]
+     */
+    showAppToast(message, type = 'info') {
+        const text = String(message || '').trim();
+        if (!text) return;
+
+        let host = document.getElementById('appToastHost');
+        if (!host) {
+            host = document.createElement('div');
+            host.id = 'appToastHost';
+            host.className = 'app-toast-host';
+            host.setAttribute('aria-live', 'polite');
+            document.body.appendChild(host);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `app-toast app-toast--${type}`;
+        toast.setAttribute('role', 'status');
+        toast.textContent = text;
+        host.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.add('is-visible');
+        });
+
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(() => {
+            toast.classList.remove('is-visible');
+            setTimeout(() => toast.remove(), 280);
+        }, 2400);
+    },
+
+    /**
+     * select: 값이 바뀌거나, 같은 옵션을 다시 골라도 콜백 실행
+     * (네이티브 change는 동일 값 재선택 시 발생하지 않음 → blur로 보완)
+     * 목록 열림 시 배경 블러(passive) 표시
+     */
+    bindSelectAutoSearch(sel, onSelect, options = {}) {
+        if (!sel || typeof onSelect !== 'function') return;
+        const backdropOwner = options.backdropOwner || sel.id || 'select';
+        let pending = false;
+        let changed = false;
+        let running = false;
+
+        const showBackdrop = () => {
+            this.setHeaderMenuBackdrop(true, { interactive: false, owner: backdropOwner });
+        };
+        const hideBackdrop = () => {
+            this.setHeaderMenuBackdrop(false, { owner: backdropOwner });
+        };
+        const runSelect = () => {
+            if (running) return;
+            running = true;
+            try {
+                onSelect();
+            } finally {
+                setTimeout(() => { running = false; }, 30);
+            }
+        };
+
+        sel.addEventListener('mousedown', () => {
+            pending = true;
+            changed = false;
+            showBackdrop();
+        });
+        sel.addEventListener('focus', showBackdrop);
+        sel.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+                pending = true;
+                changed = false;
+                showBackdrop();
+            }
+        });
+        sel.addEventListener('change', () => {
+            changed = true;
+            pending = false;
+            hideBackdrop();
+            runSelect();
+        });
+        sel.addEventListener('blur', () => {
+            hideBackdrop();
+            if (!pending || changed) {
+                pending = false;
+                changed = false;
+                return;
+            }
+            pending = false;
+            setTimeout(() => {
+                if (changed) return;
+                runSelect();
+            }, 0);
+        });
+    },
+
     //--------  초기 setting ---------- ///
-    async onClickSearch() {
+    async onClickSearch(options = {}) {
+        const softLoading = !!options.softLoading;
 
         // 1) 생년월일 및 나이 기초 데이터 확인
         const birthEl = document.getElementById('birth_date');
-        const birth_date = birthEl ? birthEl.value : mmlfcp_state.get('birth_date');
+        const birth_date = birthEl ? this.getBirthDateYmd() : mmlfcp_state.get('birth_date');
 
         //2) 검증
         if (!app.isValidDate(birth_date)) {
+            this.setSearchFeedback('error', '생년월일을 확인해 주세요');
             alert('생년월일을 확인해주세요.');
             return;
         }
@@ -2129,18 +3310,16 @@ export const Controller = {
         const genderSel = document.getElementById('gender');
         const gender = genderSel?.value || mmlfcp_state.get('gender') || '';
 
-        // console.log({ insurance_type, plan_id, gender });
-
-
-
         // 플랜 ID가 없으면 중단
         if (!plan_id) {
-            alert("선택하신 조건에 맞는 플랜을 찾을 수 없습니다.");
+            const planName = mmlfcp_state.get('plan_type_name') || '선택한 상품유형';
+            this.setSearchFeedback('error', '플랜을 찾을 수 없습니다');
+            this.showEmptySearchResult(`「${planName}」에 맞는 플랜을 찾을 수 없습니다.`);
             return;
         }
 
-        // 4) 호출 시작
-        this.setLoading(true);
+        // 4) 호출 시작 (조건변경 자동조회는 soft — 전체 화면 로더로 깜박이지 않음)
+        this.setLoading(true, { soft: softLoading });
         try {
             const res = await apiService.getProductPremiums({ plan_id, insurance_type, age, gender });
             if (res?.is_success == true && (res.coverage_premiums.length > 0 && res.product_insur_premiums.length > 0)) {
@@ -2150,7 +3329,6 @@ export const Controller = {
                 mmlfcp_state.set('coverage_premiums', res.coverage_premiums || []);
                 mmlfcp_state.set('product_insur_premiums', res.product_insur_premiums || []);
 
-                mmlfcp_state.set('user_coverage', res.user_coverages.length > 0 ? res.user_coverages[0] : {});
                 mmlfcp_state.set('user_coverages', res.user_coverages || []);
 
                 // ✅ 캐시/페이지 초기화 (이 두 줄이 핵심)
@@ -2178,8 +3356,8 @@ export const Controller = {
                 // 👇 여기!
                 this.saveOriginalPlanSnapshot();
 
-                //최초에 사용자 플랜 옵션값 settig
-                userController.renderUserCoverageList();
+                // 저장된 '기본 플랜' 선호값 반영 후 옵션 구성
+                userController.applyResolvedDefaultPlan();
 
                 //버튼 활성화
                 this.setDetailMenu();
@@ -2191,22 +3369,61 @@ export const Controller = {
 
 
                 //화면보이기
+                this.hideEmptySearchResult();
                 this.show_content();
+                this.setSearchFeedback('done', '조회 완료');
             }
             else {
-                alert("조회된 상품이 없습니다.");
-                this.hide_content();
+                const planName = mmlfcp_state.get('plan_type_name') || '선택한 상품유형';
+                this.setSearchFeedback('error', '데이터 없음');
+                this.showEmptySearchResult(`「${planName}」에 해당하는 보험료 데이터가 없습니다.`);
                 return;
             }
         }
         catch (err) {
             console.error("[상품별 보험료 조회 중 오류 발생]", err);
-            alert(err.message);
+            this.setSearchFeedback('error', '조회 실패');
+            this.showEmptySearchResult(err?.message || '조회 중 오류가 발생했습니다.');
             return;
         }
         finally {
-            this.setLoading(false);
+            this.setLoading(false, { soft: softLoading });
         }
+    },
+
+    /** 조회 결과 없음 안내 */
+    showEmptySearchResult(message) {
+        const empty = document.getElementById('searchEmptyState');
+        const msgEl = document.getElementById('searchEmptyMessage');
+        const table = document.querySelector('.product-table-wrap');
+
+        if (msgEl) {
+            msgEl.textContent = message || '선택한 상품유형에 해당하는 보험료 데이터가 없습니다.';
+        }
+        if (empty) empty.hidden = false;
+        if (table) table.style.display = 'none';
+
+        // 이전 조회 잔여 데이터 비우기
+        const bojang = document.getElementById('bojang_lists');
+        const company = document.getElementById('companyInfo');
+        const premium = document.getElementById('premium_lists');
+        const pager = document.getElementById('div-page-btn');
+        if (bojang) bojang.innerHTML = '';
+        if (company) company.innerHTML = '';
+        if (premium) premium.innerHTML = '';
+        if (pager) pager.innerHTML = '';
+
+        mmlfcp_state.set('coverage_premiums', []);
+        mmlfcp_state.set('product_insur_premiums', []);
+
+        this.show_content();
+    },
+
+    hideEmptySearchResult() {
+        const empty = document.getElementById('searchEmptyState');
+        const table = document.querySelector('.product-table-wrap');
+        if (empty) empty.hidden = true;
+        if (table) table.style.display = '';
     },
 
     async onClickPrint() {
@@ -2216,22 +3433,20 @@ export const Controller = {
             const response = await apiService.PrintProducts(printData);
 
             if (response.is_success == true) {
-                const printUrl = `${location.protocol}//${location.host}/${response.pdf_uri}`;
-                if (appConstants.device == 'APP') {
-                    // 모바일: 다운로드 처리
-                    // PDF를 Blob으로 fetch 후 Object URL 생성
-                    const res = await fetch(printUrl);
-                    const blob = await res.blob();
-                    const blobUrl = URL.createObjectURL(blob);
+                // pdf_uri는 /reportfiles/... 형태 — 이중 슬래시 방지 + JWT 헤더로 다운로드
+                const pdfPath = String(response.pdf_uri || '').replace(/^\/+/, '');
+                const printUrl = `${location.protocol}//${location.host}/${pdfPath}`;
+                const blob = await apiService.fetchAuthorizedBlob(printUrl);
+                const blobUrl = URL.createObjectURL(blob);
 
+                if (appConstants.device == 'APP') {
                     const link = document.getElementById('pdfDownloadLink');
                     link.href = blobUrl;
                     link.click();
-                    // 메모리 해제
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
                 } else {
-                    window.open(printUrl, '_blank');
+                    window.open(blobUrl, '_blank');
                 }
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
             }
 
         }
@@ -2315,15 +3530,14 @@ export const Controller = {
 
     //이벤트 함수 실행
     bindEvents() {
+        // 상단 보험사 헤더 ↔ 하단 보험료 목록 가로 스크롤 동기화
+        this.ensureCompanyTableScrollSync();
 
         const custEl = document.getElementById('cust_name');
         const birthEl = document.getElementById('birth_date');
         const genderSel = document.getElementById('gender');
         const insurSel = document.getElementById('selInsuranceType');
-        const planSel = document.getElementById('selProductsGroupCD');
         const paySel = document.getElementById('selPaymentExpirationCD');
-        const searchBtn = document.getElementById('btn_search');
-
 
         const bojangList = document.getElementById('bojang_lists');
         const companyList = document.getElementById('companyInfo');
@@ -2378,132 +3592,66 @@ export const Controller = {
             custEl.addEventListener("input", () => {
                 const cust_name = custEl.value;
                 mmlfcp_state.set('cust_name', cust_name);
-
-                // ✅ 페이지 초기화
-                this.hide_content();
-                _state.current_page = 1;
-
+                this.scheduleAutoSearch(500);
             });
         }
 
 
-        // 생년월일 입력 → 나이 계산/저장
+        // 생년월일 — 캘린더 선택
         if (birthEl) {
-            birthEl.addEventListener("input", () => {
-                const birth_date = birthEl.value;
-                if (birth_date.length === 8) {
-                    const age = app.getAgefromString(birth_date);
-
-                    //1. 데이터 업데이트
-                    mmlfcp_state.set('birth_date', birth_date);
-                    mmlfcp_state.set('age', age);
-
-                    //2. 나이 기반 기본값 세팅 
-                    this.setDefaultByAge(age);
-
-                    //3. UI 렌더링 (이 과정에서 State가 유효한 값으로 최종 조정됨)
-                    this.renderInsuAge();
-                    this.renderPlanOptions();
-                    this.renderPayTermBySelectedPlan();
-
-                    // 4. ⭐ 모든 렌더링이 끝난 후 최종적으로 ID 업데이트
-                    this.updatePlanIdByCurrentState();
-
-                    // 5. 결과 안내 문구 출력
-                    this.renderPayTermSelectedAge();
-
-                }
-                // 4) 페이지 초기화
-                this.hide_content();
-                _state.current_page = 1;
-            });
+            this.syncBirthDateInput();
+            const onBirthChange = () => this.applyBirthDateChange(birthEl.value);
+            birthEl.addEventListener('change', onBirthChange);
+            birthEl.addEventListener('input', onBirthChange);
         }
 
 
-        // 성별 변경
-        if (genderSel) {
-            genderSel.addEventListener('change', () => {
-                mmlfcp_state.set('gender', genderSel.value);
-
-                //조회나이 랜더링
-                this.renderPayTermSelectedAge();
-
-                // ✅ 페이지 초기화
-                this.hide_content();
-                _state.current_page = 1;
-
-            });
-        }
-
-        //생손보 유형 변경
-        insurSel.addEventListener('change', () => {
-
-            //생손보 유형 타입 저장
-            mmlfcp_state.set('insurance_type', insurSel.value);
-
-            this.setPlanRules();
-
-            // 1) 옵션을 그리면서 알아서 첫 번째꺼 선택 & State 업데이트까지 함
-            this.renderPlanOptions();
-
-
-            //2) 업데이트된 State(첫 번째 상품)를 기반으로 나머지 랜더링
-            this.renderPayTermBySelectedPlan();
-            this.updatePlanIdByCurrentState();
-            this.renderPayTermSelectedAge();
-
-            this.hide_content();
-            _state.current_page = 1;
-        });
-
-
-        // 상품유형 변경
-        if (planSel) {
-            planSel.addEventListener('change', () => {
-                this.handlePlanTypeChange();
-            });
-        }
-
-        // 만기 변경
-        if (paySel) {
-            paySel.addEventListener('change', () => {
-
-                // 1) 선택된 옵션이 있는지 안전하게 확인
-                if (paySel.selectedIndex === -1) return;
-
-                const selectedOption = paySel.selectedOptions[0];
-                const payterm = paySel.value;
-
-                // 2) State에 납기 코드와 이름 저장
-                mmlfcp_state.set('plan_payment_expiration_cd', payterm);
-                mmlfcp_state.set('plan_payment_expiration_name', selectedOption.textContent);
-
-                // 3) ⭐ 공통 헬퍼 함수 호출
+        // 성별 / 생손보 / 만기 — 상품유형과 동일한 커스텀 피커
+        this.bindHeaderSelectPickers();
+        this._headerSelectPickerHandlers = {
+            gender: () => {
+                const genderSel = document.getElementById('gender');
+                mmlfcp_state.set('gender', genderSel?.value || '');
+                // 남성 ↔ 여성 전환 시 여성 전용 상품 노출/숨김 반영
+                this.setPlanPickerOpen(false);
+                this.renderPlanOptions();
+                this.renderPayTermBySelectedPlan();
                 this.updatePlanIdByCurrentState();
-
-                // 4) 조회 가능 나이 안내 문구 갱신
+                this.handleGenderByPlan(mmlfcp_state.get('plan_type_id'));
                 this.renderPayTermSelectedAge();
+                this.scheduleAutoSearch();
+            },
+            insurance: () => {
+                const insurSel = document.getElementById('selInsuranceType');
+                const nextType = insurSel?.value || '';
+                mmlfcp_state.set('insurance_type', nextType);
+                this.setPlanPickerOpen(false);
 
-                // 5) 결과 화면 숨기기 및 페이지 초기화
-                this.hide_content();
-                _state.current_page = 1;
-            });
-        }
+                // 손보 선택 시 상품유형 기본값: 종합(무해지)
+                if (nextType === 'F') {
+                    this.applyFireDefaultPlanType();
+                }
 
+                this.renderPlanOptions();
+                this.renderPayTermBySelectedPlan();
+                this.updatePlanIdByCurrentState();
+                this.renderPayTermSelectedAge();
+                this.scheduleAutoSearch();
+            },
+            payterm: () => {
+                const paySel = document.getElementById('selPaymentExpirationCD');
+                if (!paySel || paySel.selectedIndex === -1) return;
+                const selectedOption = paySel.selectedOptions[0];
+                mmlfcp_state.set('plan_payment_expiration_cd', paySel.value);
+                mmlfcp_state.set('plan_payment_expiration_name', selectedOption.textContent);
+                this.updatePlanIdByCurrentState();
+                this.renderPayTermSelectedAge();
+                this.scheduleAutoSearch();
+            },
+        };
 
-        // 조회하기 클릭
-        if (searchBtn) {
-            searchBtn.addEventListener("click", () => {
-
-                //조회 전 reset
-                this.resetBeforeSearch();
-
-                this.onClickSearch();
-
-                // ✅ 페이지 초기화
-                _state.current_page = 1;
-            });
-        }
+        // 상품 유형 단일 피커 (세부 선택 시에만 조회)
+        this.bindPlanPickerEvents();
 
 
         //사용자 플랜명
@@ -2627,19 +3775,19 @@ export const Controller = {
         }
 
 
-        //보험료 합계 정렬
+        //보험료 합계 정렬 (오름차순 ↔ 내림차순 토글)
         if (sortBtn) {
             sortBtn.addEventListener("click", () => {
-                //1. 정렬
-                this.setCoverageSortPremium();
+                //1. 정렬 방향 토글
+                this.setCoverageSortPremium({ toggle: true });
 
-                //1. 보장정보
+                //2. 보장정보
                 this.renderPlanCoverages();
 
-                //2. 회사정보
+                //3. 회사정보
                 this.renderRequiredPremiums(1);
 
-                //3. 보장별 보험료 정보
+                //4. 보장별 보험료 정보
                 this.renderCoveragePremiums(1);
 
             });
@@ -2662,8 +3810,15 @@ export const Controller = {
                     return;
                 }
 
+                // 생손보·상품유형·만기 조건에 맞춰 출력 항목 표시/숨김
+                this.setPrintliMenu();
+
                 const title01 = document.getElementById("title01");
-                if (title01) title01.checked = true;
+                if (title01 && !title01.closest('li')?.hidden) {
+                    title01.checked = true;
+                } else {
+                    this._ensureVisiblePrintOptionSelected();
+                }
 
                 // modal01 표시 (fade 효과 제거 → 깔끔하게 block만)
                 const modal = document.querySelector(".modal01");
@@ -2679,9 +3834,6 @@ export const Controller = {
 
                 // 보험료 최대, 최소값, 보험료 합계 정렬
                 this.setCoverageSortPremium();
-
-                //li 태그 활성화-비활성화
-                this.setPrintliMenu();
 
                 //1. 보장정보
                 this.renderPlanCoverages();
@@ -2726,9 +3878,13 @@ export const Controller = {
         }
 
 
+        const isToolbarActionEnabled = (btn) =>
+            !!btn && !btn.disabled && !btn.hidden && !btn.classList.contains('is-toolbar-hidden');
+
         //보험료 최저 vs 최대
         if (detailModalBtn) {
             detailModalBtn.addEventListener("click", () => {
+                if (!isToolbarActionEnabled(detailModalBtn)) return;
                 const coverage_cd_checked = this.checked_coverage_cd();
                 const company_code_checked = this.checked_company_code();
                 if (!coverage_cd_checked) {
@@ -2741,6 +3897,8 @@ export const Controller = {
                     return;
                 }
                 else {
+                    mmlfcp_state.set('coverage_cd_checked', coverage_cd_checked);
+                    mmlfcp_state.set('company_code_checked', company_code_checked);
                     this._setlocalItem();
                     this.openDetailModal('premium');
 
@@ -2751,6 +3909,7 @@ export const Controller = {
         //만기별 보험료 비교
         if (detailPaymentModalBtn) {
             detailPaymentModalBtn.addEventListener("click", () => {
+                if (!isToolbarActionEnabled(detailPaymentModalBtn)) return;
                 const coverage_cd_checked = this.checked_coverage_cd();
                 const company_code_checked = this.checked_company_code();
                 if (!coverage_cd_checked) {
@@ -2763,6 +3922,8 @@ export const Controller = {
                     return;
                 }
                 else {
+                    mmlfcp_state.set('coverage_cd_checked', coverage_cd_checked);
+                    mmlfcp_state.set('company_code_checked', company_code_checked);
                     this._setlocalItem();
                     this.openDetailModal('payment');
                 }
@@ -2772,6 +3933,7 @@ export const Controller = {
         //연령별 보험료 비교
         if (detailAgingModalBtn) {
             detailAgingModalBtn.addEventListener("click", () => {
+                if (!isToolbarActionEnabled(detailAgingModalBtn)) return;
                 const coverage_cd_checked = this.checked_coverage_cd();
                 const company_code_checked = this.checked_company_code();
                 if (!coverage_cd_checked) {
@@ -2784,6 +3946,8 @@ export const Controller = {
                     return;
                 }
                 else {
+                    mmlfcp_state.set('coverage_cd_checked', coverage_cd_checked);
+                    mmlfcp_state.set('company_code_checked', company_code_checked);
                     this._setlocalItem();
                     this.openDetailModal('aging');
                 }
@@ -2793,6 +3957,7 @@ export const Controller = {
         //상품유형별 보험료
         if (detailCoveragcemodalBtn) {
             detailCoveragcemodalBtn.addEventListener("click", () => {
+                if (!isToolbarActionEnabled(detailCoveragcemodalBtn)) return;
                 const coverage_cd_checked = this.checked_coverage_cd();
                 const company_code_checked = this.checked_company_code();
 
@@ -2964,14 +4129,29 @@ export const Controller = {
         });
 
 
-        // ✅ '전체선택' 체크박스 이벤트
-        const chkAll = document.getElementById('all_checked');
-        if (chkAll) {
-            chkAll.addEventListener('change', (e) => {
-                let checked_val = e.target.checked ? 'checked' : '';
-                // 각각 자기 책임 + 필터 보정까지 포함
-                this.setPlanCoverage_Display_all(checked_val);
-                this.calculatePremiums(); //보험료 합계 갱신
+        // ✅ 담보 일괄선택 (전체선택 / 전체해제 / 초기값으로)
+        const bulkSelect = document.getElementById('coverage_bulk_select');
+        if (bulkSelect) {
+            bulkSelect.addEventListener('change', (e) => {
+                const action = e.target.value;
+                if (!action) return;
+
+                if (action === 'all') {
+                    this.setPlanCoverage_Display_all('checked');
+                } else if (action === 'none') {
+                    this.setPlanCoverage_Display_all('');
+                } else if (action === 'default') {
+                    this.setPlanCoverage_Display_default();
+                }
+
+                // 가입/미가입 필터 중이면 표시 상태 재적용
+                const activeFilter = document.querySelector('#coverageFilters input[type="checkbox"]:checked');
+                if (activeFilter) {
+                    this.setPlanCoverage_Display(activeFilter.id);
+                }
+
+                this.calculatePremiums();
+                e.target.value = '';
 
                 requestAnimationFrame(() => {
                     this.renderPlanCoverages();
@@ -3155,37 +4335,77 @@ export const Controller = {
     },
 
 
-    //로딩바
-    setLoading(on) {
-        const $loader = document.querySelector('.loader-container');
-        if ($loader) $loader.style.display = on ? 'flex' : 'none';
+    //로딩바 + 조회 중 피드백
+    // soft=true: 전체 화면 로더 없이 테이블만 흐리게 (조건 변경 자동조회 깜박임 방지)
+    setLoading(on, options = {}) {
+        const soft = !!options.soft;
+
+        if (soft) {
+            document.body.classList.toggle('is-searching-soft', !!on);
+            document.body.classList.remove('is-searching');
+            const $loader = document.getElementById('mainLoader') || document.querySelector('.loader-container');
+            if ($loader) {
+                $loader.classList.remove('is-active');
+                $loader.style.display = 'none';
+                $loader.setAttribute('aria-hidden', 'true');
+            }
+            if (on) {
+                this.setSearchFeedback('loading', '조회 중…');
+            }
+            return;
+        }
+
+        document.body.classList.remove('is-searching-soft');
+        const $loader = document.getElementById('mainLoader') || document.querySelector('.loader-container');
+        if ($loader) {
+            $loader.classList.toggle('is-active', !!on);
+            $loader.style.display = on ? 'flex' : 'none';
+            $loader.setAttribute('aria-hidden', on ? 'false' : 'true');
+        }
+        document.body.classList.toggle('is-searching', !!on);
+        if (on) {
+            this.setSearchFeedback('loading', '조회 중…');
+        }
     },
 
     /**
     * 버튼 스타일 적용 (선택 여부에 따라)
     */
     setPageButtonStyle(btn, isActive) {
-        btn.style.cssText = `
-        height: 30px; width: 30px; border: none;
-        border - radius: 3px; font - size: 11px; cursor: pointer;
-        background - color: ${isActive ? '#2b579a' : '#f0f0f0'};
-        color: ${isActive ? '#fff' : '#333'};
-        `;
+        btn.classList.toggle('is-active', !!isActive);
     },
 
 
+    /** 생보사 여부 (보험사명 녹색 표시 대상) */
+    isLifeInsuranceCompany(company_code, company_name) {
+        const code = String(company_code || '').trim().toUpperCase();
+        const name = String(company_name || '').trim();
+        // 손보 명시(롯데손해 LO 등) — L로 시작하는 손보 코드 오분류 방지
+        if (/손해|화재|해상/.test(name)) return false;
+        if (/생명|라이프/.test(name)) return true;
+        // 생보 코드는 L + 2글자 이상(LHE, LSA…). LO(롯데손보) 등 2글자는 제외
+        if (/^L[A-Z0-9]{2,}$/i.test(code)) return true;
+        return false;
+    },
+
     /**
       * 특정 셀에 보험료 숫자 + 색상 적용 (공용)
+      * @param {{ muted?: boolean }} [options] muted=true → 선택 해제 담보 0 희미 표시
       */
-    applyPremiumStyle(el, premium, maxVal, minVal, flags) {
+    applyPremiumStyle(el, premium, maxVal, minVal, flags, options = {}) {
 
         // 클래스 초기화
-        el.classList.remove('company__red', 'company__blue', 'company__black');
+        el.classList.remove('company__red', 'company__blue', 'company__black', 'company__muted');
 
         // 보험료 포맷팅
         const formattedPremium = app.formatNumber(premium);
         el.textContent = formattedPremium;
 
+        // 선택 해제된 담보: 0을 희미하게
+        if (options.muted) {
+            el.classList.add('company__muted');
+            return;
+        }
 
         // premium이 0일 경우 black 색상 적용
         if (premium == 0) {
@@ -3237,6 +4457,11 @@ export const Controller = {
             contentList.style.flexDirection = 'column';
         }
 
+        const sb = window.innerWidth - document.documentElement.clientWidth;
+        document.documentElement.style.setProperty(
+            '--scrollbar-compensation',
+            `${sb > 0 ? sb : 0}px`
+        );
         document.body.classList.add('modal');
         document.body.style.overflow = 'hidden';
     },
@@ -3251,6 +4476,9 @@ export const Controller = {
 
         document.body.classList.remove('modal');
         document.body.style.overflow = '';
+        if (!document.body.classList.contains('notice-popup-open')) {
+            document.documentElement.style.removeProperty('--scrollbar-compensation');
+        }
     },
 
     wrapWindowByMask() {
@@ -3311,27 +4539,49 @@ export const Controller = {
 
 
 
-    // 공용 오픈 함수 (tab 파라미터 추가) (detail.html 호출)
+    // 공용 오픈 함수 (index 통합 세부 비교 뷰)
     openDetailModal(tabName = 'premium') {
-        const modal = document.getElementById("detailmodal");
-        const iframe = document.getElementById("detail_modal_iframe");
-        const url = `${location.protocol}//${location.host}/detail.html?token=${appConstants.jwt}&tab=${tabName}`;
-
-        this._showModal(modal, iframe, url);
+        if (appConstants.jwt) {
+            try { sessionStorage.setItem('mmlfcp_auth_token', appConstants.jwt); } catch (_) { /* ignore */ }
+        }
+        compareView.invalidate();
+        compareView.open(tabName || 'premium');
+        try {
+            history.pushState({ detailCompare: true }, '', '');
+        } catch (_) { /* ignore */ }
     },
 
-    //상품유형별 보험료 비교 열기 (detail_c.html 호출)
+    //상품유형별 보험료 비교 열기
     openPlanDetailModalBtn() {
-        const modal = document.getElementById("detailmodal"); // 통합된 ID 사용
-        const iframe = document.getElementById("detail_modal_iframe");
-        const url = `${location.protocol}//${location.host}/detail_c.html?token=${appConstants.jwt}`;
-        this._showModal(modal, iframe, url);
+        if (appConstants.jwt) {
+            try { sessionStorage.setItem('mmlfcp_auth_token', appConstants.jwt); } catch (_) { /* ignore */ }
+        }
+        compareView.invalidate();
+        compareView.open('simplifi');
+        try {
+            history.pushState({ detailCompare: true }, '', '');
+        } catch (_) { /* ignore */ }
     },
 
 
     _setlocalItem() {
+        // UI 테마 키는 유지 (clear 시 테마 초기화 방지)
+        const preserveKeys = [
+            'mmlfcp_ui_theme',
+            'mmlfcp_ui_mode',
+            'mmlfcp_ui_font',
+            'mmlfcp_ui_custom_color',
+            'mmlfcp_ui_ga_brand',
+            'mmlfcp_default_user_plans',
+        ];
+        const preserved = {};
+        preserveKeys.forEach((k) => {
+            const v = localStorage.getItem(k);
+            if (v != null) preserved[k] = v;
+        });
 
         localStorage.clear();
+        Object.entries(preserved).forEach(([k, v]) => localStorage.setItem(k, v));
 
         // ✅ 필요한 key만 갱신
         localStorage.setItem('cust_name', mmlfcp_state.get('cust_name'));
@@ -3357,13 +4607,21 @@ export const Controller = {
         localStorage.setItem("product_insur_premiums", JSON.stringify(mmlfcp_state.get('product_insur_premiums') || []));
         localStorage.setItem("coverage_ratio_map", JSON.stringify(mmlfcp_state.get('coverage_ratio_map') || {}));
 
-        //체크한 coverage_cd, company_code
-        localStorage.setItem("coverage_cd_checked", JSON.stringify(mmlfcp_state.get('coverage_cd_checked') || {}));
-        localStorage.setItem("company_code_checked", JSON.stringify(mmlfcp_state.get('company_code_checked') || {}));
+        //체크한 coverage_cd, company_code (CSV 문자열로 저장 — 객체 {} 저장 시 detail_c 에서 .split 오류)
+        const covChecked = mmlfcp_state.get('coverage_cd_checked');
+        const coChecked = mmlfcp_state.get('company_code_checked');
+        const covCsv = (typeof covChecked === 'string' && covChecked)
+            ? covChecked
+            : (this.checked_coverage_cd() || '');
+        const coCsv = (typeof coChecked === 'string' && coChecked)
+            ? coChecked
+            : (this.checked_company_code() || '');
+        localStorage.setItem("coverage_cd_checked", JSON.stringify(covCsv));
+        localStorage.setItem("company_code_checked", JSON.stringify(coCsv));
     },
 
 
-    //내부에서만 쓰는 실제 실행 함수 (중복 로직 제거)
+    //내부에서만 쓰는 실제 실행 함수 (레거시 iframe 호환 — 미사용 시 no-op)
     _showModal(modal, iframe, url) {
         if (iframe) {
             iframe.removeAttribute("src");
@@ -3371,7 +4629,6 @@ export const Controller = {
         }
         if (modal) {
             modal.style.display = "block";
-            // 뒤로가기 처리를 위한 히스토리 추가
             history.pushState({ modal: "open" }, null, "");
         }
     },
@@ -3402,16 +4659,16 @@ export const Controller = {
         const el = document.getElementById(id);
         if (!el) return;
 
-        if (isShow) {
-            el.style.display = ""; // 공간 차지
-            // 아주 짧은 지연시간 뒤에 투명도를 올려 부드럽게 나타나게 함
-            setTimeout(() => {
-                el.style.opacity = "1";
-            }, 10);
-        } else {
-            el.style.opacity = "0";
-            el.style.display = "none"; // 공간 제거
-        }
+        const show = !!isShow;
+        el.classList.toggle('is-toolbar-hidden', !show);
+        el.hidden = !show;
+        el.setAttribute('aria-hidden', show ? 'false' : 'true');
+        if ('disabled' in el) el.disabled = !show;
+        // 인라인 스타일 잔여값 제거 (과거 opacity/display 충돌 방지)
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('pointer-events');
     }
 
 }

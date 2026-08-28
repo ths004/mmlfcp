@@ -1,3 +1,8 @@
+const AUTH_TOKEN_KEY = 'mmlfcp_auth_token';
+const URL_PATH_KEY = 'mmlfcp_url_path';
+const DEVICE_KEY = 'mmlfcp_device';
+const HIDDEN_QUERY_KEYS = ['token', 'path', 'device'];
+
 export const app = {
     getUrlParameter(sParam) {
         var sPageURL = window.location.search.substring(1),
@@ -13,6 +18,100 @@ export const app = {
             }
         }
         return false;
+    },
+
+    _sessionGet(key) {
+        try {
+            return sessionStorage.getItem(key) || '';
+        } catch (_) {
+            return '';
+        }
+    },
+
+    _sessionSet(key, value) {
+        if (value == null || value === '') return;
+        try {
+            sessionStorage.setItem(key, String(value));
+        } catch (_) { /* ignore */ }
+    },
+
+    /** sessionStorage에 저장된 인증 토큰 */
+    getStoredAuthToken() {
+        return this._sessionGet(AUTH_TOKEN_KEY);
+    },
+
+    /** 토큰 저장 (탭/iframe 간 공유) */
+    setStoredAuthToken(token) {
+        this._sessionSet(AUTH_TOKEN_KEY, token);
+    },
+
+    getStoredUrlPath() {
+        return this._sessionGet(URL_PATH_KEY);
+    },
+
+    getStoredDevice() {
+        return this._sessionGet(DEVICE_KEY);
+    },
+
+    /**
+     * URL·sessionStorage에서 token/path/device를 확보하고 주소창에서 제거한다.
+     * @returns {{ token: string, path: string, device: string }}
+     */
+    captureEntryParams() {
+        let token = '';
+        let path = '';
+        let device = '';
+        try {
+            const qs = new URLSearchParams(window.location.search);
+            token = qs.get('token') || '';
+            path = qs.get('path') || '';
+            device = qs.get('device') || '';
+        } catch (_) {
+            token = this.getUrlParameter('token') || '';
+            path = this.getUrlParameter('path') || '';
+            device = this.getUrlParameter('device') || '';
+        }
+
+        if (!token) token = this.getStoredAuthToken();
+        if (!path) path = this.getStoredUrlPath();
+        if (!device) device = this.getStoredDevice();
+
+        if (token) this.setStoredAuthToken(token);
+        if (path) this._sessionSet(URL_PATH_KEY, path);
+        if (device) this._sessionSet(DEVICE_KEY, device);
+
+        this.stripQueryParams(HIDDEN_QUERY_KEYS);
+
+        return {
+            token: token || '',
+            path: path || '',
+            device: device || '',
+        };
+    },
+
+    /**
+     * URL·sessionStorage에서 토큰을 확보하고 주소창에서 token 파라미터를 제거한다.
+     * @returns {string} JWT 또는 빈 문자열
+     */
+    captureAuthToken() {
+        return this.captureEntryParams().token;
+    },
+
+    /** 주소창에서 지정 쿼리 키 제거 (history.replaceState) */
+    stripQueryParams(keys = []) {
+        try {
+            const url = new URL(window.location.href);
+            let changed = false;
+            keys.forEach((key) => {
+                if (url.searchParams.has(key)) {
+                    url.searchParams.delete(key);
+                    changed = true;
+                }
+            });
+            if (!changed) return;
+            const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : '') + url.hash;
+            history.replaceState(history.state, '', next);
+        } catch (_) { /* ignore */ }
     },
     getAgefromString(yyyymmdd) {
         if (!yyyymmdd || yyyymmdd.length < 8) return 0;
@@ -85,6 +184,61 @@ export const app = {
     formatNumber(number) {
         return number.toLocaleString('en-US');
     },
+
+    /**
+     * html[data-font] 의 CSS zoom 값.
+     * Chrome에서 zoom 적용 시 getBoundingClientRect(시각)와 fixed top/left(레이아웃)가
+     * 어긋나므로, fixed 배치 시 이 값으로 나눠야 한다.
+     */
+    getDocumentZoom() {
+        try {
+            const raw = getComputedStyle(document.documentElement).zoom;
+            const n = parseFloat(raw);
+            return Number.isFinite(n) && n > 0 ? n : 1;
+        } catch (_) {
+            return 1;
+        }
+    },
+
+    /**
+     * position:fixed 팝오버를 앵커 바로 아래에 배치 (html zoom 보정 포함)
+     * @returns {{ top: number, left: number } | null}
+     */
+    placeFixedBelowAnchor(box, anchorEl, options = {}) {
+        if (!box || !anchorEl || !document.contains(anchorEl)) return null;
+
+        const gap = options.gap ?? 6;
+        const pad = options.pad ?? 12;
+        const zoom = this.getDocumentZoom();
+        const rect = anchorEl.getBoundingClientRect();
+
+        if (rect.width < 1 || rect.height < 1 ||
+            rect.bottom < 0 || rect.top > window.innerHeight ||
+            rect.right < 0 || rect.left > window.innerWidth) {
+            return null;
+        }
+
+        const boxW = box.offsetWidth || options.fallbackWidth || 280;
+        const boxH = box.offsetHeight || options.fallbackHeight || 160;
+
+        // visual(rect) → layout(css px under zoom)
+        const layoutLeftBound = window.innerWidth / zoom;
+        const layoutTopBound = window.innerHeight / zoom;
+
+        let left = (rect.left + rect.width / 2) / zoom - boxW / 2;
+        left = Math.max(pad, Math.min(left, layoutLeftBound - boxW - pad));
+
+        let top = rect.bottom / zoom + gap;
+        const maxTop = layoutTopBound - Math.min(boxH, layoutTopBound - pad * 2) - pad;
+        if (top > maxTop) top = Math.max(pad, maxTop);
+
+        const topPx = Math.round(top);
+        const leftPx = Math.round(left);
+        box.style.top = `${topPx}px`;
+        box.style.left = `${leftPx}px`;
+        return { top: topPx, left: leftPx };
+    },
+
     parseNumber(val) {
         return Number(String(val).replace(/,/g, '')) || 0;
     },
@@ -94,6 +248,22 @@ export const app = {
         const day = dateStr.substring(6, 8);    // 마지막 2자리: 일
         return `${year}-${month}-${day}`;       // "YYYY-MM-DD" 형식으로 변환
     },
+
+    /** YYYYMMDD 또는 YYYY-MM-DD → YYYYMMDD */
+    toYyyymmdd(value) {
+        const s = String(value ?? '').trim();
+        if (/^\d{8}$/.test(s)) return s;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(/-/g, '');
+        return '';
+    },
+
+    /** YYYYMMDD → date input 값(YYYY-MM-DD) */
+    toDateInputValue(yyyymmdd) {
+        const s = this.toYyyymmdd(yyyymmdd);
+        if (!s || !this.isValidDate(s)) return '';
+        return this.formatInsuranceBirtDate(s);
+    },
+
     isValidDate(dateString) {
         // yyyyMMdd 형식(숫자만, 총 8자리)인지 확인
         if (!/^\d{8}$/.test(dateString)) return false;

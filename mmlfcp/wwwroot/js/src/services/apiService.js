@@ -38,14 +38,15 @@ const handleResponse = async (res) => {
 
 export const apiService = {
     /**
-  * 사용자 인증 (GET 방식)
-  * ?token=xxx&access_path=xxx
+  * 사용자 인증 (GET)
+  * Authorization 헤더 필수. 레거시 서버 호환을 위해 token 쿼리는 유지하되,
+  * 진입 URL에서는 sessionStorage 저장 후 주소창에서 제거한다(app.captureEntryParams).
   */
     async auth() {
         const query = new URLSearchParams({
-            token: appConstants.jwt,
-            access_path: appConstants.access_path,
-            device: appConstants.device
+            token: appConstants.jwt || '',
+            access_path: appConstants.access_path || '',
+            device: appConstants.device || ''
         }).toString();
 
         const url = `${BASE_URL}${API_MMLFCP_URL.API_AUTH}?${query}`;
@@ -233,13 +234,11 @@ export const apiService = {
     },
 
     /**
-     엑셀 로그 생성
+     엑셀 로그 생성 — JWT는 Authorization 헤더만 사용
      */
     async ExcelLog() {
         const query = new URLSearchParams({
-            token: appConstants.jwt,
-            access_path: appConstants.access_path,
-            device: appConstants.device
+            device: appConstants.device || ''
         }).toString();
 
         const url = `${BASE_URL}${API_MMLFCP_URL.API_EXCEL_LOG}?${query}`;
@@ -249,6 +248,21 @@ export const apiService = {
         });
         return handleResponse(res);
     },
+
+    /**
+     * 인증이 필요한 PDF/정적 리소스 다운로드
+     */
+    async fetchAuthorizedBlob(url) {
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: defaultHeaders(),
+        });
+        if (!res.ok) {
+            throw new Error(`파일 다운로드 실패 (${res.status})`);
+        }
+        return res.blob();
+    },
+
 
 
 };

@@ -1,104 +1,139 @@
 <!DOCTYPE html>
 <html lang="ko">
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="IE=edge" http-equiv="X-UA-Compatible">
-<meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"
-	name="viewport">
-<meta content="yes" name="apple-mobile-web-app-capable">
-
 <head>
 	<meta charset="UTF-8">
+	<meta content="IE=edge" http-equiv="X-UA-Compatible">
+	<meta content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+	<meta content="yes" name="apple-mobile-web-app-capable">
+	<meta name="theme-color" content="#2B579A">
 	<title>한장 보험료 비교</title>
-	<link href="./css/reset.css" rel="stylesheet" type="text/css" />
-	<link href="./css/ui.css" rel="stylesheet" type="text/css" />
-	<link href="./css/style.css" rel="stylesheet" type="text/css" />
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+	<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+	<link href="./css/reset.css" rel="stylesheet" type="text/css">
+	<link href="./css/ui.css" rel="stylesheet" type="text/css">
+	<link href="./css/style.css" rel="stylesheet" type="text/css">
+	<link href="./css/mobile-app.css?v=26.08.27.37" rel="stylesheet" type="text/css">
 </head>
 
 <body>
-	<div class="container">
-		<header class="page-header">
+	<div class="container app-shell">
+		<header class="page-header app-header">
 			<div class="header-wrap">
 				<div class="header-option-box left">
-					<a href="#none" class="header-option-btn">
+					<a href="#none" class="header-option-btn" aria-label="뒤로">
 						<i class="ic ic-back"></i>
 					</a>
 				</div>
-
 				<div class="page-box">
 					<span class="page-txt">한장 보험료 비교</span>
 				</div>
-
 			</div>
 		</header>
 
-		<div class="wrapper">
-
-
-			<article class="search-form-layout1">
-
+		<div class="wrapper app-main">
+			<article class="search-form-layout1 app-search">
 				<div class="inner wrap">
-					<div class="search-item-list">
-						<div class="search-item-box">
-							<div class="item-head-box">생년월일 / 성별</div>
-							<div class="item-body-box">
+					<section class="app-condition-panel" aria-label="조회 조건">
+						<div class="condition-grid">
+							<div class="condition-field field-birth">
+								<div class="field-label-row">
+									<div class="field-label">생년월일</div>
+									<div class="old-view-box"></div>
+								</div>
 								<div class="old-group-box">
-
 									<div class="old-box">
-										<div class="old-input-box">
-											<input type="number" id="birth_date" inputmode="numeric" pattern="[0-9]*"
-												maxlength="8" onkeyup="regexp.number(this);" value="19850101">
-										</div>
-										<div class="old-view-box"></div>
-									</div>
-
-									<div class="gender-box">
-
-										<div class="label-box">
-											<label>
-												<input type="radio" name="gender" value="M" checked>
-												<span class="txt">남자</span>
-											</label>
-										</div>
-
-										<div class="label-box">
-											<label>
-												<input type="radio" name="gender" value="F">
-												<span class="txt">여자</span>
-											</label>
+										<div class="old-input-box has-calendar">
+											<input type="tel" id="birth_date" inputmode="numeric" pattern="[0-9]*"
+												maxlength="8" onkeyup="regexp.number(this);" value="19850101"
+												placeholder="YYYYMMDD" aria-label="생년월일 8자리">
+											<button type="button" id="birth_calendar_btn" class="birth-calendar-wrap"
+												title="캘린더로 선택" aria-label="캘린더로 생년월일 선택">
+												<span class="birth-calendar-icon" aria-hidden="true"></span>
+											</button>
 										</div>
 									</div>
 								</div>
 							</div>
-						</div>
 
-						<div class="search-item-box">
-							<div class="item-head-box">상품유형 / 만기</div>
-							<div class="item-body-box">
-								<div class="input-group-box">
-									<div class="sbox w60">
-										<a href="#none" id="selected_product" class="set-btn"
-											onclick="selectOpen(this)">손보 종합(무해지)</a>
-										<div id="productsgroupList" class="select-menu">
-										</div>
+							<div class="condition-field field-gender">
+								<div class="field-label">성별</div>
+								<div class="gender-box" role="radiogroup" aria-label="성별">
+									<div class="label-box">
+										<label>
+											<input type="radio" name="gender" value="M" checked>
+											<span class="txt">남</span>
+										</label>
 									</div>
-									<div class="sbox w40">
-										<a href="#none" id="selected_expiration" class="set-btn"
-											onclick="selectOpen(this)">20년/100세</a>
-										<div id="paymentgroupList" class="select-menu">
-										</div>
+									<div class="label-box">
+										<label>
+											<input type="radio" name="gender" value="F">
+											<span class="txt">여</span>
+										</label>
 									</div>
 								</div>
 							</div>
+
+							<div class="condition-field field-insurance">
+								<div class="field-label">생손보 유형</div>
+								<div class="gender-box insurance-box" role="radiogroup" aria-label="생손보 유형">
+									<div class="label-box">
+										<label>
+											<input type="radio" name="insurance_type" value="F" checked>
+											<span class="txt">손보</span>
+										</label>
+									</div>
+									<div class="label-box">
+										<label>
+											<input type="radio" name="insurance_type" value="L">
+											<span class="txt">생보</span>
+										</label>
+									</div>
+								</div>
+							</div>
+
+							<div class="condition-field field-plan-category">
+								<div class="field-label">상품군</div>
+								<div id="plan_category_box" class="plan-category-box" role="radiogroup" aria-label="상품군">
+									<button type="button" class="plan-category-chip is-active" data-category="종합" aria-pressed="true">종합</button>
+									<button type="button" class="plan-category-chip" data-category="건강" aria-pressed="false">건강</button>
+									<button type="button" class="plan-category-chip" data-category="간편" aria-pressed="false">간편</button>
+									<button type="button" class="plan-category-chip" data-category="어린이·청소년" aria-pressed="false">어린이·청소년</button>
+									<button type="button" class="plan-category-chip" data-category="기타" aria-pressed="false">기타</button>
+								</div>
+							</div>
+
+							<div class="condition-field field-product">
+								<div class="field-label">상품 유형</div>
+								<div class="sbox w60">
+									<a href="#none" id="selected_product" class="set-btn"
+										onclick="selectOpen(this)">종합(무해지)</a>
+									<div id="productsgroupList" class="select-menu"></div>
+								</div>
+							</div>
+
+							<div class="condition-field field-term">
+								<div class="field-label">납기/만기</div>
+								<div class="sbox w40">
+									<a href="#none" id="selected_expiration" class="set-btn"
+										onclick="selectOpen(this)">20년/100세</a>
+									<div id="paymentgroupList" class="select-menu"></div>
+								</div>
+							</div>
 						</div>
-					</div>
 
-					<div class="search-menu-box">
-						<button type="button" id="product-retrieve" class="search-menu-btn">
-							<span>조회</span>하기
-						</button>
-					</div>
+						<div class="condition-footer">
+							<p class="auto-hint">조건을 바꾸면 자동으로 조회됩니다</p>
+							<button type="button" id="product-retrieve" class="search-menu-btn refresh-btn">
+								다시 조회
+							</button>
+						</div>
+					</section>
 
-					<article class="popup3">
+					<!-- keep legacy class hooks for JS -->
+					<div class="search-item-list" hidden aria-hidden="true"></div>
+					<div class="search-menu-box app-search-cta" hidden aria-hidden="true"></div>
+
+					<article class="popup3 app-category" style="display:none">
 						<div class="popup-wrapper">
 							<div class="popup-contents">
 								<div class="popup-body-box">
@@ -111,68 +146,57 @@
 															<a href="#none" id="all" value="전체"
 																class="item-menu-box type-all active">
 																<div class="img-box">
-																	<img src="./img/ic_category_all.png" alt="이미지">
+																	<img src="./img/ic_category_all.png" alt="">
 																</div>
 																<div class="txt-box">전체</div>
 															</a>
 														</li>
-
 														<li>
 															<a href="#none" id="cancer" value="암" class="item-menu-box">
 																<div class="img-box">
-																	<img src="./img/ic_category1.png" alt="암">
+																	<img src="./img/ic_category1.png" alt="">
 																</div>
 																<div class="txt-box">암</div>
 															</a>
 														</li>
-
 														<li>
 															<a href="#none" id="brain" value="뇌" class="item-menu-box">
 																<div class="img-box">
-																	<img src="./img/ic_category2.png" alt="뇌">
+																	<img src="./img/ic_category2.png" alt="">
 																</div>
 																<div class="txt-box">뇌</div>
 															</a>
 														</li>
-
 														<li>
 															<a href="#none" id="heart" value="심" class="item-menu-box">
 																<div class="img-box">
-																	<img src="./img/ic_category3.png" alt="심장">
+																	<img src="./img/ic_category3.png" alt="">
 																</div>
 																<div class="txt-box">심</div>
 															</a>
 														</li>
-
 														<li>
-															<a href="#none" id="diagnosis" value="진단비"
-																class="item-menu-box">
+															<a href="#none" id="diagnosis" value="진단비" class="item-menu-box">
 																<div class="img-box">
-																	<img src="./img/ic_category4.png" alt="진단비">
+																	<img src="./img/ic_category4.png" alt="">
 																</div>
 																<div class="txt-box">진단</div>
 															</a>
 														</li>
-
 														<li>
-															<a href="#none" id="surgery" value="수술입원"
-																class="item-menu-box">
+															<a href="#none" id="surgery" value="수술입원" class="item-menu-box">
 																<div class="img-box">
-																	<img src="./img/ic_category5.png" alt="수술">
+																	<img src="./img/ic_category5.png" alt="">
 																</div>
 																<div class="txt-box">수술/입원</div>
 															</a>
 														</li>
-
-														<li>
+														<li class="category-action">
 															<button type="button" id="change-bojang"
-																onclick="popupOpen('setting')"
-																style="background-color: #ebff07; color:#000000; border: 0px #aaaaaa solid; padding: 6px 15px; border-radius: 0.5rem; width: 100%; height: 80px;">
-																<span style="font-weight: 600;">보장<br> 변경하기</span>
-
+																onclick="popupOpen('setting')" disabled>
+																보장<br>변경
 															</button>
 														</li>
-
 													</ul>
 												</div>
 											</div>
@@ -183,18 +207,11 @@
 						</div>
 					</article>
 				</div>
-
-
-
-
 			</article>
 
-
-
-
-
-			<article class="list-filter-layout1 mt40">
+			<article class="list-filter-layout1 app-sort" style="display:none">
 				<div class="filter-wrap">
+					<div class="app-section-label">보험료 정렬</div>
 					<div class="filter-input-box">
 						<div class="label-box">
 							<label>
@@ -209,65 +226,54 @@
 							</label>
 						</div>
 					</div>
-
-
 				</div>
-
-
 			</article>
 
-			<article class="result-list-layout1">
-				<div id="productList" class="list-wrap">
-				</div>
+			<article class="result-list-layout1 app-results" style="display:none">
+				<div id="productList" class="list-wrap"></div>
 			</article>
 
 			<article class="popup popup-detail">
-				<div id="productDetailList" class="popup-wrapper">
-				</div>
+				<div id="productDetailList" class="popup-wrapper"></div>
 			</article>
 
-			<article id="product-all-list" class="popup popup-setting">
+			<article id="product-all-list" class="popup popup-setting app-setting">
 				<div class="popup-wrapper">
 					<div class="popup-contents">
 						<div class="popup-head-box">
-							<a href="javascript:popupClose('setting')" class="popup-back-btn"></a>
+							<a href="javascript:popupClose('setting')" class="popup-back-btn" aria-label="닫기"></a>
+							<span class="popup-title">보장 변경</span>
 						</div>
 						<div class="popup-body-box">
 							<article class="popup-setting-layout1">
-								<div class="setting-head-box">
-								</div>
-
+								<div class="setting-head-box"></div>
+								<p class="setting-head-hint">조건을 바꾸면 목록 보험료에 바로 반영됩니다</p>
 								<div class="setting-body-box">
-									<div class="setting-category-list2">
+									<div class="setting-category-list2" role="tablist" aria-label="가입 상태 필터">
 										<div class="list-box">
 											<ul>
 												<li>
 													<a href="#none" id="all-product" value="전체"
-														class="item-menu-box2 type-all active">
+														class="item-menu-box2 type-all active" role="tab" aria-selected="true">
 														<div class="txt-box">전체</div>
 													</a>
 												</li>
-
 												<li>
 													<a href="#none" id="assign" value="가입"
-														class="item-menu-box2 type-all">
+														class="item-menu-box2 type-all" role="tab" aria-selected="false">
 														<div class="txt-box">가입</div>
 													</a>
 												</li>
-
 												<li>
 													<a href="#none" id="not-assign" value="미가입"
-														class="item-menu-box2 type-all">
-
+														class="item-menu-box2 type-all" role="tab" aria-selected="false">
 														<div class="txt-box">미가입</div>
 													</a>
 												</li>
 											</ul>
 										</div>
 									</div>
-
-									<div id="allProductsDetailList" class="setting-check-list">
-									</div>
+									<div id="allProductsDetailList" class="setting-check-list"></div>
 								</div>
 							</article>
 						</div>
@@ -275,26 +281,51 @@
 				</div>
 			</article>
 
-
-			<!-- terms -->
 			<article class="bottom-layer bottom-layer-terms">
-				<div id="insurproductDetailList" class="layer-wrapper">
-				</div>
+				<div id="insurproductDetailList" class="layer-wrapper"></div>
 			</article>
 		</div>
 
 		<div class="loader-container">
 			<div class="loader"></div>
-			<!-- <strong>조회중입니다...</strong> -->
 		</div>
+	</div>
 
+	<div id="birth_calendar_modal" class="birth-calendar-modal" hidden aria-hidden="true">
+		<div class="birth-calendar-backdrop" data-calendar-close="1"></div>
+		<div class="birth-calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="birth_calendar_title">
+			<div class="birth-calendar-head">
+				<button type="button" class="birth-cal-nav" id="birth_cal_prev" aria-label="이전 달">‹</button>
+				<div class="birth-cal-title-wrap">
+					<button type="button" id="birth_calendar_title" class="birth-cal-title" aria-haspopup="listbox" aria-expanded="false">
+						<span id="birth_cal_year_label">1985년</span>
+						<span id="birth_cal_month_label">1월</span>
+						<span class="birth-cal-year-caret" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="birth-cal-today" id="birth_cal_today">오늘</button>
+				</div>
+				<button type="button" class="birth-cal-nav" id="birth_cal_next" aria-label="다음 달">›</button>
+			</div>
+			<div id="birth_cal_year_panel" class="birth-cal-year-panel" hidden>
+				<div id="birth_cal_year_list" class="birth-cal-year-list" role="listbox" aria-label="연도 선택"></div>
+			</div>
+			<div id="birth_cal_month_panel" class="birth-cal-month-panel">
+				<div class="birth-cal-weekdays" aria-hidden="true">
+					<span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+				</div>
+				<div id="birth_calendar_days" class="birth-cal-days"></div>
+			</div>
+			<div class="birth-calendar-foot">
+				<button type="button" class="birth-cal-cancel" data-calendar-close="1">취소</button>
+				<button type="button" class="birth-cal-confirm" id="birth_cal_confirm">선택</button>
+			</div>
+		</div>
 	</div>
 
 	<script src="./js/jquery.min.js"></script>
-	<script src="./js/ui.js?v=26.03.26.1"></script>
-	<script src="./js/common.js"></script>
-	<script src="./js/mmcp_main.js?v=26.04.28.1"></script>
-	<script src="./js/mmcp_detail.js?v=26.03.26.1"></script>
+	<script src="./js/ui.js?v=26.08.27.29"></script>
+	<script src="./js/common.js?v=26.08.27.29"></script>
+	<script src="./js/mmcp_main.js?v=26.08.27.29"></script>
+	<script src="./js/mmcp_detail.js?v=26.08.27.33"></script>
 </body>
-
 </html>

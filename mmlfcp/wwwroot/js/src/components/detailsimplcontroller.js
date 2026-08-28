@@ -1,5 +1,5 @@
 
-import { app } from '../utils/app.js';
+import { app } from '../utils/app.js?v=26.08.26.26';
 import { apiService } from '../services/apiService.js';
 
 
@@ -19,8 +19,8 @@ const simplified_detail_coverage =
 
     plan_payterm_type: '',
     plan_payment_expiration_name: '',
-    coverage_cd_checked: {},
-    company_code_checked: {},
+    coverage_cd_checked: '',
+    company_code_checked: '',
 
     guide_coverage_item: {},
     coverage_product_result: [],
@@ -37,30 +37,54 @@ const simplified_detail_coverage =
 
 
 export const detailSimplController = {
+    _eventsBound: false,
+
+    setLoading(on) {
+        const loader = document.getElementById('detailLoader');
+        if (!loader) return;
+        loader.classList.toggle('is-active', !!on);
+        loader.style.display = on ? 'flex' : 'none';
+        loader.setAttribute('aria-busy', on ? 'true' : 'false');
+    },
+
+    /** 메인 테이블 chk_ 와 충돌 방지 */
+    _chkId(...parts) {
+        return `s_chk_${parts.join('_')}`;
+    },
+
+    /** 표시명에서 '생손보'/'손보'/'생보' 접두어 숨김 */
+    _formatPlanTypeLabel(planName) {
+        return String(planName || '').replace(/^(생손보|손보|생보)\s+/, '');
+    },
+
     async init() {
-        this.loadBasicInfo();
+        this.setLoading(true);
+        try {
+            this.loadBasicInfo();
 
-        //1. 서버 데이터 조회 및 보험료 계산 로직 실행
-        await this.getPlanSimplifiPremiumsComparison();
+            //1. 서버 데이터 조회 및 보험료 계산 로직 실행
+            await this.getPlanSimplifiPremiumsComparison();
 
-        //2. 고객정보, 상품 select 박스 생성
-        this.setupComparisonHeader();
+            //2. 고객정보, 상품 select 박스 생성
+            this.setupComparisonHeader();
 
-        //3. map 생성
-        this.setFilteredProductsMap();
+            //3. map 생성
+            this.setFilteredProductsMap();
 
-        //4. 보험사 상품유형, 월보험료 정보
-        this.setupComparisonMain();
+            //4. 보험사 상품유형, 월보험료 정보
+            this.setupComparisonMain();
 
-        //5. 담보리스트 랜더링
-        this.renderCoverageList();
+            //5. 담보리스트 랜더링
+            this.renderCoverageList();
 
-        //6. 상품별 보험료 랜더링
-        this.renderPremiumTable();
+            //6. 상품별 보험료 랜더링
+            this.renderPremiumTable();
 
-        //7. 이벤트 실행
-        this.simplifi_events();
-
+            //7. 이벤트 실행
+            this.simplifi_events();
+        } finally {
+            this.setLoading(false);
+        }
     },
 
     loadBasicInfo() {
@@ -76,14 +100,19 @@ export const detailSimplController = {
         simplified_detail_coverage.plan_type = localStorage.getItem('plan_type_id') || '';
         simplified_detail_coverage.plan_type_name = localStorage.getItem('plan_type_name') || '';
 
-        simplified_detail_coverage.coverage_cd_checked = JSON.parse(localStorage.getItem('coverage_cd_checked') || {});
-        simplified_detail_coverage.company_code_checked = JSON.parse(localStorage.getItem('company_code_checked') || {});
+        // localStorage 값은 JSON 문자열이어야 함. || {} / || [] 는 JSON.parse 인자로 쓰면 예외 발생
+        simplified_detail_coverage.coverage_cd_checked = this._toCheckedCsv(
+            this._parseLocalJson('coverage_cd_checked', '')
+        );
+        simplified_detail_coverage.company_code_checked = this._toCheckedCsv(
+            this._parseLocalJson('company_code_checked', '')
+        );
 
         simplified_detail_coverage.plan_payterm_type = localStorage.getItem('plan_payment_expiration_cd') || '';
         simplified_detail_coverage.plan_payment_expiration_name = localStorage.getItem('plan_payment_expiration_name') || '';
 
-        simplified_detail_coverage.simplified_plan_coverages = JSON.parse(localStorage.getItem("plan_coverages") || []);
-        simplified_detail_coverage.coverage_ratio_map = JSON.parse(localStorage.getItem("coverage_ratio_map") || {});
+        simplified_detail_coverage.simplified_plan_coverages = this._parseLocalJson('plan_coverages', []);
+        simplified_detail_coverage.coverage_ratio_map = this._parseLocalJson('coverage_ratio_map', {});
 
     },
 
@@ -234,14 +263,44 @@ export const detailSimplController = {
 
     // [헤더 정보 및 보험사 선택박스 렌더링]
     setupComparisonHeader() {
-        const { cust_name, birth_date, age, gender, plan_type_name, plan_payment_expiration_name, simplified_coverage_premiums } = simplified_detail_coverage;
+        const {
+            cust_name,
+            age,
+            gender,
+            plan_type_name,
+            plan_payment_expiration_name,
+            simplified_coverage_premiums,
+        } = simplified_detail_coverage;
 
-        // 1. 상단 텍스트 정보(고객, 납기, 플랜명) 업데이트
-        this.renderTextInfo({ cust_name, birth_date, age, gender, plan_type_name, plan_payment_expiration_name });
-
-        // 2. 보험사 선택(Select Box) 필터링 및 구성
+        this.renderTextInfo({
+            cust_name,
+            age,
+            gender,
+            plan_type_name,
+            plan_payment_expiration_name,
+        });
         this.setupCompanySelect(simplified_coverage_premiums);
+    },
 
+    //상단 메타 카드 (다른 세부 비교 화면과 동일 포맷)
+    renderTextInfo(data) {
+        const { cust_name, age, gender, plan_type_name, plan_payment_expiration_name } = data;
+        const genderText = gender === 'M' ? '남성' : '여성';
+
+        const custInfo = document.getElementById('cust_info');
+        if (custInfo) {
+            custInfo.textContent = `${cust_name || '-'} · ${age || '-'}세 · ${genderText}`;
+        }
+
+        const productInfo = document.getElementById('product_info');
+        if (productInfo) {
+            productInfo.textContent = this._formatPlanTypeLabel(plan_type_name) || '-';
+        }
+
+        const paymentInfo = document.getElementById('payment_info');
+        if (paymentInfo) {
+            paymentInfo.textContent = plan_payment_expiration_name || '-';
+        }
     },
 
     //보험사 상품유형, 월보험료 정보
@@ -256,36 +315,6 @@ export const detailSimplController = {
 
         //3. 총 납입 보험료 정보
         this.PaymentTotalPremiumInfo(simplified_coverage_premiums);
-    },
-
-
-    //상단 텍스트 정보(고객, 납기, 플랜명) 업데이트
-    renderTextInfo(data) {
-        const { cust_name, birth_date, age, gender, plan_type_name, plan_payment_expiration_name } = data;
-
-        const genderText = gender === 'M' ? '남성' : '여성';
-        const formattedDate = app.formatDate(birth_date);
-
-        // 고객정보
-        const custInfo = document.getElementById('cust_info');
-        if (custInfo) {
-            custInfo.innerHTML = `
-            <strong>${cust_name}</strong>
-            <span>(${age}세, ${genderText}, 생년월일 : ${formattedDate})</span>
-        `;
-        }
-
-        // 만기정보
-        const paymentInfo = document.getElementById('payment_info');
-        if (paymentInfo) {
-            paymentInfo.innerHTML = `<strong>${plan_payment_expiration_name},</strong>`;
-        }
-
-        // 상품정보 (플랜유형)
-        const productInfo = document.getElementById("product_info");
-        if (productInfo) {
-            productInfo.innerHTML = `<strong>${plan_type_name},</strong>`;
-        }
     },
 
     //보험사 선택(Select Box) 필터링 및 구성
@@ -329,37 +358,34 @@ export const detailSimplController = {
         const filteredProducts = simplified_coverage_premiums.filter(p => p.company_code === selectedCompany);
 
         // 2. 템플릿 리터럴을 활용한 HTML 생성
-        const listItemsHtml = filteredProducts.map((product, i) => {
-            const checkId = `chk_${product.company_code}_${product.product_code}`;
+        const listItemsHtml = filteredProducts.map((product) => {
+            const checkId = this._chkId(product.company_code, product.product_code);
             const btnId = `btn_${product.company_code}_${product.product_code}`;
+            const checked = product.DispValue ? 'checked' : '';
             return `
                 <li>
-                <div class='innerc'>
-                    <div class='checkbox-area'>
-                        <input type='checkbox' id='${checkId}' company_code='${product.company_code}' company_name='${product.company_name}' ${[product.DispValue ? 'checked' : '']}>
-                            <label for='${checkId}'></label>
-                    </div>
-                    
-                    <div class='img-area' style='font-size:14px;'>${product.plan_name}</div>
-                        <button type='button' id='${btnId}' class='btn__product-info'>상품정보</button>
-
-                    <div class='alert__product-info'>
-                        <img src='./images/ico__alert-close.svg' alt='닫기' class='btn-close__alert'>
-                            <div class='alert__top'>
-                                <span>${product.company_name}</span>
-                                <strong>${product.product_name}</strong>
+                    <div class="innerc">
+                        <div class="checkbox-area">
+                            <input type="checkbox" id="${checkId}" company_code="${product.company_code}" company_name="${product.company_name}" ${checked}>
+                            <label for="${checkId}"></label>
+                        </div>
+                        <div class="img-area">${this._formatPlanTypeLabel(product.plan_name) || ''}</div>
+                        <button type="button" id="${btnId}" class="btn__product-info">상품정보</button>
+                        <div class="alert__product-info">
+                            <img src="./images/ico__alert-close.svg" alt="닫기" class="btn-close__alert">
+                            <div class="alert__top">
+                                <span>${product.company_name || ''}</span>
+                                <strong>${product.product_name || ''}</strong>
                             </div>
-                            <div class='alert__bottom'>
-                                <strong>${product.product_detail_name}</strong>
-                                <br />
+                            <div class="alert__bottom">
+                                <strong>${product.product_detail_name || ''}</strong><br>
                                 <span>가입조건 :</span>
-                                <strong>${product.product_conditions}</strong>
+                                <strong>${product.product_conditions || ''}</strong>
                             </div>
+                        </div>
                     </div>
-                </div>
-            </li > `;
+                </li>`;
         }).join('');
-        // 3. 최종 HTML 삽입 (ul 태그로 감싸기)
         simplifi_company_lists.innerHTML = `<ul>${listItemsHtml}</ul>`;
 
         //4. 상품정보 버튼 활성화
@@ -479,11 +505,12 @@ export const detailSimplController = {
             .map((item) => {
                 const isChecked = item.plan_coverage_selected === "checked" ? "checked" : "";
                 const amount = app.formatNumber(item.guide_coverage_amount || 0);
+                const checkId = this._chkId(item.coverage_cd);
                 return `<li>
                         <div class='left'>
                             <div class='checkbox-area'>
-                                <input type='checkbox' id='chk_${item.coverage_cd}' data-cd="${item.coverage_cd}" guide_coverage_amount="${amount}" ${isChecked}>
-                                <label for='chk_${item.coverage_cd}'>${item.coverage_name}</label>
+                                <input type='checkbox' id='${checkId}' data-cd="${item.coverage_cd}" guide_coverage_amount="${amount}" ${isChecked}>
+                                <label for='${checkId}'>${item.coverage_name}</label>
                             </div>
                         </div>
                         <div class='rightn'><em>${amount}</em></div>
@@ -556,45 +583,63 @@ export const detailSimplController = {
         });
     },
 
-    //상품별 상세 보험료 랜더링
+    //상품별 상세 보험료 랜더링 (메인 담보 상세 모달 스타일)
     renderPremiumDetailTable(company_code, product_code, coverage_cd) {
         const container = document.getElementById('simplifiList');
         if (!container) return;
 
         const { simplified_coverage_insur_premiums: product_insur_premiums } = simplified_detail_coverage;
-        let targetList = product_insur_premiums.filter(r => r.company_code == company_code && r.product_code == product_code);
-        let product_name = targetList[0]?.product_name.trim() || '';
+        const targetList = (product_insur_premiums || []).filter(
+            (r) => r.company_code == company_code && r.product_code == product_code
+        );
+        const product_name = targetList[0]?.product_name?.trim() || '상품 상세';
+        const company_name = targetList[0]?.company_name?.trim() || '';
+
+        const items = [];
+        targetList.forEach((product) => {
+            (product.detailList || [])
+                .filter((detail) => detail.coverage_cd == coverage_cd)
+                .forEach((detail) => {
+                    items.push(`
+                        <article class="detail-compare-item">
+                            <h3 class="detail-compare-item__title" id="${company_code}_${product_code}_${coverage_cd}">${detail.insur_nm || '담보'}</h3>
+                            <div class="detail-compare-item__meta">
+                                <span class="detail-compare-chip">가입금액 <b>${app.formatNumber(detail.contract_amount)}만원</b></span>
+                                <span class="detail-compare-chip detail-compare-chip--accent">보험료 <b>${app.formatNumber(detail.premium)}원</b></span>
+                                <span class="detail-compare-chip">납기 <b>${detail.pay_term || '-'}</b></span>
+                            </div>
+                            <div class="detail-compare-item__body">${(detail.insur_bojang || '보장 내용이 없습니다.')
+                                .replace(/^[\s\u00a0\u3000]+/gm, '')
+                                .replace(/(?:\r\n|\r|\n)/g, '<br />')}</div>
+                        </article>
+                    `);
+                });
+        });
+
+        const bodyHtml = items.length
+            ? items.join('')
+            : `
+                <div class="detail-compare-empty">
+                    <strong>해당 담보 정보가 없습니다</strong>
+                    <span>선택한 상품에 이 담보의 상세 내역이 없습니다.</span>
+                </div>
+            `;
 
         container.innerHTML = `
-        <div style="font-size: 1.6rem; margin: 35px 0px 10px 0px; font-weight: 500;">${product_name}</div>
-        <div style="margin: 0; overflow: scroll; height: 200px;">
-        <table>
-            <tbody>
-            ${targetList.map(product =>
-            product.detailList
-                // ✅ coverage_cd 조건 추가
-                .filter(detail => detail.coverage_cd == coverage_cd)
-                .map(detail => `
-                            <tr>
-                                <td style="font-size: 1.0rem; padding: 25px 0px 10px 0px;">
-                                    <h3 id="${company_code}_${product_code}_${coverage_cd}" style="color: #2f88ff;">
-                                        ${detail.insur_nm} : ${app.formatNumber(detail.contract_amount)}만원
-                                        (${app.formatNumber(detail.premium)}원)(${detail.pay_term})
-                                    </h3>
-                                    <br />
-                                    ${(detail.insur_bojang || "").replace(/(?:\r\n|\r|\n)/g, '<br />')}
-                                </td>
-                            </tr>
-                        `).join('')
-        ).join('')}
-         </tbody>
-    </table>
+        <div class="detail-compare-modal">
+            <div class="detail-compare-toolbar">
+                <div class="detail-compare-heading">
+                    <span class="detail-compare-kicker">담보별 상세</span>
+                    <h2 class="detail-compare-title">${product_name}</h2>
+                    <p class="detail-compare-desc">${company_name ? `${company_name} · ` : ''}선택한 담보의 가입금액·보험료·보장내용을 확인하세요.</p>
+                </div>
+                <button type="button" class="btn-priceList-cancel btn__close">닫기</button>
+            </div>
+            <div class="detail-compare-body simplifi-detail-body">
+                ${bodyHtml}
+            </div>
         </div>
-
-    <div class="button-area">
-        <button type="button" class="btn__close">닫기</button>
-    </div>
-    `;
+        `;
     },
 
     /**
@@ -610,9 +655,9 @@ export const detailSimplController = {
         let isChanged = false;
 
         // 2. 새로운 배열을 생성하며 값 업데이트 (불변성 유지)
-        //chk_LDB_82601015
+        // s_chk_LDB_82601015
         const updatedPremiums = coveragePremiums.map(item => {
-            if (item.company_code === company_code && item.DispValue !== checked && `chk_${item.company_code}_${item.product_code}` == id) {
+            if (item.company_code === company_code && item.DispValue !== checked && this._chkId(item.company_code, item.product_code) == id) {
                 isChanged = true;
                 return { ...item, DispValue: checked }; // 변경된 객체만 새로 생성
             }
@@ -762,7 +807,7 @@ export const detailSimplController = {
         // --- Part 1. 담보 리스트 UI 업데이트 ---
         const lists = document.getElementById('simplifi_plan_lists'); // ID 확인: simplifi_plan_lists
         if (lists) {
-            const li = lists.querySelector(`#chk_${coverage_cd}`)?.closest('li');
+            const li = lists.querySelector(`#${CSS.escape(this._chkId(coverage_cd))}`)?.closest('li');
             if (li) {
                 // 1. 체크박스 상태 업데이트
                 const checkbox = li.querySelector('.checkbox-area input');
@@ -799,10 +844,8 @@ export const detailSimplController = {
             // ID 규칙에 맞춰 요소 찾기
             const el = document.querySelector(`em[id="${product.company_code}_${product.product_code}_${coverage_cd}"][coverage_cd="${coverage_cd}"]`);
             if (el) {
-                // 텍스트 업데이트
-                el.textContent = app.formatNumber(premiumValue);
-                // 색상 및 스타일 적용 (Part 2에서 구한 globalMax/Min 기준)
-                this._applyPremiumStyle(el, premiumValue, globalMax, globalMin, flags);
+                // 선택 해제된 담보는 0을 희미하게 표시
+                this._applyPremiumStyle(el, premiumValue, globalMax, globalMin, flags, { muted: !isSelected });
             }
         });
         //console.log(`[Sync] 담보(${coverage_cd}) 관련 모든 UI 갱신 완료! 乔!`);
@@ -848,6 +891,9 @@ export const detailSimplController = {
 
     //--------------- 이벤트 함수 실행 ---------------
     simplifi_events() {
+        if (this._eventsBound) return;
+        this._eventsBound = true;
+
         const productgroupBtn = document.getElementById('product_group_name');
         const companyLists = document.getElementById('simplifi_company_lists');
         const bojangLists = document.getElementById('simplifi_plan_lists');
@@ -864,7 +910,7 @@ export const detailSimplController = {
 
         if (companyLists) {
             companyLists.addEventListener('click', (e) => {
-                const cb = e.target.closest('input[type="checkbox"][id^="chk_"]');
+                const cb = e.target.closest('input[type="checkbox"][id^="s_chk_"]');
                 if (!cb) return;
                 const company_code = cb.getAttribute("company_code"); // DB, HA, LABL
                 const checked_id = cb.getAttribute("id");
@@ -891,10 +937,10 @@ export const detailSimplController = {
 
         if (bojangLists) {
             bojangLists.addEventListener('click', (e) => {
-                const cb = e.target.closest('input[type="checkbox"][id^="chk_"]');
+                const cb = e.target.closest('input[type="checkbox"][id^="s_chk_"]');
                 if (cb) {
                     const coverage_cd = cb.dataset.cd;
-                    const bojangs = document.getElementById(`chk_${coverage_cd}`);
+                    const bojangs = document.getElementById(this._chkId(coverage_cd));
                     if (!bojangs) return;
 
                     //1.보장별, 상품별 체크 상태 갱신
@@ -936,11 +982,11 @@ export const detailSimplController = {
 
 
         if (container) {
-            // 1. 닫기 버튼 클릭 이벤트 (이미 잘 짜셨어요!)
+            // 1. 닫기 버튼 클릭 이벤트
             container.addEventListener("click", (e) => {
-                const closeBtn = e.target.closest('.btn__close'); // 두 클래스 모두 대응
+                const closeBtn = e.target.closest('.btn__close');
                 if (closeBtn) {
-                    const modal = document.querySelector('#modal01'); // 대상 모달 선택
+                    const modal = document.getElementById('simplifiDetailModal') || document.querySelector('#modal01');
                     const bottomContent = document.querySelector(".bottom-content .bottom");
 
                     if (modal) modal.style.display = 'none';
@@ -949,14 +995,12 @@ export const detailSimplController = {
                 }
             });
 
-            // 2. 배경 클릭 시 닫기 (이벤트 위임 방식 최적화)
+            // 2. 배경 클릭 시 닫기
             document.addEventListener("click", (e) => {
-                // 배경(.modal-bg 또는 .bg)을 클릭했는지 확인
                 const isBackground = e.target.classList.contains('modal-bg') || e.target.classList.contains('bg');
 
                 if (isBackground) {
-                    // 클릭된 배경의 부모 모달 찾기
-                    const modal = e.target.closest('#modal01');
+                    const modal = e.target.closest('#simplifiDetailModal') || e.target.closest('#modal01');
                     if (modal) {
                         modal.style.display = 'none';
                         document.body.classList.remove('modal');
@@ -972,23 +1016,112 @@ export const detailSimplController = {
 
 
 
-    //회사 "상품정보" 버튼 토글
+    //회사 "상품정보" 버튼 토글 — 메인 화면과 동일하게 body 마운트 + 앵커 아래 배치
     _ensureCompanyInfoTogglesBound() {
         const area = document.getElementById('simplifi_company_lists');
-        if (!area) return;
+        if (!area || area.dataset.companyInfoBound === '1') return;
+        area.dataset.companyInfoBound = '1';
 
-        area.addEventListener("click", (e) => {
-            const openBtn = e.target.closest('.btn__product-info');
-            const closeBtn = e.target.closest('.btn-close__alert');
+        const BOX_SEL = '.alert__product-info, .alert__product_info';
 
-            if (openBtn) {
-                const box = openBtn.parentElement.querySelector('.alert__product_info, .alert__product-info');
-                if (box) box.classList.toggle("show");
-            } else if (closeBtn) {
-                const box = closeBtn.closest('.alert__product_info, .alert__product-info');
-                if (box) box.classList.remove("show");// 숨기기
+        const restoreHome = (box) => {
+            if (!box) return;
+            const homeId = box.dataset.homeParentId;
+            const home = homeId ? document.getElementById(homeId) : null;
+            box.classList.remove('show');
+            box.style.top = '';
+            box.style.left = '';
+            box.style.visibility = '';
+            box.style.removeProperty('display');
+            box.removeAttribute('data-anchor-btn');
+            delete box.dataset.homeParentId;
+            if (home && document.contains(home)) {
+                if (box.parentElement !== home) home.appendChild(box);
+            } else if (box.parentElement === document.body) {
+                box.remove();
             }
+        };
+
+        const closeAll = (except = null) => {
+            document.querySelectorAll(`${BOX_SEL}.show`).forEach((el) => {
+                if (except && el === except) return;
+                restoreHome(el);
+            });
+        };
+
+        const placeBelow = (box, anchorBtn) => {
+            if (!box || !anchorBtn || !document.contains(anchorBtn)) return;
+            const home = anchorBtn.parentElement;
+            if (home && !home.id) {
+                home.id = `simplifi_info_home_${anchorBtn.id || Math.random().toString(36).slice(2, 8)}`;
+            }
+            if (home) box.dataset.homeParentId = home.id;
+            box.dataset.anchorBtn = anchorBtn.id || '';
+            if (box.parentElement !== document.body) document.body.appendChild(box);
+
+            box.classList.add('show');
+            box.style.visibility = 'hidden';
+
+            const placed = app.placeFixedBelowAnchor(box, anchorBtn, { gap: 6 });
+            if (!placed) {
+                restoreHome(box);
+                return;
+            }
+
+            box.style.visibility = '';
+        };
+
+        area.addEventListener('click', (e) => {
+            const openBtn = e.target.closest('.btn__product-info');
+            if (!openBtn) return;
+            e.stopPropagation();
+
+            let box = openBtn.parentElement.querySelector(BOX_SEL);
+            if (!box && openBtn.id) {
+                box = document.querySelector(`body > ${BOX_SEL}[data-anchor-btn="${CSS.escape(openBtn.id)}"]`);
+            }
+            if (!box) return;
+
+            const willOpen = !box.classList.contains('show');
+            closeAll(willOpen ? box : null);
+            if (willOpen) placeBelow(box, openBtn);
+            else restoreHome(box);
         });
+
+        if (!document.documentElement.dataset.simplifiProductInfoDocBound) {
+            document.documentElement.dataset.simplifiProductInfoDocBound = '1';
+            document.addEventListener('click', (e) => {
+                const closeBtn = e.target.closest('.btn-close__alert');
+                if (closeBtn) {
+                    const box = closeBtn.closest(BOX_SEL);
+                    if (box) restoreHome(box);
+                    return;
+                }
+                if (e.target.closest(BOX_SEL) || e.target.closest('.btn__product-info')) return;
+                closeAll();
+            });
+            const onViewportChange = () => closeAll();
+            window.addEventListener('resize', onViewportChange);
+            area.addEventListener('scroll', onViewportChange, true);
+        }
+    },
+
+    /** localStorage JSON 안전 파싱 (누락/깨진 값 → fallback) */
+    _parseLocalJson(key, fallback) {
+        const raw = localStorage.getItem(key);
+        if (raw == null || raw === '') return fallback;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            return fallback;
+        }
+    },
+
+    /** 체크 목록을 CSV 문자열로 정규화 (.split 호출 전 필수) */
+    _toCheckedCsv(value) {
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) return value.filter(Boolean).join(',');
+        return '';
     },
 
     /** 헬퍼 함수 1: ratioMap 안전하게 가져오기 */
@@ -1069,7 +1202,7 @@ export const detailSimplController = {
             const el = document.querySelector(`em[id="${product.company_code}_${product.product_code}_${coverage_cd}"][company_code="${product.company_code}"][product_code="${product.product_code}"]`);
 
             if (el) {
-                this._applyPremiumStyle(el, premiumValue, globalMax, globalMin, flags);
+                this._applyPremiumStyle(el, premiumValue, globalMax, globalMin, flags, { muted: !isSelected });
             }
         });
 
@@ -1077,15 +1210,22 @@ export const detailSimplController = {
 
     /**
   * 특정 셀에 보험료 숫자 + 색상 적용 (공용)
+  * @param {{ muted?: boolean }} [options] muted=true → 선택 해제 담보 0 희미 표시
   */
-    _applyPremiumStyle(el, premium, maxVal, minVal, flags) {
+    _applyPremiumStyle(el, premium, maxVal, minVal, flags, options = {}) {
 
         // 클래스 초기화
-        el.classList.remove('company__red', 'company__blue', 'company__black');
+        el.classList.remove('company__red', 'company__blue', 'company__black', 'company__muted');
 
         // 보험료 포맷팅
         const formattedPremium = app.formatNumber(premium);
         el.textContent = formattedPremium;
+
+        // 선택 해제된 담보: 0을 희미하게
+        if (options.muted) {
+            el.classList.add('company__muted');
+            return;
+        }
 
         // premium이 0일 경우 black 색상 적용
         if (premium == 0) {
@@ -1122,43 +1262,25 @@ export const detailSimplController = {
 
 
     _show_layer() {
-        const modal = document.querySelector('#modal01');
-        const inner = document.querySelector('.simplifi_main');
-        const body = document.body;
+        const modal = document.getElementById('simplifiDetailModal') || document.querySelector('#modal01');
+        const inner = document.querySelector('#simplifiDetailModal .simplifi_main') || document.querySelector('.simplifi_main');
+        if (!modal) return;
 
-        // 1. 마스크/전체 레이아웃 크기 설정
-        this._wrapWindowByMask();
+        // 인라인 absolute 위치 제거 — CSS flex 중앙 정렬
+        if (inner) {
+            inner.style.position = '';
+            inner.style.top = '';
+            inner.style.left = '';
+            inner.style.display = '';
+        }
 
-        // 2. 모달 보이기 (FadeIn 효과는 CSS transition 추천)
         modal.style.display = 'block';
-        setTimeout(() => { modal.style.opacity = '1'; }, 10);
-
-        // 3. 중앙 정렬 계산 (Vanilla JS 버전)
-        // 사실 CSS로 처리하는 게 베스트지만, 기존 로직을 유지한다면:
-        const windowHeight = window.innerHeight;
-        const windowWidth = window.innerWidth;
-        const innerHeight = inner.offsetHeight;
-        const innerWidth = inner.offsetWidth;
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-        inner.style.position = 'absolute';
-        inner.style.top = `${Math.max(0, (windowHeight - innerHeight) / 2 + scrollTop - 100)}px`;
-        inner.style.left = `${Math.max(0, (windowWidth - innerWidth) / 2)}px`;
-        inner.style.display = 'block';
-
-        // 4. body 클래스 추가
-        body.classList.add('modal');
-
+        modal.style.opacity = '1';
+        document.body.classList.add('modal');
     },
 
     _wrapWindowByMask() {
-        const modal = document.querySelector('#modal01');
-        // document.height 대체: scrollHeight 사용
-        const maskHeight = document.documentElement.scrollHeight;
-        const maskWidth = window.innerWidth;
-
-        modal.style.width = `${maskWidth}px`;
-        modal.style.height = `${maskHeight}px`;
+        // 레이아웃은 CSS(fixed inset)로 처리 — 마스크 크기 수동 지정 불필요
     },
 
 

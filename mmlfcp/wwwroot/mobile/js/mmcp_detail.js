@@ -119,17 +119,38 @@ var product_detail =
 
 
     /**
+     * 보장 변경 헤더 렌더링
+     */
+    renderSettingHead: function () {
+        const headBox = document.querySelector(".setting-head-box");
+        if (!headBox) return;
+
+        const planLabel = (typeof state.formatPlanTypeLabel === "function")
+            ? state.formatPlanTypeLabel(state.plan_name)
+            : String(state.plan_name || "");
+        const genderText = state.gender === "M" ? "남성" : "여성";
+        const insuranceLabel = state.insurance_type === "L" ? "생보"
+            : (state.insurance_type === "LF" ? "생손보" : "손보");
+
+        headBox.innerHTML = `
+            <div class="setting-head-label">조회 조건</div>
+            <div class="setting-head-top">
+                <span class="setting-head-badge">${insuranceLabel}</span>
+                <div class="subject-box">${planLabel || state.plan_name || "상품"}</div>
+            </div>
+            <div class="setting-head-meta">
+                <span class="setting-meta-chip">${state.plan_payterm_type_name || "-"}</span>
+                <span class="setting-meta-chip">보험나이 ${state.insur_age}세</span>
+                <span class="setting-meta-chip">${genderText}</span>
+            </div>
+        `;
+    },
+
+    /**
      * 모든 보장 항목 상세 리스트를 화면에 랜더링합니다.
      */
     renderAllCoverageList: function () {
-        // 1. 헤더 영역 렌더링 (setting-head-box)
-        const headBox = document.querySelector(".setting-head-box");
-        if (headBox) {
-            headBox.innerHTML = `
-                <div class='subject-box'>${state.plan_name}</div>
-                <div class='sub-box'>${state.plan_payterm_type_name} ( ${state.insur_age}세 / ${state.gender === 'M' ? '남자' : '여자'} )</div>
-            `;
-        }
+        this.renderSettingHead();
 
         // 2. 예외 코드 확인용 배열 (검색 속도 향상을 위해 Set이나 Array 활용)
         const coverage_except_code = "i001,i002,i003,i004,i005,i006,i008,i009,i010,i011,i012,f007,f009,f010,f011,f015,f016".split(',');
@@ -165,6 +186,7 @@ var product_detail =
                                     maxlength='7' 
                                     inputmode='numeric' 
                                     pattern='[0-9]*' 
+                                    aria-label='${item.coverage_name} 가입금액'
                                     onclick='this.select();'>
                             </div>
                         </div>
@@ -203,37 +225,38 @@ var product_detail =
             const displayAmount = (selected_assign === "not-assign" || !isSelected) ? "0" : item.guide_coverage_amount.toLocaleString();
 
             return `
-                <div class='list-box'>
-                    <a href='#none' class='${isSelected ? "row selected" : "row"}'>
-                        <div class='check-box'>
-                            <i class='ic ic-check'></i>
-                        </div>
-                        <div class='info-box'>
-                            <div class='subject-box'>${item.coverage_name}</div>
-                            <div class='con-box'>
-                                <div class='input-box'>
-                                    <input type='text' ${isReadonly} 
-                                        value='${displayAmount}' 
-                                        id='contract${i}' 
-                                        name='change_coverage_amount' 
-                                        plan_id='${item.plan_id}' 
-                                        coverage_name='${item.coverage_name}' 
-                                        coverage_cd='${item.coverage_cd}' 
-                                        coverage_amount='${item.guide_coverage_amount}' 
-                                        is_selected_coverage='${item.is_selected_coverage}' 
-                                        maxlength='7' 
-                                        inputmode='numeric' 
-                                        pattern='[0-9]*' 
-                                        onclick='this.select();'>
-                                </div>
+                <a href='#none' class='${isSelected ? "row selected" : "row"}'>
+                    <div class='check-box'>
+                        <i class='ic ic-check'></i>
+                    </div>
+                    <div class='info-box'>
+                        <div class='subject-box'>${item.coverage_name}</div>
+                        <div class='con-box'>
+                            <div class='input-box'>
+                                <input type='text' ${isReadonly} 
+                                    value='${displayAmount}' 
+                                    id='contract${i}' 
+                                    name='change_coverage_amount' 
+                                    plan_id='${item.plan_id}' 
+                                    coverage_name='${item.coverage_name}' 
+                                    coverage_cd='${item.coverage_cd}' 
+                                    coverage_amount='${item.guide_coverage_amount}' 
+                                    is_selected_coverage='${item.is_selected_coverage}' 
+                                    maxlength='7' 
+                                    inputmode='numeric' 
+                                    pattern='[0-9]*' 
+                                    aria-label='${item.coverage_name} 가입금액'
+                                    onclick='this.select();'>
                             </div>
                         </div>
-                    </a>
-                </div>
+                    </div>
+                </a>
             `;
         }).join('');
 
-        listContainer.innerHTML = listItemsHTML;
+        listContainer.innerHTML = filteredList.length
+            ? `<div class='list-box'>${listItemsHTML}</div>`
+            : `<div class="setting-empty" role="status">해당 조건의 담보가 없습니다.</div>`;
     },
 
     /**
@@ -243,17 +266,8 @@ var product_detail =
     generateCoverageListHTML: function () {
         const coverage_except_code = "i001,i002,i003,i004,i005,i006,i008,i009,i010,i011,i012,f007,f009,f010,f011,f015,f016".split(',');
 
-        // 1. 헤더 영역 업데이트 (Vanilla JS)
-        const headBox = document.querySelector(".setting-head-box");
-        if (headBox) {
-            const genderText = state.gender === 'M' ? '남성' : '여성';
-            headBox.innerHTML = `
-            <div class='subject-box'>${state.plan_name}</div>
-            <div class='sub-box'>${state.plan_payterm_type_name} ( ${state.insur_age}세 / ${genderText} )</div>
-            `;
-        }
+        this.renderSettingHead();
 
-        // 2. 리스트 마크업 생성 (map 사용)
         const listItemsHTML = state.plan_coverages.map((item, i) => {
             const isSelected = item.coverages_checked !== "";
             const isReadonly = coverage_except_code.includes(item.coverage_cd) ? "readonly" : "";
@@ -280,6 +294,7 @@ var product_detail =
                                 maxlength='7' 
                                 inputmode='numeric' 
                                 pattern='[0-9]*' 
+                                aria-label='${item.coverage_name} 가입금액'
                                 onclick='this.select();'>
                         </div>
                     </div>
@@ -288,7 +303,6 @@ var product_detail =
         `;
         }).join('');
 
-        // 3. 최종 list-box 래퍼로 감싸서 반환
         return `<div class='list-box'>${listItemsHTML}</div>`;
     },
 
@@ -449,7 +463,9 @@ var product_detail =
             .filter(detail => detail.coverage_cd === coverage_cd) // 그 중 선택한 담보코드 찾기
             .map(detail => {
                 const headerText = `${detail.insur_nm}:${detail.contract_amount.toLocaleString()}만원(${detail.premium.toLocaleString()}원)(${detail.pay_term})`;
-                const bodyContent = detail.insur_bojang ? detail.insur_bojang.replace(/(?:\r\n|\r|\n)/g, '<br />') : "";
+                const bodyContent = detail.insur_bojang
+                    ? detail.insur_bojang.replace(/^[\s\u00a0\u3000]+/gm, '').replace(/(?:\r\n|\r|\n)/g, '<br />')
+                    : "";
 
                 return `
                     <div class='terms-item-box'>

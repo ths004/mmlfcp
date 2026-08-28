@@ -1,167 +1,179 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//ko" "http://www.w3.org/TR/html4/strict.dtdViewer">
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>한장으로 보는 보험료 비교</title>
-    <link rel="stylesheet" href="./css/common.css?v=26.04.07.1">
-    <link rel="stylesheet" href="./css/detail_c.css?v=26.03.26.1">
-
-    <style>
-        /* Close button */
-        /* .detailPlanclose {
-            position: absolute;
-            top: 20px;
-            left: auto;
-            margin-left: 1350px;
-            color: #fff;
-            font-size: 40px;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .detailPlanclose:hover,
-        .detailPlanclose:focus {
-            color: #bbb;
-            text-decoration: none;
-            cursor: pointer;
-        } */
-    </style>
-
+    <title>상품유형별 보험료 비교</title>
+    <link rel="stylesheet" href="./css/common.css?v=26.07.20.45">
+    <link rel="stylesheet" href="./css/detail.css?v=26.07.20.45">
+    <link rel="stylesheet" href="./css/detail_c.css?v=26.07.20.45">
+    <script>
+        (function () {
+            try {
+                var u = new URL(location.href);
+                var changed = false;
+                var tok = u.searchParams.get('token');
+                var p = u.searchParams.get('path');
+                var d = u.searchParams.get('device');
+                if (tok) { sessionStorage.setItem('mmlfcp_auth_token', tok); u.searchParams.delete('token'); changed = true; }
+                if (p) { sessionStorage.setItem('mmlfcp_url_path', p); u.searchParams.delete('path'); changed = true; }
+                if (d) { sessionStorage.setItem('mmlfcp_device', d); u.searchParams.delete('device'); changed = true; }
+                if (changed) {
+                    history.replaceState(null, '', u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : '') + u.hash);
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                var t = localStorage.getItem('mmlfcp_ui_theme');
+                var m = localStorage.getItem('mmlfcp_ui_mode') || 'light';
+                var f = localStorage.getItem('mmlfcp_ui_font');
+                var c = localStorage.getItem('mmlfcp_ui_custom_color') || '#2B579A';
+                if (t) document.documentElement.setAttribute('data-theme', t);
+                document.documentElement.setAttribute('data-mode', m === 'dark' ? 'dark' : 'light');
+                if (f) document.documentElement.setAttribute('data-font', f);
+                if (t === 'custom') {
+                    function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
+                    function hexToRgb(hex) {
+                        var h = String(hex || '').replace(/^#/, '');
+                        if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+                        if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+                        return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+                    }
+                    function rgbToHex(r,g,b) {
+                        function to(n){ var s=clamp(Math.round(n),0,255).toString(16); return s.length===1?'0'+s:s; }
+                        return '#'+to(r)+to(g)+to(b);
+                    }
+                    function darken(hex, amt){ var c=hexToRgb(hex); if(!c) return hex; return rgbToHex(c.r*(1-amt),c.g*(1-amt),c.b*(1-amt)); }
+                    function lighten(hex, amt){ var c=hexToRgb(hex); if(!c) return hex; return rgbToHex(c.r+(255-c.r)*amt,c.g+(255-c.g)*amt,c.b+(255-c.b)*amt); }
+                    function mixHex(base, hex, amt){
+                        var a=hexToRgb(base), b=hexToRgb(hex); if(!a||!b) return base;
+                        return rgbToHex(a.r+(b.r-a.r)*amt, a.g+(b.g-a.g)*amt, a.b+(b.b-a.b)*amt);
+                    }
+                    var accent = /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#2B579A';
+                    var isDark = m === 'dark';
+                    var s = document.createElement('style');
+                    s.id = 'mmlfcp-custom-theme';
+                    if (isDark) {
+                        s.textContent = 'html[data-theme="custom"]{' +
+                            '--accent:' + lighten(accent, 0.12) + ';' +
+                            '--accent-hover:' + lighten(accent, 0.22) + ';' +
+                            '--accent-ink:' + lighten(accent, 0.55) + ';' +
+                            '--accent-soft:' + mixHex('#1a222c', accent, 0.28) + ';}';
+                    } else {
+                        s.textContent = 'html[data-theme="custom"]{' +
+                            '--accent:' + accent + ';' +
+                            '--accent-hover:' + darken(accent, 0.14) + ';' +
+                            '--accent-ink:' + darken(accent, 0.28) + ';' +
+                            '--accent-soft:' + lighten(accent, 0.9) + ';' +
+                            '--bg:' + lighten(accent, 0.93) + ';' +
+                            '--bg-accent:' + lighten(accent, 0.88) + ';}';
+                    }
+                    document.head.appendChild(s);
+                }
+                // iframe: 부모 창 테마/모드와 동기화
+                if (window.parent && window.parent !== window) {
+                    var p = window.parent.document.documentElement;
+                    function syncFromParent() {
+                        ['data-theme', 'data-mode', 'data-font'].forEach(function (a) {
+                            var v = p.getAttribute(a);
+                            if (v) document.documentElement.setAttribute(a, v);
+                            else if (a !== 'data-mode') document.documentElement.removeAttribute(a);
+                        });
+                    }
+                    syncFromParent();
+                    try {
+                        new MutationObserver(syncFromParent).observe(p, {
+                            attributes: true,
+                            attributeFilter: ['data-theme', 'data-mode', 'data-font']
+                        });
+                    } catch (_) { /* ignore */ }
+                }
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
 </head>
 
 <body>
+    <div class="loader-container is-active" id="detailLoader" aria-live="polite" aria-busy="true">
+        <div class="loader" role="status" aria-label="불러오는 중"></div>
+    </div>
 
-    <!--최대 모달-->
+    <!-- 보장 상세 모달 -->
     <div class="modal__layout" id="modal01">
-        <div class="modal-bg"></div>
+        <div class="modal-bg bg"></div>
         <div class="area">
-            <div class="simplifi_main">
-                <div id="simplifiList" class="simplifi_inner">
-                </div>
-                <!--end simplifi_main-->
+            <div class="content_list simplifi_main">
+                <div id="simplifiList" class="simplifi_inner"></div>
             </div>
         </div>
     </div>
 
     <div class="insurance-wrap">
-        <!-- 상단 탭 메뉴 -->
-        <header class="tab-header" style="position: sticky; top: 0px; z-index: 99;">
-            <!--탭-->
-            <span id="cust_info" style="font-size: 20px; color:#ffffff; margin-left: 40px;">
-            </span>
-            <span id="payment_info" style="font-size: 20px; color:#ffffff; margin-left: 0px;">
-            </span>
-            <span id="product_info" style="font-size: 20px; color:#ffffff; margin-left: 0px;">
-            </span>
-            <span style="font-size: 20px; color:#ffffff; margin-right: 0px;">
-                <form action="">
-                    <select id="product_group_name"
-                        style="font-size: 20px; padding: 5px; border-radius: 6px; width: 200px;">
-                    </select>
-                </form>
-            </span>
-            <span style="font-size: 20px; color:#ffffff; margin-left: -40px; margin-right: 150px;">
-            </span>
+        <header class="tab-header">
+            <ul class="tab-list">
+                <li id="premium" data-detail-tab="premium">보험료 최저vs최대</li>
+                <li id="payment" data-detail-tab="payment">만기 보험료 비교</li>
+                <li id="aging" data-detail-tab="aging">연령대별 보험료 비교</li>
+                <li id="simplifi" data-detail-tab="simplifi" class="active">상품유형별 보험료 비교</li>
+            </ul>
         </header>
-        <!-- 상단 탭 메뉴 끝 -->
+
         <main>
-            <!--보험료 비교 화면 - 상품유형별 보험료 비교-->
             <section class="tab-content content02 show">
-                <div class="title-header">
-                </div>
-                <div class="tc-middle">
-                    <div class="bottom-content">
-
-                        <section class=""
-                            style="position: sticky; top: 88px; z-index: 98; background-color:#ffffff; height: 132px;">
-                            <section class="company-area">
-                                <div class="left">
-                                    <span
-                                        style="color:#000000; position: absolute; margin-top: -40px; font-size: 15px;">
-                                        <h1>상품유형별 보험료 비교</h1>
-                                    </span>
-                                    <span style="color:#000000; position: absolute; margin-top: -10px;">( 가입금액 : 만원 /
-                                        보험료
-                                        : 원 )</span>
-                                </div>
-
-                                <div id="simplifi_company_lists" class="right">
-                                </div>
-                            </section>
-                        </section>
-
-                        <section class="bottom" style="margin-top: -40px;">
-
-                            <!--암 질환 플랜-->
-                            <section class="product-table-wrap product01">
-                                <div class="title-header">
-                                    <strong> </strong>
-                                </div>
-                                <!--월 보험료-->
-                                <div class="total-amount"
-                                    style="position:sticky; top: 200px; z-index: 97; background-color: #ffffff;">
-                                    <div class="left">
-                                        <p>월 보험료</p>
-                                    </div>
-                                    <div class="right">
-                                        <ul>
-                                            <li id="monthly_premium_lists">
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-
-                                <!--총 납입 보험료-->
-                                <div class="total-amount"
-                                    style="border-top: 0px; position: sticky; top: 250px; z-index: 97; background-color: #ffffff; ">
-                                    <div class="left">
-                                        <p>총 납입 보험료</p>
-                                    </div>
-                                    <div class="right">
-                                        <ul>
-                                            <li id="payment_total_premium_lists">
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <!--전체선택 창-->
-                                <!-- <div
-                                    style="border-bottom: 1px solid #000000; padding: 15px; position: sticky; top: 300px; z-index: 97; background-color: #ffffff; ">
-                                    <div class="left">
-                                        <div class="checkbox-area">
-                                            <input type="checkbox" id="all_checked" class="all">
-                                            <label for="all_checked">
-                                                <span style="margin-left:28px;">전체 선택</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div> -->
-
-                                <!--보장명/가입금액-->
-                                <div class="table-area">
-                                    <div class="product-name__list">
-                                        <ul id="simplifi_plan_lists">
-                                        </ul>
-                                    </div>
-
-                                    <!--보험료/상품정보-->
-                                    <div class="product-info__list">
-                                        <ul id="simplifi_premium_lists" class="info__price">
-                                        </ul>
-                                    </div>
-
-                                </div>
-
-                            </section>
-                        </section>
+                <div id="simplifi_info" class="tc-top">
+                    <div class="simplifi-top-row">
+                        <div class="simplifi-meta">
+                            <span id="cust_info"></span>
+                            <span id="payment_info"></span>
+                            <span id="product_info"></span>
+                        </div>
+                        <label class="simplifi-company-select">
+                            <select id="product_group_name" aria-label="보험사 선택"></select>
+                        </label>
                     </div>
+                </div>
 
-                    <!--설계자 교육용 자료-->
+                <div class="tc-middle">
+                    <section class="simplifi-board">
+                        <div class="title-header simplifi-page-title">
+                            <strong>상품유형별 보험료 비교</strong>
+                            <span>(가입금액 : 만원 / 보험료 : 원)</span>
+                        </div>
+
+                        <div class="company-area">
+                            <div class="left" aria-hidden="true"></div>
+                            <div id="simplifi_company_lists" class="right"></div>
+                        </div>
+
+                        <div class="total-amount">
+                            <div class="left"><p>월 보험료</p></div>
+                            <div class="right">
+                                <ul>
+                                    <li id="monthly_premium_lists"></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="total-amount">
+                            <div class="left"><p>총 납입 보험료</p></div>
+                            <div class="right">
+                                <ul>
+                                    <li id="payment_total_premium_lists"></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="table-area">
+                            <div class="product-name__list">
+                                <ul id="simplifi_plan_lists"></ul>
+                            </div>
+                            <div class="product-info__list">
+                                <ul id="simplifi_premium_lists" class="info__price"></ul>
+                            </div>
+                        </div>
+                    </section>
+
                     <div class="tc-bottom">
                         <strong>설계사 교육용 자료입니다!</strong>
                         <ul>
@@ -172,7 +184,6 @@
                                     고객에게 판매를 위해 직접 제시하는 용도로는 사용할 수 없습니다.
                                     또한 담보별 가입 한도와 스코어링이 적용되지 않은 단순 보험료 비교입니다.
                                 </span>
-
                             </li>
                             <li>
                                 <img src="./images/_list-ico.svg" alt="">
@@ -180,41 +191,30 @@
                                     기본계약은 실제 가입설계시 달라질 수 있습니다.
                                     상품설계를 위한 참고자료로 활용하세요.
                                 </span>
-
                             </li>
                         </ul>
                     </div>
-
                 </div>
             </section>
         </main>
     </div>
-    <script type="module" src="./js/src/detail_coverage_main.js?v=26.03.26.1"></script>
 
+    <script type="module" src="./js/src/detail_coverage_main.js?v=26.07.21.04"></script>
     <script>
-        // 1. 상세 페이지(iframe)가 로드되자마자 가짜 히스토리를 심어 브라우저 뒤로가기를 가로챕니다.
         history.pushState({ page: "detail_c" }, null, "");
-
-        // 2. 사용자가 뒤로 가기를 눌렀을 때 실행될 이벤트
-        window.onpopstate = function (event) {
-            if (window.parent) {
-                // [방법 1] 부모 창에 리팩토링된 'closeModal' 함수가 직접 정의되어 있다면 실행
-                if (typeof window.parent.closeModal === "function") {
-                    window.parent.closeModal();
-                }
-                // [방법 2] 함수가 없다면 기존처럼 닫기 버튼을 찾아서 강제로 클릭
-                else {
-                    // 통합 모달 버튼(#unifiedCloseBtn) 또는 기존 버튼(.detailclose) 모두 대응
-                    const parentCloseBtn =
-                        window.parent.document.getElementById('unifiedCloseBtn') ||
-                        window.parent.document.querySelector('.detailclose') ||
-                        window.parent.document.querySelector('.detailPlanclose');
-
-                    if (parentCloseBtn) {
-                        parentCloseBtn.click();
-                    }
-                }
+        window.onpopstate = function () {
+            if (!window.parent) return;
+            if (typeof window.parent.closeModal === "function") {
+                window.parent.closeModal();
+                return;
             }
+            const parentCloseBtn =
+                window.parent.document.getElementById("unifiedCloseBtn") ||
+                window.parent.document.querySelector(".detailclose") ||
+                window.parent.document.querySelector(".detailPlanclose");
+            if (parentCloseBtn) parentCloseBtn.click();
         };
     </script>
 </body>
+
+</html>

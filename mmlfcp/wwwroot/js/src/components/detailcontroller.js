@@ -37,32 +37,46 @@ const detail_coverage = {
 };
 
 export const detailController = {
+    _eventsBound: false,
+    /** 최저/최대 보장 상세 정렬: key=seq|name|min|max, dir=asc|desc */
+    _minmaxDetailSort: { key: 'seq', dir: 'asc' },
+
+    setLoading(on) {
+        const loader = document.getElementById('detailLoader');
+        if (!loader) return;
+        loader.classList.toggle('is-active', !!on);
+        loader.style.display = on ? 'flex' : 'none';
+        loader.setAttribute('aria-busy', on ? 'true' : 'false');
+    },
+
+    _detailRoot() {
+        return document.getElementById('detailCompareView') || document;
+    },
+
     async init() {
-
-        //2.  로컬스토리지에서 기본 정보 로드
-        this.loadBasicInfo();
-
-        //3. 이벤트 실행
-        this.setcoverageDisplayonMenu();
-
-        //4. coverage_premiums setting
-        this.setcoverageDetailMap();
-
+        this.setLoading(true);
         try {
+            //2.  로컬스토리지에서 기본 정보 로드
+            this.loadBasicInfo();
+
+            //3. 이벤트 실행
+            this.setcoverageDisplayonMenu();
+
+            //4. coverage_premiums setting
+            this.setcoverageDetailMap();
+
             await Promise.all([this.getProductPremiumsByAges(), this.getPaytermCoveragePremiums()]);
             //5. rendering
             this.setActiveTabUI();
 
-        }
-        catch (err) {
+            //6. events (index 통합 뷰에서는 compareView/detailTabs가 탭 전환)
+            this.detail_bindEvents();
+        } catch (err) {
             console.error("[연령별/ 만기별 보험료 조회 시 오류 발생]", err);
             alert(err.message);
-            return;
+        } finally {
+            this.setLoading(false);
         }
-
-        //6. events
-        this.detail_bindEvents();
-
     },
 
     loadBasicInfo() {
@@ -82,43 +96,54 @@ export const detailController = {
         detail_coverage.plan_payment_expiration_name = localStorage.getItem('plan_payment_expiration_name') || '';
 
 
-        detail_coverage.plan_coverages = JSON.parse(localStorage.getItem("plan_coverages") || []);
-        detail_coverage.coverage_premiums = JSON.parse(localStorage.getItem("coverage_premiums") || []);
-        detail_coverage.product_insur_premiums = JSON.parse(localStorage.getItem("product_insur_premiums") || []);
-        detail_coverage.coverage_ratio_map = JSON.parse(localStorage.getItem("coverage_ratio_map") || {});
+        detail_coverage.plan_coverages = this._parseLocalJson("plan_coverages", []);
+        detail_coverage.coverage_premiums = this._parseLocalJson("coverage_premiums", []);
+        detail_coverage.product_insur_premiums = this._parseLocalJson("product_insur_premiums", []);
+        detail_coverage.coverage_ratio_map = this._parseLocalJson("coverage_ratio_map", {});
 
         //console.log(detail_coverage);
+    },
+
+    /** localStorage JSON 안전 파싱 (|| [] / || {} 를 JSON.parse에 넘기면 예외) */
+    _parseLocalJson(key, fallback) {
+        const raw = localStorage.getItem(key);
+        if (raw == null || raw === '') return fallback;
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            return fallback;
+        }
     },
 
     // detailcontroller.js 수정
 
     setActiveTabUI() {
-        // 1. URL 파라미터에서 tab 가져오기 (없으면 기본값 premium)
         const urlParams = new URLSearchParams(window.location.search);
-        const tabId = urlParams.get('tab') || 'premium';
+        const tabId = window.__detailCompareTab || urlParams.get('tab') || 'premium';
+        if (tabId === 'simplifi') return;
+
         console.log(`[setActiveTabUI] ${tabId} 보여짐`);
 
-        // 2. [UI 제어] 모든 탭(li)과 컨텐츠(section) 초기화 후 선택된 것만 활성화
-        const tabs = document.querySelectorAll('.tab-list li');
-        const contents = document.querySelectorAll('.tab-content');
+        const root = this._detailRoot();
+        const tabs = root.querySelectorAll('.tab-list li[data-detail-tab]');
+        const contents = root.querySelectorAll('.tab-content');
+        const classMap = {
+            premium: 'content01',
+            payment: 'content03',
+            aging: 'content04',
+            simplifi: 'content02',
+        };
 
-        // 3. 탭 li 태그들 처리
-        tabs.forEach(li => {
-            li.classList.remove('active');
-            if (li.id === tabId) li.classList.add('active');
+        tabs.forEach((li) => {
+            const id = li.getAttribute('data-detail-tab') || li.id;
+            li.classList.toggle('active', id === tabId);
         });
 
-        // 컨텐츠 section 태그들 처리 (HTML 순서가 premium-0, payment-1, aging-2 인 점 활용)
-        const tabMap = { 'premium': 0, 'payment': 1, 'aging': 2 };
-        const targetIdx = tabMap[tabId] ?? 0;
-
-        contents.forEach((section, index) => {
-            section.classList.remove('show');
-            if (index === targetIdx) section.classList.add('show');
+        const targetClass = classMap[tabId] || 'content01';
+        contents.forEach((section) => {
+            section.classList.toggle('show', section.classList.contains(targetClass));
         });
 
-        // 2️⃣ [데이터 호출] 탭 ID에 맞는 렌더링 함수를 실행
-        // 💡 여기서 'this'는 detailController를 가리킵니다.
         this.renderTabContent(tabId);
     },
 
@@ -135,6 +160,17 @@ export const detailController = {
             case "aging":
                 this.coverage_aging_detail();   // 연령별 보험료 비교 렌더링
                 break;
+        }
+    },
+
+    /** 탭 전환 — 화면 전환 시 짧은 로딩 표시 */
+    async switchTabContent(tabId) {
+        this.setLoading(true);
+        try {
+            await new Promise((r) => setTimeout(r, 80));
+            this.renderTabContent(tabId);
+        } finally {
+            this.setLoading(false);
         }
     },
 
@@ -205,7 +241,8 @@ export const detailController = {
         const menu = {
             premium: false, // 보험료 최저vs최대
             payment: false, // 만기 보험료 비교
-            aging: false    // 연령대별 보험료 비교
+            aging: false,   // 연령대별 보험료 비교
+            simplifi: false // 상품유형별 보험료 비교
         };
 
 
@@ -217,6 +254,8 @@ export const detailController = {
             "20", "21", "22",// 청소년
             "25", //생보 치매(무해지)
         ];
+
+        const BASE_SIMPLIFI = ["06", "07", "14", "15", "16", "17", "21", "22", "09", "11", "12", "13"];
 
         // 여성건강무해지
         const FEMALE_HEALTH = "08";
@@ -252,11 +291,16 @@ export const detailController = {
             menu.aging = true;
         }
 
+        if (BASE_SIMPLIFI.includes(String(plan_type_id))) {
+            menu.simplifi = true;
+        }
+
         // 한꺼번에 변경 사항을 모아서 브라우저에 전달합니다.
         window.requestAnimationFrame(() => {
             this.toggleMenu("premium", menu.premium);
             this.toggleMenu("payment", menu.payment);
             this.toggleMenu("aging", menu.aging);
+            this.toggleMenu("simplifi", menu.simplifi);
         });
     },
 
@@ -420,92 +464,67 @@ export const detailController = {
     },
 
 
-    //상품조건 정보
+    //상품조건 정보 (상단 메타 카드)
     rendercoverageProductInfo(target_id) {
-        const table = document.getElementById(target_id);
-        if (!table) return;
+        const root = document.getElementById(target_id);
+        if (!root) return;
 
-        // 기존 내용 초기화
-        table.innerHTML = '';
+        const genderLabel = detail_coverage.gender == 'M' ? '남성' : '여성';
+        const custName = detail_coverage.cust_name || '-';
+        const planType = detail_coverage.plan_type_name || '-';
+        const payterm = detail_coverage.plan_payment_expiration_name || '-';
 
-        // ul 생성
-        const ul = document.createElement("ul");
+        const needsSelect = target_id === 'payment_period_info' || target_id === 'aging_info';
+        const selectId = target_id === 'payment_period_info'
+            ? 'payment_coverage_list'
+            : (target_id === 'aging_info' ? 'aging_coverage_list' : '');
 
-        // li 1: 고객정보
-        const li1 = document.createElement("li");
-        const strong1 = document.createElement("strong");
-        strong1.textContent = detail_coverage.cust_name;
-        const span1 = document.createElement("span");
-        span1.textContent = `(${detail_coverage.age}세 ,${detail_coverage.gender == 'M' ? '남성' : '여성'} ,생년월일 :${detail_coverage.birth_date}),`;
-        li1.appendChild(strong1);
-        li1.appendChild(span1);
+        root.innerHTML = `
+            <div class="dc-meta-card">
+                <div class="dc-meta-chips">
+                    <div class="dc-meta-item">
+                        <span class="dc-meta-label">고객</span>
+                        <strong class="dc-meta-value">${custName} · ${detail_coverage.age || '-'}세 · ${genderLabel}</strong>
+                    </div>
+                    <div class="dc-meta-divider" aria-hidden="true"></div>
+                    <div class="dc-meta-item">
+                        <span class="dc-meta-label">상품유형</span>
+                        <strong class="dc-meta-value">${planType}</strong>
+                    </div>
+                    <div class="dc-meta-divider" aria-hidden="true"></div>
+                    <div class="dc-meta-item">
+                        <span class="dc-meta-label">납기/만기</span>
+                        <strong class="dc-meta-value">${payterm}</strong>
+                    </div>
+                    ${needsSelect ? `
+                    <div class="dc-meta-divider" aria-hidden="true"></div>
+                    <label class="dc-meta-item dc-meta-select-inline">
+                        <select id="${selectId}" aria-label="비교 상품 선택"></select>
+                    </label>` : ''}
+                </div>
+            </div>
+        `;
 
-        // li 2: 상품유형
-        const li2 = document.createElement("li");
-        const strong2 = document.createElement("strong");
-        strong2.textContent = `${detail_coverage.plan_type_name},`;
-        li2.appendChild(strong2);
+        if (!needsSelect || !selectId) return;
 
-        // li 3: 납기/만기
-        const li3 = document.createElement("li");
-        const strong3 = document.createElement("strong");
-        strong3.textContent = detail_coverage.plan_payment_expiration_name;
-        li3.appendChild(strong3);
+        const select = document.getElementById(selectId);
+        if (!select) return;
 
-        // ul에 li들 추가
-        ul.appendChild(li1);
-        ul.appendChild(li2);
-        ul.appendChild(li3);
+        (detail_coverage.coverage_premiums || []).forEach((item) => {
+            if (!item.DispValue) return;
+            const option = document.createElement('option');
+            option.value = item.company_code;
+            option.textContent = `${item.company_name}  ${item.product_name}`;
+            select.appendChild(option);
+        });
 
-        // 최종 삽입
-        table.appendChild(ul);
-
-        // ✅ target_id가 'payment_period_info'일 경우 추가 폼 생성
-        if (target_id == "payment_period_info") {
-            const form = document.createElement("form");
-            const select = document.createElement("select");
-            select.id = "payment_coverage_list";
-
-            detail_coverage.coverage_premiums.forEach(item => {
-                if (!item.DispValue) return;
-                const option = document.createElement("option");
-                option.value = item.company_code;
-                option.textContent = `${item.company_name}  ${item.product_name}`;
-                select.appendChild(option);
-            });
-
-            // 🔥 여기서 이벤트 바로 연결
-            select.onchange = (e) => {
-                this.handlePaymentPremiumChange();
-            };
-
-            form.appendChild(select);
-            table.appendChild(form);
-        }
-        // ✅ target_id가 'aging_info'일 경우 추가 폼 생성
-        else if (target_id == 'aging_info') {
-
-            const form = document.createElement("form");
-            const select = document.createElement("select");
-            select.id = "aging_coverage_list";
-
-            detail_coverage.coverage_premiums.forEach(item => {
-                if (!item.DispValue) return;
-                const option = document.createElement("option");
-                option.value = item.company_code;
-                option.textContent = `${item.company_name}  ${item.product_name}`;
-                select.appendChild(option);
-
-            });
-
-            // 🔥 여기서 이벤트 바로 연결
-            select.onchange = (e) => {
+        if (target_id === 'payment_period_info') {
+            select.onchange = () => this.handlePaymentPremiumChange();
+        } else if (target_id === 'aging_info') {
+            select.onchange = () => {
                 this.renderCoveragePremiumByAging();
                 this.renderCoverageBojangByAging();
             };
-
-            form.appendChild(select);
-            table.appendChild(form);
         }
     },
 
@@ -519,16 +538,26 @@ export const detailController = {
         const stats = this.calculatePremiumStats(coverage_premiums, plan_payment_expiration_name);
         if (!stats) return; // 데이터 없으면 종료
 
+        // 상·하단 열 맞춤: 좌측(구분/보장+가입금액) 40% · 최저 30% · 최대 30%
+        const MM_COL = {
+            label: '40%',
+            cov: '28%',
+            amt: '12%',
+            min: '30%',
+            max: '30%',
+        };
+
         // ============================================================
         // ✅ [1] 최저/최대 보험료 상품 테이블 (min_max_coverage_premium)
         // ============================================================
         const premiumTable = document.getElementById("min_max_coverage_premium");
         if (premiumTable) {
             premiumTable.innerHTML = ''; //초기화
+            premiumTable.classList.add('dc-compare-table', 'dc-minmax-table', 'dc-minmax-summary');
 
             // colgroup 추가
             const colgroup = document.createElement("colgroup");
-            ["549px", "426px", "427px"].forEach(width => {
+            [MM_COL.label, MM_COL.min, MM_COL.max].forEach(width => {
                 const col = document.createElement("col");
                 col.style.width = width;
                 colgroup.appendChild(col);
@@ -540,9 +569,9 @@ export const detailController = {
             const thead = document.createElement('thead');
             thead.innerHTML = `
             <tr>
-                <th>구분</th>
-                <th>최저 보험료 상품</th>
-                <th>최대 보험료 상품</th>
+                <th class="dc-minmax-h-label">구분</th>
+                <th class="dc-minmax-h-min">최저 보험료 상품</th>
+                <th class="dc-minmax-h-max">최대 보험료 상품</th>
             </tr>`;
             premiumTable.appendChild(thead);
 
@@ -551,7 +580,7 @@ export const detailController = {
             // 회사명
             let tr1 = document.createElement("tr");
             tr1.innerHTML = `
-            <td>회사명</td>
+            <td class="dc-minmax-label">회사명</td>
             <td>${coverage_premiums[stats.minPos].company_name}</td>
             <td>${coverage_premiums[stats.maxPos].company_name}</td>`;
             tbody.appendChild(tr1);
@@ -559,23 +588,31 @@ export const detailController = {
             // 상품명
             let tr2 = document.createElement("tr");
             tr2.innerHTML = `
-            <td>상품명</td>
+            <td class="dc-minmax-label">상품명</td>
             <td>${coverage_premiums[stats.minPos].product_name}</td>
             <td>${coverage_premiums[stats.maxPos].product_name}</td>`;
             tbody.appendChild(tr2);
 
             // 월 보험료
             let tr3 = document.createElement("tr");
+            tr3.className = 'dc-minmax-premium-row';
             tr3.innerHTML = `
-            <td>월 보험료 ( 차액 : <strong class="plus">+${app.formatNumber(stats.monthlyDiff)}</strong>)</td>
+            <td class="dc-minmax-label">
+                <span class="dc-minmax-label-text">월 보험료</span>
+                <span class="dc-minmax-diff">( 차액 : <strong class="plus">+${app.formatNumber(stats.monthlyDiff)}</strong> )</span>
+            </td>
             <td><strong class="minus">${app.formatNumber(coverage_premiums[stats.minPos].total_premium)}</strong></td>
             <td><strong class="plus">${app.formatNumber(coverage_premiums[stats.maxPos].total_premium)}</strong></td>`;
             tbody.appendChild(tr3);
 
             // 총 납입 보험료
             let tr4 = document.createElement("tr");
+            tr4.className = 'dc-minmax-premium-row';
             tr4.innerHTML = `
-            <td>총 납입 보험료 ( 차액 : <strong class="plus">+${app.formatNumber(stats.totalDiff)}</strong>)</td>
+            <td class="dc-minmax-label">
+                <span class="dc-minmax-label-text">총 납입 보험료</span>
+                <span class="dc-minmax-diff">( 차액 : <strong class="plus">+${app.formatNumber(stats.totalDiff)}</strong> )</span>
+            </td>
             <td><strong class="minus">${app.formatNumber(stats.totalMin)}</strong></td>
             <td><strong class="plus">${app.formatNumber(stats.totalMax)}</strong></td>`;
             tbody.appendChild(tr4);
@@ -588,66 +625,152 @@ export const detailController = {
         // ============================================================
         const bojangTable = document.getElementById("min_max_coverage_detail");
         if (bojangTable) {
-            bojangTable.innerHTML = '';
-            // colgroup 추가
-            const colgroup2 = document.createElement("colgroup");
-            ["376px", "173px", "426px", "427px"].forEach(width => {
-                const col = document.createElement("col");
-                col.style.width = width;
-                colgroup2.appendChild(col);
-            });
-            bojangTable.appendChild(colgroup2);
-
-            // thead
-            const thead2 = document.createElement("thead");
-            thead2.innerHTML = `
-                            <tr>
-                                <th>보장</th>
-                                <th>가입금액</th>
-                                <th>월 보험료</th>
-                                <th>월 보험료</th>
-                            </tr>`;
-            bojangTable.appendChild(thead2);
-
-            // tbody
-            const tbody2 = document.createElement("tbody");
             const min_product = coverage_premiums[stats.minPos];
             const max_product = coverage_premiums[stats.maxPos];
+            const rows = [];
 
-            plan_coverages.forEach(bj => {
-                if (bj.plan_coverage_selected == "checked") {
-                    let min_premium = 0;
-                    let max_premium = 0;
+            plan_coverages.forEach((bj, idx) => {
+                if (bj.plan_coverage_selected != "checked") return;
 
-                    if (bj.coverage_cd == "aa00") {
-                        // coverage_cd = "aa00" 인 모든 항목 합산
-                        min_premium = min_product.detailList.filter(d => d.coverage_cd == "aa00").reduce((sum, d) => sum + (d.base_premium || 0), 0);
-                        max_premium = max_product.detailList.filter(d => d.coverage_cd == "aa00").reduce((sum, d) => sum + (d.base_premium || 0), 0);
-                    }
-                    else {
-                        // 기존 로직
-                        const min_detailIdx = detail_coverage.guide_coverage_detail_item.get(min_product.company_code + bj.coverage_cd);
-                        const max_detailIdx = detail_coverage.guide_coverage_detail_item.get(max_product.company_code + bj.coverage_cd);
+                let min_premium = 0;
+                let max_premium = 0;
 
-                        const min_detail = min_detailIdx ? min_product.detailList[min_detailIdx] : null;
-                        const max_detail = max_detailIdx ? max_product.detailList[max_detailIdx] : null;
-                        min_premium = min_detail ? min_detail.base_premium : 0;
-                        max_premium = max_detail ? max_detail.base_premium : 0;
-                    }
-                    // tr 추가
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${bj.coverage_name}</td>
-                        <td>${bj.coverage_cd == 'aa00' ? '-' : app.formatNumber(bj.guide_coverage_amount)}</td>
-                        <td>${app.formatNumber(min_premium)}</td>
-                        <td>${app.formatNumber(max_premium)}</td>`;
-                    tbody2.appendChild(tr);
+                if (bj.coverage_cd == "aa00") {
+                    min_premium = min_product.detailList.filter(d => d.coverage_cd == "aa00").reduce((sum, d) => sum + (d.base_premium || 0), 0);
+                    max_premium = max_product.detailList.filter(d => d.coverage_cd == "aa00").reduce((sum, d) => sum + (d.base_premium || 0), 0);
+                } else {
+                    const min_detailIdx = detail_coverage.guide_coverage_detail_item.get(min_product.company_code + bj.coverage_cd);
+                    const max_detailIdx = detail_coverage.guide_coverage_detail_item.get(max_product.company_code + bj.coverage_cd);
+                    const min_detail = min_detailIdx ? min_product.detailList[min_detailIdx] : null;
+                    const max_detail = max_detailIdx ? max_product.detailList[max_detailIdx] : null;
+                    min_premium = min_detail ? min_detail.base_premium : 0;
+                    max_premium = max_detail ? max_detail.base_premium : 0;
                 }
+
+                rows.push({
+                    coverage_cd: bj.coverage_cd,
+                    name: bj.coverage_name || '',
+                    amountNum: bj.coverage_cd == 'aa00' ? null : Number(bj.guide_coverage_amount) || 0,
+                    amountText: bj.coverage_cd == 'aa00' ? '-' : app.formatNumber(bj.guide_coverage_amount),
+                    minPremium: Number(min_premium) || 0,
+                    maxPremium: Number(max_premium) || 0,
+                    seq: bj.coverage_seq ?? idx,
+                });
             });
 
-            // ✅ tbody를 table에 붙여야 렌더링됨
-            bojangTable.appendChild(tbody2);
+            this._minmaxDetailRows = rows;
+            this._renderMinMaxDetailTable(bojangTable, MM_COL);
         }
+    },
+
+    _sortMinMaxDetailRows(rows) {
+        const { key, dir } = this._minmaxDetailSort || { key: 'seq', dir: 'asc' };
+        const mult = dir === 'desc' ? -1 : 1;
+        const list = [...rows];
+
+        list.sort((a, b) => {
+            let cmp = 0;
+            if (key === 'name') {
+                cmp = String(a.name).localeCompare(String(b.name), 'ko');
+            } else if (key === 'min') {
+                cmp = a.minPremium - b.minPremium;
+            } else if (key === 'max') {
+                cmp = a.maxPremium - b.maxPremium;
+            } else {
+                cmp = (a.seq ?? 0) - (b.seq ?? 0);
+            }
+            if (cmp === 0) cmp = (a.seq ?? 0) - (b.seq ?? 0);
+            return cmp * mult;
+        });
+        return list;
+    },
+
+    _minmaxSortIndicator(colKey) {
+        const { key, dir } = this._minmaxDetailSort || {};
+        if (key !== colKey || key === 'seq') return '';
+        return dir === 'desc' ? '↓' : '↑';
+    },
+
+    _renderMinMaxDetailTable(bojangTable, MM_COL) {
+        if (!bojangTable) return;
+        const rows = this._sortMinMaxDetailRows(this._minmaxDetailRows || []);
+        const sort = this._minmaxDetailSort || { key: 'seq', dir: 'asc' };
+
+        bojangTable.innerHTML = '';
+        bojangTable.classList.add('dc-compare-table', 'dc-minmax-table', 'dc-minmax-detail');
+
+        const colgroup2 = document.createElement("colgroup");
+        [MM_COL.cov, MM_COL.amt, MM_COL.min, MM_COL.max].forEach(width => {
+            const col = document.createElement("col");
+            col.style.width = width;
+            colgroup2.appendChild(col);
+        });
+        bojangTable.appendChild(colgroup2);
+
+        const mark = (colKey) => {
+            const active = sort.key === colKey && colKey !== 'seq';
+            const aria = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+            const ind = this._minmaxSortIndicator(colKey);
+            return { active, aria, ind };
+        };
+        const nameM = mark('name');
+        const minM = mark('min');
+        const maxM = mark('max');
+
+        const thead2 = document.createElement("thead");
+        thead2.innerHTML = `
+            <tr>
+                <th class="dc-minmax-h-label dc-sortable${nameM.active ? ' is-sorted' : ''}" data-sort-key="name" role="button" tabindex="0" aria-sort="${nameM.aria}">
+                    최저/최대 보장 상세${nameM.ind ? ` <span class="dc-sort-ind" aria-hidden="true">${nameM.ind}</span>` : ''}
+                </th>
+                <th class="dc-minmax-h-amt">가입금액 <span class="dc-col-unit">(만원)</span></th>
+                <th class="dc-minmax-h-min dc-sortable${minM.active ? ' is-sorted' : ''}" data-sort-key="min" role="button" tabindex="0" aria-sort="${minM.aria}">
+                    월 보험료 <span class="dc-col-unit">(원)</span>${minM.ind ? ` <span class="dc-sort-ind" aria-hidden="true">${minM.ind}</span>` : ''}
+                </th>
+                <th class="dc-minmax-h-max dc-sortable${maxM.active ? ' is-sorted' : ''}" data-sort-key="max" role="button" tabindex="0" aria-sort="${maxM.aria}">
+                    월 보험료 <span class="dc-col-unit">(원)</span>${maxM.ind ? ` <span class="dc-sort-ind" aria-hidden="true">${maxM.ind}</span>` : ''}
+                </th>
+            </tr>`;
+        bojangTable.appendChild(thead2);
+
+        const tbody2 = document.createElement("tbody");
+        rows.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="dc-minmax-cov">${row.name}</td>
+                <td class="dc-minmax-amt">${row.amountText}</td>
+                <td class="dc-minmax-min">${app.formatNumber(row.minPremium)}</td>
+                <td class="dc-minmax-max">${app.formatNumber(row.maxPremium)}</td>`;
+            tbody2.appendChild(tr);
+        });
+        bojangTable.appendChild(tbody2);
+
+        this._bindMinMaxDetailSort(bojangTable, MM_COL);
+    },
+
+    _bindMinMaxDetailSort(bojangTable, MM_COL) {
+        if (!bojangTable) return;
+        bojangTable.querySelectorAll('th.dc-sortable').forEach((th) => {
+            const activate = () => {
+                const nextKey = th.getAttribute('data-sort-key');
+                if (!nextKey) return;
+                const cur = this._minmaxDetailSort || { key: 'seq', dir: 'asc' };
+                if (cur.key === nextKey) {
+                    if (cur.dir === 'asc') this._minmaxDetailSort = { key: nextKey, dir: 'desc' };
+                    else this._minmaxDetailSort = { key: 'seq', dir: 'asc' }; // 기본 순서로 복귀
+                } else {
+                    this._minmaxDetailSort = { key: nextKey, dir: 'asc' };
+                }
+                this._renderMinMaxDetailTable(bojangTable, MM_COL);
+            };
+            th.addEventListener('click', activate);
+            th.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    activate();
+                }
+            });
+        });
     },
 
     //연령별 보험료 비교 랜더링
@@ -679,15 +802,20 @@ export const detailController = {
         const ages = this.getSortedAges(selectedCompany.totals);
 
 
-        // ✅ colgroup 생성
+        // ✅ colgroup — 하단 상세표(보장+가입금액)와 좌측 폭 일치, 나이 열 균등
         const colgroup = document.createElement("colgroup");
-
-        ["189px", ...ages.map(() => "243px")].forEach(width => {
+        const leftCol = document.createElement("col");
+        leftCol.className = "dc-aging-col-left";
+        colgroup.appendChild(leftCol);
+        ages.forEach(() => {
             const col = document.createElement("col");
-            col.style.width = width;
+            col.className = "dc-aging-col-age";
             colgroup.appendChild(col);
         });
         agingPremiumTable.appendChild(colgroup);
+        agingPremiumTable.classList.add("dc-compare-table", "dc-aging-table", "dc-aging-summary");
+        agingPremiumTable.style.tableLayout = "fixed";
+        agingPremiumTable.style.width = "100%";
 
 
 
@@ -695,15 +823,20 @@ export const detailController = {
         const thead = document.createElement("thead");
         const headerRow = document.createElement("tr");
         const thFirst = document.createElement("th");
-
+        thFirst.className = "dc-minmax-h-label";
         thFirst.textContent = "구분";
         headerRow.appendChild(thFirst);
 
 
 
-        ages.forEach(age => {
+        ages.forEach((age, i) => {
             const th = document.createElement("th");
-            th.textContent = `${age}세 가입하면`;
+            th.className = `dc-aging-age-head ${i === 0 || parseInt(age, 10) === parseInt(detail_coverage.age, 10) ? "dc-minmax-h-min" : "dc-minmax-h-col"}`;
+            if (i === 0 || parseInt(age, 10) === parseInt(detail_coverage.age, 10)) {
+                th.innerHTML = `<span class="dc-aging-age-main">${age}세</span><span class="dc-aging-age-sub">현재</span>`;
+            } else {
+                th.innerHTML = `<span class="dc-aging-age-main">${age}세</span><span class="dc-aging-age-sub">가입 시</span>`;
+            }
             headerRow.appendChild(th);
         });
 
@@ -717,11 +850,13 @@ export const detailController = {
 
         // [1] 월 보험료 행
         const tr1 = document.createElement("tr");
-        tr1.appendChild(Object.assign(document.createElement("td"), { rowSpan: '2', className: 'row', textContent: "월 보험료" }));
+        const tdMonthlyLabel = Object.assign(document.createElement("td"), { rowSpan: '2', className: 'row dc-minmax-label' });
+        tdMonthlyLabel.textContent = "월 보험료";
+        tr1.appendChild(tdMonthlyLabel);
 
         ages.forEach(age => {
             const td = document.createElement("td");
-            td.textContent = app.formatNumber(selectedCompany.totals[age]);
+            td.innerHTML = `<strong>${app.formatNumber(selectedCompany.totals[age])}</strong>`;
             tr1.appendChild(td);
         });
         tbody.appendChild(tr1);
@@ -753,11 +888,11 @@ export const detailController = {
 
         // [3] 총 납입 보험료 행
         const tr3 = document.createElement("tr");
-        tr3.appendChild(Object.assign(document.createElement("td"), { rowSpan: '2', className: 'row', textContent: "총 납입 보험료" }));
+        tr3.appendChild(Object.assign(document.createElement("td"), { rowSpan: '2', className: 'row dc-minmax-label', textContent: "총 납입 보험료" }));
 
         ages.forEach(age => {
             const td = document.createElement("td");
-            td.textContent = app.formatNumber(((selectedCompany.totals[age] * payment_period) * 12));
+            td.innerHTML = `<strong>${app.formatNumber(((selectedCompany.totals[age] * payment_period) * 12))}</strong>`;
             tr3.appendChild(td);
         });
 
@@ -851,11 +986,11 @@ export const detailController = {
         const createRow = (name, amountText, agePremiums) => {
             const tr = document.createElement("tr");
 
-            const nameTd = Object.assign(document.createElement("td"), { className: "title-text", textContent: name });
-            const amountTd = Object.assign(document.createElement("td"), { textContent: amountText });
+            const nameTd = Object.assign(document.createElement("td"), { className: "dc-minmax-cov", textContent: name });
+            const amountTd = Object.assign(document.createElement("td"), { className: "dc-minmax-amt", textContent: amountText });
             tr.append(nameTd, amountTd);
 
-            agesKeys.forEach((age, i) => {
+            agesKeys.forEach((age) => {
                 const td = document.createElement("td");
                 const premium = agePremiums?.[age];
                 td.textContent = premium != null ? app.formatNumber(premium) : "0";
@@ -865,24 +1000,43 @@ export const detailController = {
             return tr;
         };
 
-        // colgroup
+        // colgroup — 상단 요약표와 동일 비율 (보장 | 가입금액 = 좌측 합, 나이 열 균등)
         const colgroup = document.createElement("colgroup");
-        [377, 173, ...agesKeys.map(() => 170)].forEach(width => {
+        const covCol = document.createElement("col");
+        covCol.className = "dc-aging-col-cov";
+        const amtCol = document.createElement("col");
+        amtCol.className = "dc-aging-col-amt";
+        colgroup.append(covCol, amtCol);
+        agesKeys.forEach(() => {
             const col = document.createElement("col");
-            col.style.width = `${width}px`;
+            col.className = "dc-aging-col-age";
             colgroup.appendChild(col);
         });
         table.appendChild(colgroup);
+        table.classList.add("dc-compare-table", "dc-aging-table", "dc-aging-detail");
+        table.style.tableLayout = "fixed";
+        table.style.width = "100%";
 
         // thead
         const thead = document.createElement("thead");
         const headRow = document.createElement("tr");
-        ["보장", "가입금액", ...agesKeys.map((age, i) => i === 0 ? "현재" : `${age}세`)]
-            .forEach(text => {
-                const th = document.createElement("th");
-                th.textContent = text;
-                headRow.appendChild(th);
-            });
+        const thCov = document.createElement("th");
+        thCov.className = "dc-minmax-h-label";
+        thCov.textContent = "연령별 보장 상세";
+        const thAmt = document.createElement("th");
+        thAmt.className = "dc-minmax-h-amt";
+        thAmt.innerHTML = `가입금액 <span class="dc-col-unit">(만원)</span>`;
+        headRow.append(thCov, thAmt);
+        agesKeys.forEach((age, i) => {
+            const th = document.createElement("th");
+            th.className = `dc-aging-age-head ${i === 0 ? "dc-minmax-h-min" : "dc-minmax-h-col"}`;
+            if (i === 0) {
+                th.innerHTML = `<span class="dc-aging-age-main">${age}세</span><span class="dc-aging-age-sub">현재</span>`;
+            } else {
+                th.innerHTML = `<span class="dc-aging-age-main">${age}세</span>`;
+            }
+            headRow.appendChild(th);
+        });
         thead.appendChild(headRow);
         table.appendChild(thead);
 
@@ -923,29 +1077,13 @@ export const detailController = {
         const paymentPremiumTable = document.getElementById('payment_period_coverage_premium');
         if (!paymentPremiumTable) return;
         paymentPremiumTable.innerHTML = ''; //  초기화
-
-
-        // ** colgroup 생성
-        const colgroup = document.createElement("colgroup");
-        ["550px", "284px", "284px", "284px"].forEach(w => {
-            const col = document.createElement("col");
-            col.style.width = w;
-            colgroup.appendChild(col);
-        });
-        paymentPremiumTable.appendChild(colgroup);
-
-
-        // ** thead 생성
-        const thead = document.createElement("thead");
-        const headRow = document.createElement("tr");
-        headRow.appendChild(document.createElement("th"));
+        paymentPremiumTable.classList.add('dc-compare-table', 'dc-payment-summary');
 
         const companyRows = (payterm_coverage_premiums || []).filter(p => p.company_code == selectedValue && p.DispValue);
         if (!companyRows || companyRows.length === 0) {
             detail_coverage.companyRows = []; //빈 값으로 초기화
             return;
         }
-
 
         // 🔥 현재 조회한 만기 맨 위로 정렬
         companyRows.sort((a, b) => {
@@ -957,32 +1095,57 @@ export const detailController = {
         //companyRows 객체 생성
         detail_coverage.companyRows = companyRows;
 
-        companyRows.forEach(item => {
+        const leftPct = 40;
+        const colPct = ((100 - leftPct) / companyRows.length).toFixed(4) + '%';
+
+        // ** colgroup 생성 — 하단 상세표와 열 맞춤
+        const colgroup = document.createElement("colgroup");
+        [leftPct + '%', ...companyRows.map(() => colPct)].forEach(w => {
+            const col = document.createElement("col");
+            col.style.width = w;
+            colgroup.appendChild(col);
+        });
+        paymentPremiumTable.appendChild(colgroup);
+
+
+        // ** thead 생성
+        const thead = document.createElement("thead");
+        const headRow = document.createElement("tr");
+        const thLabel = document.createElement("th");
+        thLabel.className = 'dc-minmax-h-label';
+        thLabel.textContent = '구분';
+        headRow.appendChild(thLabel);
+
+        companyRows.forEach((item, i) => {
             const th = document.createElement("th");
-            const plan_payterm_type_name = item.plan_payterm_type_name;
-            th.textContent = plan_payterm_type_name;
+            th.className = i === 0 ? 'dc-minmax-h-min' : 'dc-minmax-h-col';
+            th.textContent = item.plan_payterm_type_name;
             headRow.appendChild(th);
         });
 
         thead.appendChild(headRow);
         paymentPremiumTable.appendChild(thead);
 
-        // ** tbody 생성
+        // ** tbody 생성 — 연령대별과 동일: 월/총 납입 라벨에 차액 행 통합
         const tbody = document.createElement("tbody");
 
         /* 🔹 [1] 월 보험료 */
         const trMonthly = document.createElement("tr");
-        trMonthly.appendChild(this._makeTd("월 보험료"));
+        const tdMonthlyLabel = Object.assign(document.createElement("td"), {
+            rowSpan: '2',
+            className: 'row dc-minmax-label',
+            textContent: '월 보험료',
+        });
+        trMonthly.appendChild(tdMonthlyLabel);
 
         companyRows.forEach(item => {
             trMonthly.appendChild(this._makeTd(app.formatNumber(item.total_premium), true));
         });
         tbody.appendChild(trMonthly);
 
-        /* 🔹 [2] 월 보험료 차액 */
+        /* 🔹 [2] 월 보험료 차액 (라벨 없음 — 월 보험료에 통합) */
         const trDiff = document.createElement("tr");
         trDiff.className = "gray-bg";
-        trDiff.appendChild(this._makeTd("차액", false, "( 선택 상품 - 비교 상품 = 보험료 )"));
         trDiff.appendChild(this._makeTd("-", false, null, "none"));
 
         for (let i = 1; i < companyRows.length; i++) {
@@ -995,10 +1158,13 @@ export const detailController = {
         /* 🔹 [3] 총 납입 보험료 */
         const baseTotal = (companyRows[0].total_premium * payment_period) * 12;
 
-
-
         const trTotal = document.createElement("tr");
-        trTotal.appendChild(this._makeTd("총 납입 보험료"));
+        const tdTotalLabel = Object.assign(document.createElement("td"), {
+            rowSpan: '2',
+            className: 'row dc-minmax-label',
+            textContent: '총 납입 보험료',
+        });
+        trTotal.appendChild(tdTotalLabel);
         trTotal.appendChild(this._makeTd(app.formatNumber(baseTotal), true));
 
         for (let i = 1; i < companyRows.length; i++) {
@@ -1008,10 +1174,9 @@ export const detailController = {
         tbody.appendChild(trTotal);
 
 
-        /* 🔹 [4] 총 납입 보험료 차액 */
+        /* 🔹 [4] 총 납입 보험료 차액 (라벨 없음 — 총 납입 보험료에 통합) */
         const trTotalDiff = document.createElement("tr");
         trTotalDiff.className = "gray-bg";
-        trTotalDiff.appendChild(this._makeTd("차액", false, "( 선택 상품 - 비교 상품 = 보험료 )"));
         trTotalDiff.appendChild(this._makeTd("-", false, null, "none"));
 
         for (let i = 1; i < companyRows.length; i++) {
@@ -1044,32 +1209,41 @@ export const detailController = {
         //console.log("데이터 있음 - 그리기 시작");
 
         /* =========================
-           colgroup
+           colgroup — 상단 요약과 열 맞춤 (좌측 40% = 보장+가입금액)
         ========================= */
+        const nCols = companyRows.length;
+        const leftPct = 40;
+        const covPct = 28;
+        const amtPct = 12;
+        const colPct = ((100 - leftPct) / nCols).toFixed(4) + '%';
+
         const colgroup = document.createElement("colgroup");
-        ["377px", "173px", "284px", "284px", "284px"].forEach(w => {
+        [covPct + '%', amtPct + '%', ...companyRows.map(() => colPct)].forEach(w => {
             const col = document.createElement("col");
             col.style.width = w;
             colgroup.appendChild(col);
         });
 
         table.appendChild(colgroup);
+        table.classList.add('dc-compare-table', 'dc-payment-detail');
         /* =========================
            thead
         ========================= */
         const thead = document.createElement("thead");
         const headRow = document.createElement("tr");
 
-        ["보장", "가입금액"].forEach(text => {
-            const th = document.createElement("th");
-            th.textContent = text;
-            headRow.appendChild(th);
-        });
+        const thCov = document.createElement("th");
+        thCov.className = 'dc-minmax-h-label';
+        thCov.textContent = '만기별 보장 상세';
+        const thAmt = document.createElement("th");
+        thAmt.className = 'dc-minmax-h-amt';
+        thAmt.innerHTML = `가입금액 <span class="dc-col-unit">(만원)</span>`;
+        headRow.append(thCov, thAmt);
 
-        companyRows.forEach(item => {
+        companyRows.forEach((item, i) => {
             const th = document.createElement("th");
-            const plan_payterm_type_name = item.plan_payterm_type_name;
-            th.textContent = plan_payterm_type_name;
+            th.className = i === 0 ? 'dc-minmax-h-min' : 'dc-minmax-h-col';
+            th.textContent = item.plan_payterm_type_name;
             headRow.appendChild(th);
         });
 
@@ -1105,19 +1279,19 @@ export const detailController = {
 
             // 보장명
             const tdName = document.createElement("td");
-            tdName.className = "title-text";
+            tdName.className = "dc-minmax-cov";
             tdName.textContent = baseDetail.coverage_name;
             tr.appendChild(tdName);
 
             // 가입금액
             const coverageAmountText = app.formatNumber(baseDetail.base_coverage_amount || 0);
-            tr.appendChild(this._makeTd(coverageAmountText));
+            tr.appendChild(this._makeTd(coverageAmountText, false, null, "dc-minmax-amt"));
 
             // 🔥 만기별 보험료
-            companyRows.forEach(prod => {
+            companyRows.forEach((prod, i) => {
                 const matched = (prod.detailList || []).find(d => d.coverage_cd === baseDetail.coverage_cd);
                 const premiumText = matched ? app.formatNumber(matched.base_premium || 0) : "-";
-                tr.appendChild(this._makeTd(premiumText));
+                tr.appendChild(this._makeTd(premiumText, false, null, i === 0 ? "dc-minmax-min" : ""));
             });
             tbody.appendChild(tr);
         })
@@ -1191,37 +1365,44 @@ export const detailController = {
     },
 
     detail_bindEvents() {
-        const tabs = document.querySelectorAll('.tab-list > li');
-        const contents = document.querySelectorAll('.tab-content');
+        // index 통합 뷰: compareView / detailTabs가 탭 전환 담당
+        if (document.getElementById('detailCompareView') && window.compareView) return;
+        if (this._eventsBound) return;
+        this._eventsBound = true;
 
-        tabs.forEach((tab, index) => {
-            tab.addEventListener('click', () => {
-                // 모든 탭/콘텐츠 초기화
-                tabs.forEach(li => li.classList.remove('active'));
-                contents.forEach(content => content.classList.remove('show'));
+        const root = this._detailRoot();
+        const tabs = root.querySelectorAll('.tab-list > li[data-detail-tab]');
+        const contents = root.querySelectorAll('.tab-content');
+        const classMap = {
+            premium: 'content01',
+            payment: 'content03',
+            aging: 'content04',
+        };
 
-                // 클릭된 탭과 콘텐츠 활성화
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', async (e) => {
+                const tabId = tab.getAttribute('data-detail-tab') || tab.id;
+                // 상품유형별은 detailTabs가 페이지 이동
+                if (tabId === 'simplifi') return;
+                if (!classMap[tabId]) return;
+
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                tabs.forEach((li) => li.classList.remove('active'));
+                contents.forEach((content) => content.classList.remove('show'));
+
                 tab.classList.add('active');
-                contents[index].classList.add('show');
+                const target = root.querySelector(`.tab-content.${classMap[tabId]}`);
+                if (target) target.classList.add('show');
 
-                // ✅ 탭별 기능 실행
-                switch (tab.id) {
-                    case "premium":
-                        this.coverage_min_max_detail();
-                        break;
-                    case "payment":
-                        this.coverage_payment_detail();
-                        break;
-                    case "aging":
-                        this.coverage_aging_detail();
-                        break;
-                }
+                await this.switchTabContent(tabId);
             });
         });
     },
 
 
-    _makeTd(text, strong = false, subText = null, className = "") {
+    _makeTd(text, strong = false, subText = null, className = "", allowHtml = false) {
         const td = document.createElement("td");
         if (className) td.className = className;
 
@@ -1234,6 +1415,9 @@ export const detailController = {
             const s = document.createElement("strong");
             s.textContent = text;
             td.appendChild(s);
+        }
+        else if (allowHtml) {
+            td.innerHTML = text;
         }
         else {
             td.textContent = text;
@@ -1257,16 +1441,14 @@ export const detailController = {
         const el = document.getElementById(id);
         if (!el) return;
 
-        if (isShow) {
-            el.style.display = ""; // 공간 차지
-            // 아주 짧은 지연시간 뒤에 투명도를 올려 부드럽게 나타나게 함
-            setTimeout(() => {
-                el.style.opacity = "1";
-            }, 10);
-        } else {
-            el.style.opacity = "0";
-            el.style.display = "none"; // 공간 제거
-        }
+        const show = !!isShow;
+        el.classList.toggle('is-tab-hidden', !show);
+        el.hidden = !show;
+        el.setAttribute('aria-hidden', show ? 'false' : 'true');
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+        el.style.removeProperty('pointer-events');
     }
 
 };

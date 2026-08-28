@@ -1,824 +1,908 @@
-body {
+/* =========================================================
+   #detailCompareView — 세부 비교 통합 UI
+   메인 앱(accent #2B579A)과 동일한 톤 · 심플한 상단 탭바
+   ========================================================= */
+
+#detailCompareView {
+  --tab-h: 56px;
+  --dc-pad: 16px;
+  --dc-gap: 12px;
+  --dc-radius: 8px;
+  --dc-meta-h: 84px;
+  box-sizing: border-box;
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#detailCompareView *,
+#detailCompareView *::before,
+#detailCompareView *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- Loader ---------- */
+#detailCompareView .loader-container {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(2px);
+}
+#detailCompareView .loader-container.is-active {
+  display: flex;
+}
+#detailCompareView .loader {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: detailSpin 0.75s linear infinite;
+}
+@keyframes detailSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Nested modal (simplifi detail) ---------- */
+#detailCompareView .modal__layout { display: none; }
+#detailCompareView .modal__layout .bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 32, 0.5);
+  z-index: 998;
+}
+#detailCompareView .modal__layout .area {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  pointer-events: none;
+}
+#detailCompareView .modal__layout .content_list {
+  pointer-events: auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* ---------- Top bar (tabs + close) ---------- */
+#detailCompareView .dc-topbar,
+#detailCompareView .tab-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-height: var(--tab-h);
+  padding: 0 12px 0 8px;
+  margin: 0;
+  background: #1a2836;
+  border-radius: 0;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+#detailCompareView .dc-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+#detailCompareView .tab-list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#detailCompareView .tab-list::-webkit-scrollbar { display: none; }
+
+#detailCompareView .tab-list li {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--ease), background var(--ease), border-color var(--ease), box-shadow var(--ease);
+}
+#detailCompareView .tab-list li:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+#detailCompareView .tab-list li.active {
+  color: var(--accent-ink, #1e3f70);
+  background: #fff;
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+#detailCompareView .tab-list li.active::after {
+  display: none;
+}
+
+#detailCompareView .tab-list li.is-tab-hidden,
+#detailCompareView .tab-list li[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#detailCompareView .dc-close,
+#detailCompareView .detailclose {
+  position: static;
+  flex: 0 0 auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 64px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 1;
+  transition: background var(--ease), border-color var(--ease);
+}
+#detailCompareView .dc-close:hover,
+#detailCompareView .detailclose:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ---------- Body / frame (메인 .wrap 과 동일 폭) ---------- */
+#detailCompareView .dc-frame {
+  width: min(100% - 32px, var(--wrap));
+  margin: 12px auto 24px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  overflow: hidden;
+}
+
+#detailCompareView .dc-body,
+#detailCompareView .insurance-wrap {
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: var(--dc-pad);
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+#detailCompareView .dc-main {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+#detailCompareView .dc-topbar,
+#detailCompareView .tab-header {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+#detailCompareView .tab-content { display: none; }
+#detailCompareView .tab-content.show {
+  display: block;
+  animation: detailFade 160ms ease;
+}
+@keyframes detailFade {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Meta strip ---------- */
+#detailCompareView .tc-top {
+  margin: 0 0 var(--dc-gap);
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--dc-radius);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+#detailCompareView .tc-middle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dc-gap);
+}
+
+#detailCompareView .tc-middle > section,
+#detailCompareView .dc-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--dc-radius);
+  overflow: auto;
+  max-width: 100%;
+  box-shadow: none;
+}
+
+#detailCompareView .title-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+#detailCompareView .title-header strong {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+#detailCompareView .title-header span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* ---------- Tables ---------- */
+#detailCompareView table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+#detailCompareView th,
+#detailCompareView td {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: center;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  background: var(--surface);
+  color: var(--text);
+}
+
+#detailCompareView th {
+  background: var(--surface-muted);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+#detailCompareView td:first-child,
+#detailCompareView th:first-child {
+  text-align: left;
+  font-weight: 500;
+  background: var(--surface-row);
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+#detailCompareView th:first-child {
+  z-index: 6;
+  background: var(--surface-row-stripe);
+}
+
+#detailCompareView tr:nth-child(even) td { background: var(--surface-row-stripe-alt); }
+#detailCompareView tr:nth-child(even) td:first-child { background: var(--surface-row-stripe); }
+#detailCompareView tr:hover td { background: var(--accent-soft); }
+#detailCompareView tr:hover td:first-child { background: var(--accent-soft); }
+
+#detailCompareView .company__blue {
+  color: var(--min) !important;
+  font-weight: 700 !important;
+  background: var(--min-soft);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+#detailCompareView .company__red {
+  color: var(--max) !important;
+  font-weight: 700 !important;
+  background: var(--max-soft);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+#detailCompareView .company__black { color: var(--text) !important; }
+
+/* ---------- 세부 비교 공통 표 스타일 (최저/최대 · 만기 · 연령) ---------- */
+#detailCompareView .content01 .tc-middle,
+#detailCompareView .content03 .tc-middle,
+#detailCompareView .content04 .tc-middle {
+  gap: 10px;
+}
+#detailCompareView .content01 .dc-panel,
+#detailCompareView .content03 .dc-panel {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+}
+#detailCompareView .content04 .dc-aging-block {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+#detailCompareView table.dc-compare-table,
+#detailCompareView table.dc-minmax-table {
+  width: 100%;
+  table-layout: fixed;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #fff;
+}
+#detailCompareView table.dc-compare-table th,
+#detailCompareView table.dc-compare-table td,
+#detailCompareView table.dc-minmax-table th,
+#detailCompareView table.dc-minmax-table td {
+  border-right: 0;
+  border-left: 0;
+  border-top: 0;
+  border-bottom: 1px solid #e6e8eb;
+  background: #fff;
+  padding: 12px 14px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a5560;
+  position: static;
+}
+#detailCompareView table.dc-compare-table thead th,
+#detailCompareView table.dc-minmax-table thead th {
+  position: static;
+  z-index: auto;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  border-bottom: 0;
+  letter-spacing: -0.02em;
+}
+#detailCompareView table.dc-compare-table th.dc-minmax-h-label,
+#detailCompareView table.dc-compare-table th.dc-minmax-h-amt,
+#detailCompareView table.dc-minmax-table th.dc-minmax-h-label,
+#detailCompareView table.dc-minmax-table th.dc-minmax-h-amt {
+  background: #1e3f70;
+  color: #fff;
+}
+#detailCompareView table.dc-compare-table th.dc-minmax-h-min,
+#detailCompareView table.dc-minmax-table th.dc-minmax-h-min {
+  background: #5ba8d9;
+  color: #fff;
+}
+#detailCompareView table.dc-compare-table th.dc-minmax-h-col {
+  background: #7eb8d9;
+  color: #fff;
+}
+#detailCompareView table.dc-compare-table th.dc-minmax-h-max,
+#detailCompareView table.dc-minmax-table th.dc-minmax-h-max {
+  background: #e05252;
+  color: #fff;
+}
+#detailCompareView table.dc-compare-table td:first-child,
+#detailCompareView table.dc-compare-table th:first-child,
+#detailCompareView table.dc-minmax-table td:first-child,
+#detailCompareView table.dc-minmax-table th:first-child {
+  position: static;
+  z-index: auto;
+}
+#detailCompareView table.dc-compare-table td.dc-minmax-label,
+#detailCompareView table.dc-compare-table td.dc-minmax-cov,
+#detailCompareView table.dc-compare-table td.row,
+#detailCompareView table.dc-minmax-table td.dc-minmax-label,
+#detailCompareView table.dc-minmax-table td.dc-minmax-cov {
+  text-align: left;
+  font-weight: 500;
+  color: #4a5560;
+  background: #fff;
+}
+#detailCompareView table.dc-compare-table th:first-child,
+#detailCompareView table.dc-minmax-table th:first-child {
+  text-align: center;
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table tr:nth-child(even) td,
+#detailCompareView table.dc-compare-table tr:nth-child(even) td:first-child,
+#detailCompareView table.dc-compare-table tr:hover td,
+#detailCompareView table.dc-compare-table tr:hover td:first-child,
+#detailCompareView table.dc-minmax-table tr:nth-child(even) td,
+#detailCompareView table.dc-minmax-table tr:nth-child(even) td:first-child,
+#detailCompareView table.dc-minmax-table tr:hover td,
+#detailCompareView table.dc-minmax-table tr:hover td:first-child {
+  background: #fff;
+}
+#detailCompareView table.dc-compare-table tbody tr:last-child td,
+#detailCompareView table.dc-minmax-table tbody tr:last-child td {
+  border-bottom: 1px solid #e6e8eb;
+}
+#detailCompareView table.dc-compare-table .dc-minmax-label,
+#detailCompareView table.dc-minmax-table .dc-minmax-label {
+  white-space: nowrap;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-premium-row td.dc-minmax-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: normal;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-label-text {
+  flex: 0 0 auto;
+  text-align: left;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-diff {
+  flex: 1 1 auto;
+  text-align: right;
+  white-space: nowrap;
+  color: #4a5560;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-premium-row td {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-premium-row td strong.minus {
+  color: var(--min, #0066e0);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-premium-row td strong.plus {
+  color: var(--max, #c23b3b);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+#detailCompareView table.dc-minmax-summary .dc-minmax-diff strong.plus {
+  color: var(--max, #c23b3b);
+  font-size: 14px;
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table .dc-col-unit,
+#detailCompareView table.dc-minmax-table .dc-col-unit {
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+}
+#detailCompareView table.dc-minmax-summary td .dc-col-unit {
+  color: #8a939e;
+}
+#detailCompareView table.dc-compare-table td.dc-minmax-amt,
+#detailCompareView table.dc-minmax-table td.dc-minmax-amt {
+  text-align: center;
+  color: #4a5560;
+}
+#detailCompareView table.dc-compare-table td.dc-minmax-min,
+#detailCompareView table.dc-minmax-table td.dc-minmax-min {
+  color: var(--min, #0066e0);
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table td.dc-minmax-max,
+#detailCompareView table.dc-minmax-table td.dc-minmax-max {
+  color: var(--max, #c23b3b);
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table.dc-payment-detail tbody tr:nth-child(even) td,
+#detailCompareView table.dc-compare-table.dc-aging-detail tbody tr:nth-child(even) td,
+#detailCompareView table.dc-minmax-detail tbody tr:nth-child(even) td {
+  background: #f7f9fb;
+}
+#detailCompareView table.dc-compare-table.dc-payment-detail tbody tr:nth-child(even) td.dc-minmax-cov,
+#detailCompareView table.dc-compare-table.dc-aging-detail tbody tr:nth-child(even) td.dc-minmax-cov,
+#detailCompareView table.dc-minmax-detail tbody tr:nth-child(even) td.dc-minmax-cov {
+  background: #f7f9fb;
+}
+#detailCompareView table.dc-compare-table tr.gray-bg td {
+  background: #f7f9fb;
+  font-size: 12px;
+}
+#detailCompareView table.dc-compare-table tr.gray-bg td.dc-minmax-label,
+#detailCompareView table.dc-compare-table tr.gray-bg td.row {
+  background: #f7f9fb;
+}
+#detailCompareView table.dc-compare-table .plus {
+  color: var(--max, #c23b3b);
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table .minus {
+  color: var(--min, #0066e0);
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table td.none,
+#detailCompareView table.dc-compare-table td.none02 {
+  color: #8a939e;
+}
+#detailCompareView table.dc-compare-table .dc-minmax-label span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8a939e;
+  white-space: normal;
+}
+
+/* 만기/연령 상단 요약 — 최저vs최대와 동일 금액 폰트 */
+#detailCompareView table.dc-payment-summary tbody td,
+#detailCompareView table.dc-aging-summary tbody td {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+#detailCompareView table.dc-payment-summary td.dc-minmax-label,
+#detailCompareView table.dc-aging-summary td.dc-minmax-label,
+#detailCompareView table.dc-aging-summary td.row {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a5560;
+}
+#detailCompareView table.dc-payment-summary tbody td strong,
+#detailCompareView table.dc-aging-summary tbody td strong {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+#detailCompareView table.dc-payment-summary tbody tr.gray-bg td strong.plus,
+#detailCompareView table.dc-aging-summary tbody tr.gray-bg td strong.plus {
+  color: var(--max, #c23b3b);
+}
+#detailCompareView table.dc-payment-summary tbody tr.gray-bg td strong.minus,
+#detailCompareView table.dc-aging-summary tbody tr.gray-bg td strong.minus {
+  color: var(--min, #0066e0);
+}
+
+/* 최저/최대 보장 상세 — 열 정렬 */
+#detailCompareView table.dc-minmax-detail th.dc-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.12s ease;
+}
+#detailCompareView table.dc-minmax-detail th.dc-sortable:hover,
+#detailCompareView table.dc-minmax-detail th.dc-sortable:focus-visible {
+  filter: brightness(1.08);
+  outline: none;
+}
+#detailCompareView table.dc-minmax-detail th.dc-sortable.is-sorted {
+  box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.55);
+}
+#detailCompareView table.dc-minmax-detail th.dc-sortable .dc-sort-ind {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.95;
+  vertical-align: middle;
+}
+
+/* ---------- Notice ---------- */
+#detailCompareView .tc-bottom,
+#detailCompareView .dc-notice {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--dc-radius);
+}
+#detailCompareView .dc-notice strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+#detailCompareView .dc-notice ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#detailCompareView .dc-notice li {
+  position: relative;
+  margin: 0;
+  padding: 3px 0 3px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+#detailCompareView .dc-notice li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+#detailCompareView .dc-notice li img { display: none; }
+
+/* ---------- Meta card (고객/상품/만기 + 비교상품) ---------- */
+#detailCompareView .tc-top:has(.dc-meta-card) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#detailCompareView .dc-meta-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px 20px;
+  min-height: var(--dc-meta-h);
+  padding: 14px 16px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--dc-radius);
+}
+#detailCompareView .dc-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+#detailCompareView .dc-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 18px;
+  justify-content: center;
+}
+#detailCompareView .dc-meta-item:first-child {
+  padding-left: 0;
+}
+#detailCompareView .dc-meta-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  flex-shrink: 0;
+}
+#detailCompareView .dc-meta-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+#detailCompareView .dc-meta-value {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.3;
+}
+#detailCompareView .dc-meta-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+/* 납기/만기 옆 인라인 비교 상품 선택 */
+#detailCompareView .dc-meta-select-inline {
+  flex: 1 1 280px;
+  min-width: 200px;
+  max-width: 420px;
+  gap: 0;
+  padding-right: 0;
+  justify-content: center;
+}
+#detailCompareView .dc-meta-select-inline select {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+}
+/* legacy (혹시 남은 우측 분리형) */
+#detailCompareView .dc-meta-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 1 340px;
+  min-width: 220px;
+  max-width: 100%;
+}
+#detailCompareView .dc-meta-select select {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+/* ---------- Aging tables — 나이 열 정렬 ---------- */
+#detailCompareView .dc-aging-block {
+  --aging-cov-w: 26%;
+  --aging-amt-w: 10%;
+  --aging-left-w: 36%;
+  overflow: hidden;
+  padding: 0;
+}
+#detailCompareView .dc-aging-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#detailCompareView .dc-aging-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+#detailCompareView .dc-aging-summary .dc-aging-col-left {
+  width: var(--aging-left-w);
+}
+#detailCompareView .dc-aging-detail .dc-aging-col-cov {
+  width: var(--aging-cov-w);
+}
+#detailCompareView .dc-aging-detail .dc-aging-col-amt {
+  width: var(--aging-amt-w);
+}
+#detailCompareView .dc-aging-age-head {
+  text-align: center;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+#detailCompareView .dc-aging-age-main {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+#detailCompareView .dc-aging-age-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+#detailCompareView table.dc-compare-table.dc-aging-table td.row {
+  text-align: left;
+  font-weight: 500;
+  background: #fff;
+  vertical-align: middle;
+}
+#detailCompareView table.dc-compare-table.dc-aging-table tr.gray-bg td {
+  background: #f7f9fb;
+  font-size: 12px;
+}
+#detailCompareView table.dc-compare-table.dc-aging-table .plus {
+  color: var(--max);
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table.dc-aging-table .minus {
+  color: var(--min);
+  font-weight: 700;
+}
+#detailCompareView table.dc-compare-table.dc-aging-table td.none02 {
+  color: #8a939e;
+}
+
+/* ---------- Controls ---------- */
+#detailCompareView .tc-top select,
+#detailCompareView .tc-middle select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+@media (max-width: 900px) {
+  #detailCompareView {
+    --dc-pad: 10px;
+    --tab-h: 48px;
+  }
+  #detailCompareView .tab-list li {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  #detailCompareView .dc-close,
+  #detailCompareView .detailclose {
+    min-width: 52px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  #detailCompareView .dc-meta-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #detailCompareView .dc-meta-chips {
+    flex-direction: column;
+    gap: 10px;
+  }
+  #detailCompareView .dc-meta-item {
+    padding: 0;
+  }
+  #detailCompareView .dc-meta-divider {
     width: 100%;
-    background-color: #fff
+    height: 1px;
+  }
+  #detailCompareView .dc-meta-select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #detailCompareView .dc-meta-select-inline {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+  }
+  #detailCompareView .dc-aging-block {
+    --aging-cov-w: 30%;
+    --aging-amt-w: 12%;
+    --aging-left-w: 42%;
+  }
 }
-
-.modal__layout {
-    display: none
-}
-
-.modal__layout .modal-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, .9);
-    z-index: 9998
-}
-
-.modal__layout .area {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    position: absolute;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0
-}
-
-.modal__layout .plan_content_list {
-    position: relative;
-    width: 692px;
-    padding: 40px 20px 40px;
-    border-radius: 15px;
-    background-color: #fff;
-    z-index: 9999 !important
-}
-
-/* .modal__layout .content h2 {
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 25px
-}
-
-.modal__layout .content strong {
-    display: block;
-    margin-top: 23px;
-    font-weight: 700;
-    font-size: 15px;
-    line-height: 19px
-}
-
-.modal__layout .content span {
-    display: block;
-    margin-top: 15px;
-    font-weight: 500;
-    font-size: 12px;
-    line-height: 15px
-}
-
-.modal__layout .content button {
-    display: block;
-    width: 105px;
-    height: 33px;
-    margin: 136px auto 0;
-    background: #c9c9c9;
-    border-radius: 38px;
-    font-weight: 700;
-    font-size: 13px;
-    line-height: 16px;
-    text-align: center
-} */
-
-.insurance-wrap header,
-.insurance-wrap main {
-    width: 1440px;
-    margin: 0 auto
-}
-
-.insurance-wrap .tab-header {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
-    justify-content: space-between;
-    height: 89px;
-    background: #2b579a
-}
-
-.insurance-wrap .tab-close {
-    margin-right: 29px;
-    cursor: pointer
-}
-
-.insurance-wrap .tab-list {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    margin: 17px 0 0 19px
-}
-
-.insurance-wrap .tab-list li:first-child {
-    margin-left: 0
-}
-
-.insurance-wrap .tab-list li.active {
-    height: 83px;
-    background-color: #fff
-}
-
-.insurance-wrap .tab-list li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    width: 278px;
-    height: 71px;
-    margin-left: 2px;
-    background: #fff;
-    border-radius: 20px 20px 0px 0px;
-    font-weight: 700;
-    font-size: 24px;
-    cursor: pointer;
-    text-align: center;
-    color: #595f69;
-    background-color: rgba(255, 255, 255, .5);
-
-    /* 1. 기본적으로 투명도를 조절해서 자연스럽게 보이게 함 */
-    opacity: 1;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.insurance-wrap .tab-content {
-    display: none;
-    background: #fff
-}
-
-.insurance-wrap .tab-content .tc-top ul {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    padding-top: 72px
-}
-
-.insurance-wrap .tab-content .tc-top ul li:first-child {
-    margin-right: 0
-}
-
-.insurance-wrap .tab-content .tc-top ul li {
-    margin-left: 35px;
-    font-size: 32px;
-    line-height: 47px;
-    color: #595f69
-}
-
-.insurance-wrap .tab-content .tc-top ul li strong {
-    font-weight: 700
-}
-
-.insurance-wrap .tab-content .tc-top ul li span {
-    font-weight: 400
-}
-
-.insurance-wrap .tab-content .tc-middle {
-    margin: 0 19px
-}
-
-.insurance-wrap .tab-content .tc-middle table th {
-    height: 56px;
-    padding: 0 39px;
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-    text-align: center;
-    color: #fff
-}
-
-.insurance-wrap .tab-content .tc-middle table td {
-    height: 85px;
-    padding: 0 39px;
-    border-bottom: 1px solid #000;
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 30px;
-    color: #595f69;
-    background: #fff
-}
-
-.insurance-wrap .tab-content .tc-middle table td strong {
-    font-size: 32px;
-    line-height: 47px
-}
-
-.insurance-wrap .tab-content .tc-middle table td strong.plus {
-    color: #e60f0f
-}
-
-.insurance-wrap .tab-content .tc-middle table td strong.minus {
-    color: #0463fc
-}
-
-.insurance-wrap .tab-content .tc-middle table td:nth-child(2),
-.insurance-wrap .tab-content .tc-middle table td:nth-child(3),
-.insurance-wrap .tab-content .tc-middle table td:nth-child(4),
-.insurance-wrap .tab-content .tc-middle table td:nth-child(5) {
-    text-align: center
-}
-
-.insurance-wrap .tab-content .tc-middle .title-header {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
-    justify-content: space-between
-}
-
-.insurance-wrap .tab-content .tc-middle .title-header strong {
-    display: block;
-    padding-left: 15px;
-    margin-bottom: 27px;
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px;
-    color: #595f69
-}
-
-.insurance-wrap .tab-content .tc-middle .title-header span {
-    padding-right: 15px;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 18px;
-    color: #595f69
-}
-
-.insurance-wrap .tab-content .tc-bottom {
-    padding: 87px 0 47px
-}
-
-.insurance-wrap .tab-content .tc-bottom>strong {
-    display: block;
-    margin: 0 15px;
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px;
-    color: #e60f0f
-}
-
-.insurance-wrap .tab-content .tc-bottom ul {
-    margin: 20px 15px 0
-}
-
-.insurance-wrap .tab-content .tc-bottom ul li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center
-}
-
-.insurance-wrap .tab-content .tc-bottom ul li span {
-    display: block;
-    margin-left: 14px;
-    font-weight: 400;
-    font-size: 13px;
-    color: #8a8a8a
-}
-
-.insurance-wrap .gray-bg td {
-    background: #f8f8f8 !important
-}
-
-.insurance-wrap .content01 .tc-middle,
-.insurance-wrap .content03 .tc-middle,
-.insurance-wrap .content04 .tc-middle {
-    background: #fcfcfc
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) {
-    margin-top: 72px
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(1) {
-    text-align: left;
-    background: #2b579a
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(2) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(3) {
-    background: #e60f0f
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) {
-    margin-top: 82px;
-    border-bottom: 3px solid #000
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(1) {
-    text-align: left;
-    background: #2b579a
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(2) {
-    background: #2b579a
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(3) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(4) {
-    background: #e60f0f
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) td {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px
-}
-
-.insurance-wrap .content02 .tc-fixed {
-    position: sticky;
-    top: 0;
-    height: 189px;
-    background: #fff;
-    z-index: 10
-}
-
-.insurance-wrap .content02 .insurance-wrap .content02 .bottom-content .company-area {
-    background: #fff
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area {
-    overflow: visible
-}
-
-.insurance-wrap .content02 .product02,
-.insurance-wrap .content02 .product03 {
-    margin-top: 46px
-}
-
-.insurance-wrap .content02 .total-amount {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    height: 80px;
-    background: #f8f8f8;
-    border-top: 2px solid #979797;
-    border-bottom: 2px solid #000
-}
-
-.insurance-wrap .content02 .total-amount .left {
-    width: 389px;
-    text-align: center
-}
-
-.insurance-wrap .content02 .total-amount .left p {
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 27px;
-    color: #595f69
-}
-
-.insurance-wrap .content02 .total-amount .left p span {
-    font-weight: 400 !important
-}
-
-.insurance-wrap .content02 .total-amount .left .text__red {
-    font-weight: 700;
-    color: #e60f0f
-}
-
-.insurance-wrap .content02 .total-amount .right {
-    width: 1013px
-}
-
-.insurance-wrap .content02 .total-amount .right ul {
-    width: 100%
-}
-
-.insurance-wrap .content02 .total-amount .right ul li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -ms-flex-pack: distribute;
-    justify-content: space-around;
-    width: 100%;
-    height: 60px
-}
-
-.insurance-wrap .content02 .total-amount .right ul li span {
-    display: block;
-    position: relative;
-    width: 75px;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 400;
-    font-size: 18px;
-    line-height: 27px
-}
-
-.insurance-wrap .content02 .company-area .company__green {
-    color: #20a144 !important
-}
-
-.insurance-wrap .content02 .company-area .company__red {
-    color: #f05c54 !important
-}
-
-.insurance-wrap .content02 .bottom-content .company-area .right ul li .inner .price-area span {
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 24px;
-    color: #3f434a
-}
-
-.insurance-wrap .content02 .bottom-content .company-area .right ul li .inner .btn__product-info {
-    border-radius: 0
-}
-
-.insurance-wrap .content02 .company-area .size {
-    position: absolute;
-    bottom: -32px;
-    left: 0;
-    width: 72px;
-    height: 22px;
-    text-align: center;
-    color: #fff;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 10px;
-    line-height: 22px;
-    cursor: pointer
-}
-
-.insurance-wrap .content02 .company-area .size.least {
-    background: #0463fc
-}
-
-.insurance-wrap .content02 .company-area .size.maximum {
-    background: #e60f0f
-}
-
-.insurance-wrap .content02 .product-table-wrap .title-header {
-    -webkit-box-align: start;
-    -ms-flex-align: start;
-    align-items: start;
-    height: 47px;
-    margin-top: 0;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #000
-}
-
-.insurance-wrap .content02 .product-table-wrap .title-header strong {
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px
-}
-
-.insurance-wrap .content02 .bottom-content .bottom {
-    -webkit-box-shadow: none;
-    box-shadow: none;
-    border-radius: 0px 0px 20px 20px
-}
-
-.insurance-wrap .content02 .bottom-content .company-area {
-    border-bottom: 0
-}
-
-.insurance-wrap .content02 .company__blue {
-    color: #0463fc
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-info__list ul.info__price>li span em {
-    font-weight: 400;
-    font-size: 18px;
-    line-height: 27px
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
-    justify-content: space-between;
-    padding: 0 24px 0 15px;
-    background: #f8f9f9;
-    border-right: 1px solid #e6e6e6;
-    border-bottom: 1px solid #e6e6e6
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li .right {
-    width: 82px;
-    height: 29px;
-    background: #fff;
-    border: 1px solid #979797;
-    border-radius: 0
-}
-
-.insurance-wrap .content02 .product-name__list .checkbox-area input+label {
-    font-weight: 400;
-    font-size: 15px;
-    line-height: 27px;
-}
-
-.insurance-wrap .content02 .product-name__list .checkbox-area input+label:before {
-    top: 5px;
-}
-
-.insurance-wrap .content02 .product-name__list .right input {
-    display: block;
-    width: 65px;
-    height: 29px;
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 27px;
-    margin-right: 15px;
-    color: #202020;
-    text-align: right;
-}
-
-.insurance-wrap .content02 .bottom-content .company-area {
-    height: auto;
-    padding: 16px 0 0 19px
-}
-
-.insurance-wrap .content02 .title-header {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: end;
-    -ms-flex-pack: end;
-    justify-content: end;
-    margin-top: 23px
-}
-
-.insurance-wrap .content02 .title-header span {
-    display: block;
-    margin: 0 37px 7px 0;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 18px;
-    color: #595f69
-}
-
-.insurance-wrap .content02 .tc-middle {
-    background: #fff
-}
-
-.insurance-wrap .content03 select,
-.insurance-wrap .content04 select {
-    display: block;
-    position: relative;
-    width: 842px;
-    height: 68px;
-    padding: 0 43px;
-    margin: 38px auto 0;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-    border: 3px solid #304ffd;
-    border-radius: 42px;
-    color: #304ffd;
-    font-weight: 700;
-    font-size: 30px;
-    line-height: 47px;
-    outline: 0 none;
-    -o-appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    cursor: pointer;
-    background: #f8f8f8 url("../images/_select-arrow.svg") no-repeat 96% center
-}
-
-.insurance-wrap .content03 section:nth-child(2) .title-text,
-.insurance-wrap .content04 section:nth-child(2) .title-text {
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 30px
-}
-
-.insurance-wrap .content03 section:nth-child(1) {
-    margin-top: 51px
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(1) {
-    text-align: left;
-    background: #2b579a
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(2) {
-    background: #2b579a
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(3) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(4) {
-    background: #61a0ff;
-    opacity: .7
-}
-
-.insurance-wrap .content03 section:nth-child(1) td {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-    text-align: right !important
-}
-
-.insurance-wrap .content03 section:nth-child(1) td strong,
-.insurance-wrap .content03 section:nth-child(1) td span {
-    display: block
-}
-
-.insurance-wrap .content03 section:nth-child(1) td strong {
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px
-}
-
-.insurance-wrap .content03 section:nth-child(1) td span {
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 20px;
-    color: #595f69
-}
-
-.insurance-wrap .content03 section:nth-child(1) td.none {
-    text-align: center !important
-}
-
-.insurance-wrap .content03 section:nth-child(2) {
-    margin-top: 83px;
-    border-bottom: 3px solid #000
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(1) {
-    background: #2b579a
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(2) {
-    background: #2b579a
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(3) {
-    background: #2b579a
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(4) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(5) {
-    background: #61a0ff;
-    opacity: .7
-}
-
-.insurance-wrap .content03 section:nth-child(2) td {
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 41px
-}
-
-.insurance-wrap .content04 section:nth-child(1) {
-    margin-top: 51px
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(1) {
-    text-align: left;
-    background: #2b579a
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(2) {
-    background: #2b579a
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(3) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(4) {
-    background: #61a0ff;
-    opacity: .7
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(5) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(6) {
-    background: #61a0ff;
-    opacity: .7
-}
-
-.insurance-wrap .content04 section:nth-child(1) td.row {
-    padding: 0 14px !important;
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-    text-align: center !important
-}
-
-.insurance-wrap .content04 section:nth-child(1) td {
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 41px;
-    text-align: right !important
-}
-
-.insurance-wrap .content04 section:nth-child(1) td strong,
-.insurance-wrap .content04 section:nth-child(1) td span {
-    display: block
-}
-
-.insurance-wrap .content04 section:nth-child(1) td strong {
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 41px
-}
-
-.insurance-wrap .content04 section:nth-child(1) td span {
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 20px;
-    color: #595f69
-}
-
-.insurance-wrap .content04 section:nth-child(1) td.none02 {
-    color: #e60f0f;
-    text-align: center !important
-}
-
-.insurance-wrap .content04 section:nth-child(2) {
-    margin-top: 83px;
-    border-bottom: 3px solid #000
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(1) {
-    background: #2b579a
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(2) {
-    background: #2b579a
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(3) {
-    background: #2b579a
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(4) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(5) {
-    background: #61a0ff;
-    opacity: .7
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(6) {
-    background: #61a0ff
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(7) {
-    background: #61a0ff;
-    opacity: .7
-}
-
-.insurance-wrap .content04 section:nth-child(2) td {
-    font-weight: 700;
-    font-size: 30px;
-    line-height: 44px
-}
-
-.insurance-wrap .tab-content.show {
-    display: block
-}
-
-/*# sourceMappingURL=tab.min.css.map */

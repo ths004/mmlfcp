@@ -33,6 +33,7 @@ export const _state =
     coveragePremiums_page: 1,
     required_premiums_page: 1,
     companyInfoEventsBound: false,
+    companyTableScrollSyncBound: false,
 
     coverage_cd_checked: {},
     company_code_checked: {},

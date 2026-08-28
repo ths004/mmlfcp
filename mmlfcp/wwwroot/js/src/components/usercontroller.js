@@ -4,12 +4,75 @@ import { mmlfcp_state, _state, deepCopy } from '../core/state.js';
 import { Controller } from './controller.js';
 import { app } from '../utils/app.js';
 
+const PREFERRED_PLANS_KEY = 'mmlfcp_default_user_plans';
+
 export const userController = {
     /**
      * 사용자 플랜 갱신
      * - 기존 user_coverages 배열에서 동일한 ID 제거 후, 새 항목을 맨 앞에 추가
      */
 
+    _preferredMapKey() {
+        const ga = String(mmlfcp_state.get('ga_id') || '').trim();
+        const cons = String(mmlfcp_state.get('consultant_id') || '').trim();
+        return `${ga}|${cons}`;
+    },
+
+    _readPreferredMap() {
+        try {
+            const raw = localStorage.getItem(PREFERRED_PLANS_KEY);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (_) {
+            return {};
+        }
+    },
+
+    _writePreferredMap(map) {
+        try {
+            localStorage.setItem(PREFERRED_PLANS_KEY, JSON.stringify(map || {}));
+        } catch (_) { /* ignore */ }
+    },
+
+    /** 저장된 기본 플랜 id ('' = 시스템 기본플랜). 없으면 null */
+    getPreferredDefaultPlanId() {
+        const map = this._readPreferredMap();
+        const key = this._preferredMapKey();
+        if (!Object.prototype.hasOwnProperty.call(map, key)) return null;
+        return String(map[key] ?? '');
+    },
+
+    setPreferredDefaultPlanId(userPlanId) {
+        const map = this._readPreferredMap();
+        map[this._preferredMapKey()] = String(userPlanId ?? '');
+        this._writePreferredMap(map);
+    },
+
+    /**
+     * 조회/렌더 시 적용할 기본 플랜 id
+     * - 선호값 있고 목록에 있으면 그 값
+     * - 선호값이 '' 이면 시스템 기본플랜
+     * - 미설정이면 시스템 기본플랜('')
+     */
+    resolveDefaultPlanId(userCoverages = []) {
+        const preferred = this.getPreferredDefaultPlanId();
+        if (preferred === null || preferred === '') return '';
+        const exists = (userCoverages || []).some((p) => String(p.user_plan_id) === String(preferred));
+        return exists ? preferred : '';
+    },
+
+    applyResolvedDefaultPlan() {
+        const user_coverages = mmlfcp_state.get('user_coverages') || [];
+        const planId = this.resolveDefaultPlanId(user_coverages);
+        const selected = user_coverages.find((p) => String(p.user_plan_id) === String(planId)) || {};
+        mmlfcp_state.set('user_coverage', selected);
+
+        const selectEl = document.getElementById('user_coverages');
+        if (selectEl) selectEl.value = planId;
+
+        this.renderUserCoverageList();
+    },
 
     setUserCoverageData(userCoverage) {
         // 기존 리스트 가져오기
@@ -58,11 +121,15 @@ export const userController = {
             // 최신 상태 반영
             mmlfcp_state.set('user_coverages', user_coverages);
 
-            // 🔄 삭제 후 첫 번째 플랜으로 선택 변경
-            const newCurrent = user_coverages[0] || {};
-            mmlfcp_state.set('user_coverage', newCurrent);
+            // 기본 선택 플랜이 삭제된 경우 → 시스템 기본플랜으로
+            const preferred = this.getPreferredDefaultPlanId();
+            if (preferred != null && String(preferred) === String(user_plan_id)) {
+                this.setPreferredDefaultPlanId('');
+            }
 
-            //console.log(`🗑️ 플랜 삭제 완료: ${user_plan_id}`);
+            const resolvedId = this.resolveDefaultPlanId(user_coverages);
+            const newCurrent = user_coverages.find((p) => String(p.user_plan_id) === String(resolvedId)) || {};
+            mmlfcp_state.set('user_coverage', newCurrent);
         }
 
         //옵션값 갱신
@@ -91,8 +158,9 @@ export const userController = {
         selectEl.appendChild(defaultOption);
 
         // 3️⃣ 사용자 플랜 목록이 있는 경우 옵션 추가
-        const user_coverage = mmlfcp_state.get('user_coverage') || {};
         const user_coverages = mmlfcp_state.get('user_coverages') || [];
+        const selectedId = this.resolveDefaultPlanId(user_coverages)
+            || String((mmlfcp_state.get('user_coverage') || {}).user_plan_id || '');
 
         if (user_coverages.length > 0) {
             user_coverages.forEach(coverage => {
@@ -101,24 +169,21 @@ export const userController = {
                 option.textContent = coverage.user_plan_name;
 
                 // 선택 상태 설정
-                if (coverage.user_plan_id == user_coverage.user_plan_id) {
+                if (String(coverage.user_plan_id) === String(selectedId)) {
                     option.selected = true;
                 }
                 selectEl.appendChild(option);
             });
         }
 
+        selectEl.value = selectedId;
+        const matched = user_coverages.find((p) => String(p.user_plan_id) === String(selectedId));
+        mmlfcp_state.set('user_coverage', matched || {});
     },
 
     restoreDefaultPlanState() {
         const snapshot = mmlfcp_state.get('default_plan_snapshot');
         if (!snapshot) return;
-
-        //mmlfcp_state.set('plan_coverages', structuredClone(snapshot.plan_coverages));
-        // mmlfcp_state.set('required_premiums', structuredClone(snapshot.required_premiums));
-        // mmlfcp_state.set('coverage_premiums', structuredClone(snapshot.coverage_premiums));
-        // mmlfcp_state.set('product_insur_premiums', structuredClone(snapshot.product_insur_premiums));
-        // mmlfcp_state.set('coverage_ratio_map', {});
 
         mmlfcp_state.set('plan_coverages', deepCopy(snapshot.plan_coverages));
         mmlfcp_state.set('required_premiums', deepCopy(snapshot.required_premiums));
@@ -147,7 +212,6 @@ export const userController = {
         if (!selected_user_plan_id) {
             this.restoreDefaultPlanState();
             console.log('🔁 기본플랜으로 복원되었습니다.');
-            //console.log({ default_plan_snapshot: mmlfcp_state.get('default_plan_snapshot') });
             return;
         }
 
@@ -300,68 +364,106 @@ export const userController = {
         // 기존 내용 초기화
         container.innerHTML = '';
 
-        // 헤더 생성
+        const user_coverages = mmlfcp_state.get('user_coverages') || [];
+        const preferredId = this.resolveDefaultPlanId(user_coverages);
+
+        const hint = document.createElement('p');
+        hint.className = 'coverage-plans-hint';
+        hint.textContent = '기본으로 사용할 플랜을 선택하면, 다음 조회부터 해당 플랜이 기본으로 표시됩니다.';
+        container.appendChild(hint);
+
+        // 헤더
         const headerDiv = document.createElement('div');
-        headerDiv.style.padding = '15px 5px';
-        headerDiv.style.border = 'solid 2px #ffffff';
-        headerDiv.style.borderBottomColor = '#aaaaaa';
-        headerDiv.style.fontWeight = '600';
-        headerDiv.style.position = 'sticky';
-        headerDiv.style.top = '0px';
-        headerDiv.style.zIndex = '10';
-        headerDiv.style.backgroundColor = '#ffffff';
-        headerDiv.innerHTML = `플랜명<span style="margin-left: 426px;">생성일시</span>`;
+        headerDiv.className = 'coverage-plan-row coverage-plan-row--head';
+        headerDiv.innerHTML = `
+            <span class="coverage-plan-col coverage-plan-col--default">기본</span>
+            <span class="coverage-plan-col coverage-plan-col--name">플랜명</span>
+            <span class="coverage-plan-col coverage-plan-col--date">생성일시</span>
+            <span class="coverage-plan-col coverage-plan-col--action"></span>
+        `;
         container.appendChild(headerDiv);
 
-        // ✅ user_coverages 배열이 있는지 확인
-        const user_coverages = mmlfcp_state.get('user_coverages') || [];
+        // 시스템 기본플랜 행
+        const systemRow = document.createElement('div');
+        systemRow.className = 'coverage-plan-row'
+            + (preferredId === '' ? ' is-default' : '');
+        systemRow.innerHTML = `
+            <label class="coverage-plan-col coverage-plan-col--default">
+                <input type="radio" name="default_user_plan" value="" ${preferredId === '' ? 'checked' : ''} aria-label="시스템 기본플랜을 기본값으로">
+            </label>
+            <span class="coverage-plan-col coverage-plan-col--name">시스템 기본플랜</span>
+            <span class="coverage-plan-col coverage-plan-col--date">—</span>
+            <span class="coverage-plan-col coverage-plan-col--action"></span>
+        `;
+        container.appendChild(systemRow);
 
         if (user_coverages.length > 0) {
             user_coverages.forEach((plan) => {
                 const date = app.convertDateFormat(new Date(plan.up_date));
+                const planId = String(plan.user_plan_id || '');
+                const isDefault = String(preferredId) === planId;
 
-                // 바깥 div
                 const planDiv = document.createElement('div');
-                planDiv.style.padding = '30px 5px';
-                planDiv.style.border = 'solid 1px #ffffff';
-                planDiv.style.borderBottomColor = '#eeeeee';
+                planDiv.className = 'coverage-plan-row' + (isDefault ? ' is-default' : '');
 
-                // 플랜명
-                const nameDiv = document.createElement('div');
-                nameDiv.style.float = 'left';
-                nameDiv.style.width = '300px';
-                nameDiv.style.paddingBottom = '5px';
+                const radioLabel = document.createElement('label');
+                radioLabel.className = 'coverage-plan-col coverage-plan-col--default';
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'default_user_plan';
+                radio.value = planId;
+                radio.checked = isDefault;
+                radio.setAttribute('aria-label', `${plan.user_plan_name}을(를) 기본값으로`);
+                radioLabel.appendChild(radio);
+
+                const nameDiv = document.createElement('span');
+                nameDiv.className = 'coverage-plan-col coverage-plan-col--name';
                 nameDiv.textContent = plan.user_plan_name;
 
-                // 날짜
-                const dateDiv = document.createElement('div');
-                dateDiv.style.float = 'left';
-                dateDiv.style.marginLeft = '170px';
+                const dateDiv = document.createElement('span');
+                dateDiv.className = 'coverage-plan-col coverage-plan-col--date';
                 dateDiv.textContent = date;
 
-                // 삭제 버튼
-                const btnDiv = document.createElement('div');
-                btnDiv.style.float = 'right';
-                btnDiv.style.marginLeft = '20px';
-                btnDiv.style.marginRight = '20px';
-
+                const btnDiv = document.createElement('span');
+                btnDiv.className = 'coverage-plan-col coverage-plan-col--action';
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.id = 'coverage_del';
                 delBtn.setAttribute('user_plan_id', plan.user_plan_id);
                 delBtn.setAttribute('user_plan_name', plan.user_plan_name);
                 delBtn.textContent = '삭제';
-
                 btnDiv.appendChild(delBtn);
 
-                // 조립
+                planDiv.appendChild(radioLabel);
                 planDiv.appendChild(nameDiv);
                 planDiv.appendChild(dateDiv);
                 planDiv.appendChild(btnDiv);
-
                 container.appendChild(planDiv);
             });
         }
+
+        container.querySelectorAll('input[name="default_user_plan"]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                if (!radio.checked) return;
+                this.onSelectDefaultUserPlan(radio.value);
+            });
+        });
+    },
+
+    onSelectDefaultUserPlan(userPlanId) {
+        const planId = String(userPlanId ?? '');
+        this.setPreferredDefaultPlanId(planId);
+
+        const user_coverages = mmlfcp_state.get('user_coverages') || [];
+        const selected = user_coverages.find((p) => String(p.user_plan_id) === planId) || {};
+        mmlfcp_state.set('user_coverage', selected);
+
+        const selectEl = document.getElementById('user_coverages');
+        if (selectEl) selectEl.value = planId;
+
+        this.renderUserCoverageList();
+        this.renderuserCoverageSetting();
+        this.getUserCoverage();
     },
 
 
@@ -388,4 +490,3 @@ export const userController = {
         Controller.renderCoveragePremiums(1);
     }
 };
-

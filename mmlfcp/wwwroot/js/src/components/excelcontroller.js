@@ -226,11 +226,13 @@ export const excelController = {
 
     //6. 엑셀 로그 생성
     async exportExcelLog() {
-        const device = app.getUrlParameter("device");
+        const device = appConstants.device || app.getStoredDevice() || app.getUrlParameter("device");
         let excel_checked = false;
 
         if (!device) {
             appConstants.device = "WEB";
+        } else {
+            appConstants.device = device;
         }
         try {
             const res = await apiService.ExcelLog();

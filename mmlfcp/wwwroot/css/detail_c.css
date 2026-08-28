@@ -1,957 +1,576 @@
-body {
-    width: 100%;
-    background-color: #fff;
+/* =========================================================
+   #detailCompareView — 상품유형별 비교 그리드
+   detail.css 셸과 동일한 톤으로 통일
+   ========================================================= */
+
+#detailCompareView {
+  --label-w: 280px;
+  --company-w: 112px;
+  --row-h: 42px;
 }
 
-.modal__layout {
-    display: none;
+#detailCompareView ul,
+#detailCompareView ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.modal__layout .modal-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.9);
-    z-index: 9998;
+/* Meta + company select */
+#detailCompareView .simplifi-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
 }
 
-.modal__layout .area {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    position: absolute;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+#detailCompareView .simplifi-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+#detailCompareView .simplifi-meta strong {
+  font-weight: 700;
+  color: var(--text);
+}
+#detailCompareView .simplifi-meta span {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+#detailCompareView #payment_info,
+#detailCompareView #product_info {
+  font-weight: 600;
+  color: var(--text);
 }
 
-.modal__layout .coverage_insur_detail_main {
-    position: relative;
-    width: 692px;
-    padding: 40px 20px 40px;
-    border-radius: 15px;
-    background-color: #fff;
-    z-index: 9999 !important;
+#detailCompareView .simplifi-company-select {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+#detailCompareView .simplifi-company-select select {
+  min-width: 160px;
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--text);
 }
 
-.modal__layout .coverage_insur_detail {
-    margin: 0 22px;
+/* Board */
+#detailCompareView .simplifi-board {
+  padding: 0;
+  overflow: hidden;
 }
 
-.modal__layout .coverage_insur_detail .button-area {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    margin-top: 24px;
+/* 구 대형 타이틀 제거 — 공통 title-header 사용 */
+#detailCompareView .simplifi-page-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+#detailCompareView .simplifi-page-title strong {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.3;
+}
+#detailCompareView .simplifi-page-title span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
-.modal__layout .coverage_insur_detail .button-area button {
-    width: 105px;
-    height: 35px;
-    border-radius: 17.25px;
-    font-weight: 500;
-    font-size: 12px;
+/* Company header row */
+#detailCompareView .company-area {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+#detailCompareView .company-area .left {
+  width: var(--label-w);
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+#detailCompareView .company-area .right {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+#detailCompareView .company-area .right ul {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+}
+#detailCompareView .company-area .right ul li {
+  flex: 1 1 0;
+  min-width: var(--company-w);
+  padding: 0 4px;
 }
 
-.modal__layout .coverage_insur_detail .button-area .btn__close {
-    margin-left: 27px;
-    color: #2F2F2F;
-    background: #D3D3D3;
+#detailCompareView .company-area .right ul li .innerc {
+  position: relative;
+  display: grid;
+  grid-template-rows: 20px auto 26px;
+  align-items: center;
+  justify-items: center;
+  gap: 4px;
+  min-height: 88px;
+  padding: 4px 2px 6px;
 }
 
+#detailCompareView .company-area .checkbox-area {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-/* .modal__layout .content h2 {
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 25px;
+#detailCompareView .company-area .img-area {
+  width: 100%;
+  max-width: 108px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+#detailCompareView .company-area .btn__product-info {
+  width: 68px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  line-height: 20px;
+  border-radius: 4px;
+  border: 1px solid #c5dde6;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#detailCompareView .company-area .btn__product-info:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* 상품정보 팝오버 — 메인 common.css 스타일 사용 (인라인 템플릿은 레이아웃 영향 없음) */
+#detailCompareView .company-area .right ul li .innerc > .alert__product-info {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Monthly / total rows — 첨부 UI (흰 배경 · 상하단 굵은 선 · 최저 파랑/최고 빨강) */
+#detailCompareView .dc-simplifi-premium-board {
+  border-top: 2px solid #1a1a1a;
+  border-bottom: 2px solid #1a1a1a;
+  background: #fff;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount {
+  display: flex;
+  align-items: stretch;
+  min-height: 52px;
+  border-bottom: 1px solid #d8dce1;
+  background: #fff;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount:last-child {
+  border-bottom: 0;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .left {
+  width: var(--label-w);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-right: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  background: #fff;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .left p {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  background: #fff;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul {
+  width: max-content;
+  min-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul > li {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul > li span {
+  flex: 1 1 0;
+  min-width: var(--company-w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #1a1a1a;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  background: transparent !important;
+  border-radius: 0;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul > li span.company__blue {
+  color: var(--min, #0066e0) !important;
+  font-weight: 800 !important;
+  background: transparent !important;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul > li span.company__red {
+  color: var(--max, #c23b3b) !important;
+  font-weight: 800 !important;
+  background: transparent !important;
+}
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul > li span.company__black,
+#detailCompareView .dc-simplifi-premium-board .total-amount .right ul > li span.company__muted {
+  background: transparent !important;
+}
+
+/* legacy .total-amount (fallback if board wrapper missing) */
+#detailCompareView .total-amount {
+  display: flex;
+  align-items: stretch;
+  min-height: 40px;
+  border-bottom: 1px solid var(--border);
+  background: var(--accent-soft);
+}
+#detailCompareView .total-amount .left {
+  width: var(--label-w);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-right: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface-muted));
+}
+#detailCompareView .total-amount .left p { margin: 0; }
+#detailCompareView .dc-col-unit {
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+#detailCompareView th .dc-col-unit,
+#detailCompareView td.row .dc-col-unit,
+#detailCompareView .total-amount .dc-col-unit {
+  font-size: 10px;
+}
+#detailCompareView .total-amount .right {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+#detailCompareView .total-amount .right ul {
+  width: max-content;
+  min-width: 100%;
+}
+#detailCompareView .total-amount .right ul > li {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+}
+#detailCompareView .total-amount .right ul > li span {
+  flex: 1 1 0;
+  min-width: var(--company-w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Coverage grid */
+#detailCompareView .table-area {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: none;
+  background: var(--surface);
+}
+
+#detailCompareView .product-name__list {
+  width: var(--label-w);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--surface);
+}
+#detailCompareView .product-name__list ul > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: var(--row-h);
+  padding: 0 12px 0 14px;
+  background: var(--surface-row);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+#detailCompareView .product-name__list ul > li:nth-child(even) {
+  background: var(--surface-row-stripe);
+}
+#detailCompareView .product-name__list ul > li .left { min-width: 0; flex: 1; }
+#detailCompareView .product-name__list ul > li .rightn {
+  width: 64px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+#detailCompareView .product-info__list { flex: 1 1 auto; min-width: 0; }
+#detailCompareView .product-info__list ul.info__price {
+  width: max-content;
+  min-width: 100%;
+}
+#detailCompareView .product-info__list ul.info__price > li {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--row-h);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-row-stripe-alt);
+  color: var(--text);
+}
+#detailCompareView .product-info__list ul.info__price > li:nth-child(even) {
+  background: var(--surface);
+}
+#detailCompareView .product-info__list ul.info__price > li:hover {
+  background: var(--accent-soft);
+}
+#detailCompareView .product-info__list ul.info__price > li span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: var(--company-w);
+  height: 100%;
+  cursor: pointer;
+}
+#detailCompareView .product-info__list ul.info__price > li span em {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+#detailCompareView .product-info__list ul.info__price > li span em.company__blue,
+#detailCompareView .total-amount .right ul > li span.company__blue {
+  color: var(--min) !important;
+  font-weight: 700 !important;
+  background: var(--min-soft);
+}
+#detailCompareView .product-info__list ul.info__price > li span em.company__red,
+#detailCompareView .total-amount .right ul > li span.company__red {
+  color: var(--max) !important;
+  font-weight: 700 !important;
+  background: var(--max-soft);
+}
+#detailCompareView .product-info__list ul.info__price > li span em.company__black,
+#detailCompareView .total-amount .right ul > li span.company__black {
+  color: var(--text) !important;
+  background: transparent;
+}
+#detailCompareView .product-info__list ul.info__price > li span em.company__muted,
+#detailCompareView .total-amount .right ul > li span.company__muted {
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+  opacity: 0.45;
+  background: transparent !important;
+}
+
+/* Checkboxes */
+#detailCompareView .checkbox-area input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+#detailCompareView .checkbox-area input + label {
+  position: relative;
+  display: inline-block;
+  min-height: 18px;
+  padding-left: 22px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.3;
+  cursor: pointer;
+  word-break: keep-all;
+}
+#detailCompareView .checkbox-area input + label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+}
+#detailCompareView .checkbox-area input:checked + label::before {
+  border-color: var(--accent);
+  background: var(--accent) url("../images/ico__check-on.svg") no-repeat center / 10px;
+}
+#detailCompareView .company-area .checkbox-area input + label {
+  padding-left: 16px;
+  font-size: 0;
+}
+
+/* 상품정보 팝오버 — 메인 common.css(.alert__product-info) 사용 */
+#detailCompareView .company-area .right ul li .innerc > .alert__product-info {
+  position: absolute;
+  pointer-events: none;
+}
+
+#detailCompareView #simplifiDetailModal {
+  z-index: 60;
+}
+#detailCompareView #simplifiDetailModal .area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+  z-index: 999;
+}
+#detailCompareView #simplifiDetailModal .content_list,
+#detailCompareView #simplifiDetailModal .simplifi_main {
+  pointer-events: auto;
+  width: min(100% - 32px, var(--wrap));
+  max-width: var(--wrap);
+  height: min(92vh, 900px);
+  max-height: 92vh;
+  margin: 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  top: auto;
+  left: auto;
+}
+#detailCompareView #simplifiDetailModal .simplifi_inner,
+#detailCompareView #simplifiList {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  padding: 20px 24px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#detailCompareView #simplifiList .detail-compare-modal {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: none;
+}
+#detailCompareView #simplifiList .simplifi-detail-body,
+#detailCompareView #simplifiList .detail-compare-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-top: 12px;
+}
+#detailCompareView #simplifiList .btn-priceList-cancel {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+}
+#detailCompareView #simplifiList .btn-priceList-cancel:hover {
+  background: var(--border);
+  color: var(--text);
+}
+#detailCompareView #simplifiDetailModal .modal-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 32, 0.45);
+  z-index: 998;
+  pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+  #detailCompareView {
+    --label-w: 200px;
+    --company-w: 96px;
   }
-  
-  .modal__layout .content strong {
-    display: block;
-    margin-top: 23px;
-    font-weight: 700;
-    font-size: 15px;
-    line-height: 19px;
+  #detailCompareView .simplifi-company-select { margin-left: 0; width: 100%; }
+  #detailCompareView .simplifi-company-select select { width: 100%; }
+  #detailCompareView #simplifiDetailModal .content_list,
+  #detailCompareView #simplifiDetailModal .simplifi_main {
+    width: calc(100% - 16px);
+    height: 90vh;
   }
-  
-  .modal__layout .content span {
-    display: block;
-    margin-top: 15px;
-    font-weight: 500;
-    font-size: 12px;
-    line-height: 15px;
-  }
-  
-  .modal__layout .content button {
-    display: block;
-    width: 105px;
-    height: 33px;
-    margin: 136px auto 0;
-    background: #C9C9C9;
-    border-radius: 38px;
-    font-weight: 700;
-    font-size: 13px;
-    line-height: 16px;
-    text-align: center;
-  } */
-
-.insurance-wrap header,
-.insurance-wrap main {
-    width: 1440px;
-    margin: 0 auto;
 }
-
-.insurance-wrap .tab-header {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
-    justify-content: space-between;
-    height: 89px;
-    background: #2B579A;
-}
-
-.insurance-wrap .tab-close {
-    margin-right: 29px;
-    cursor: pointer;
-}
-
-.insurance-wrap .tab-list {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    margin: 17px 0 0 19px;
-}
-
-.insurance-wrap .tab-list li:first-child {
-    margin-left: 0;
-}
-
-.insurance-wrap .tab-list li.active {
-    height: 83px;
-    background-color: rgb(255, 255, 255);
-}
-
-.insurance-wrap .tab-list li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    width: 278px;
-    height: 71px;
-    margin-left: 2px;
-    background: #FFFFFF;
-    border-radius: 20px 20px 0px 0px;
-    font-weight: 700;
-    font-size: 24px;
-    cursor: pointer;
-    text-align: center;
-    color: #595F69;
-    background-color: rgba(255, 255, 255, 0.5);
-
-    /* 1. 기본적으로 투명도를 조절해서 자연스럽게 보이게 함 */
-    opacity: 1;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-
-}
-
-.insurance-wrap .tab-content {
-    display: none;
-    background: #fff;
-}
-
-.insurance-wrap .tab-content .tc-top ul {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    padding-top: 72px;
-}
-
-.insurance-wrap .tab-content .tc-top ul li:first-child {
-    margin-right: 0;
-}
-
-.insurance-wrap .tab-content .tc-top ul li {
-    margin-left: 35px;
-    font-size: 32px;
-    line-height: 47px;
-    color: #595F69;
-}
-
-.insurance-wrap .tab-content .tc-top ul li strong {
-    font-weight: 700;
-}
-
-.insurance-wrap .tab-content .tc-top ul li span {
-    font-weight: 400;
-}
-
-.insurance-wrap .tab-content .tc-middle {
-    margin: 0 19px;
-}
-
-.insurance-wrap .tab-content .tc-middle table th {
-    height: 56px;
-    padding: 0 39px;
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-    text-align: center;
-    color: #fff;
-}
-
-.insurance-wrap .tab-content .tc-middle table td {
-    height: 85px;
-    padding: 0 39px;
-    border-bottom: 1px solid #000000;
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 30px;
-    color: #595F69;
-    background: #fff;
-}
-
-.insurance-wrap .tab-content .tc-middle table td strong {
-    font-size: 32px;
-    line-height: 47px;
-}
-
-.insurance-wrap .tab-content .tc-middle table td strong.plus {
-    color: #E60F0F;
-}
-
-.insurance-wrap .tab-content .tc-middle table td strong.minus {
-    color: #0463FC;
-}
-
-.insurance-wrap .tab-content .tc-middle table td:nth-child(2),
-.insurance-wrap .tab-content .tc-middle table td:nth-child(3),
-.insurance-wrap .tab-content .tc-middle table td:nth-child(4),
-.insurance-wrap .tab-content .tc-middle table td:nth-child(5) {
-    text-align: center;
-}
-
-.insurance-wrap .tab-content .tc-middle .title-header {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
-    justify-content: space-between;
-}
-
-.insurance-wrap .tab-content .tc-middle .title-header strong {
-    display: block;
-    padding-left: 15px;
-    margin-bottom: 27px;
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px;
-    color: #595F69;
-}
-
-.insurance-wrap .tab-content .tc-middle .title-header span {
-    padding-right: 15px;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 18px;
-    color: #595F69;
-}
-
-.insurance-wrap .tab-content .tc-bottom {
-    padding: 87px 0 47px;
-}
-
-.insurance-wrap .tab-content .tc-bottom>strong {
-    display: block;
-    margin: 0 15px;
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px;
-    color: #E60F0F;
-}
-
-.insurance-wrap .tab-content .tc-bottom ul {
-    margin: 20px 15px 0;
-}
-
-.insurance-wrap .tab-content .tc-bottom ul li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-}
-
-.insurance-wrap .tab-content .tc-bottom ul li span {
-    display: block;
-    margin-left: 14px;
-    font-weight: 400;
-    font-size: 13px;
-    color: #8A8A8A;
-}
-
-.insurance-wrap .gray-bg td {
-    background: #F8F8F8 !important;
-}
-
-.insurance-wrap .content01 .tc-middle,
-.insurance-wrap .content03 .tc-middle,
-.insurance-wrap .content04 .tc-middle {
-    background: #FCFCFC;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) {
-    margin-top: 72px;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(1) {
-    text-align: left;
-    background: #2B579A;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(2) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(1) th:nth-child(3) {
-    background: #E60F0F;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) {
-    margin-top: 82px;
-    border-bottom: 3px solid #000;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(1) {
-    text-align: left;
-    background: #2B579A;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(2) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(3) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) th:nth-child(4) {
-    background: #E60F0F;
-}
-
-.insurance-wrap .content01 .tc-middle section:nth-child(2) td {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-}
-
-.insurance-wrap .content02 .tc-fixed {
-    position: sticky;
-    top: 0;
-    height: 189px;
-    background: #fff;
-    z-index: 10;
-}
-
-.insurance-wrap .content02 .insurance-wrap .content02 .bottom-content .company-area {
-    background: #fff;
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area {
-    overflow: visible;
-}
-
-.insurance-wrap .content02 .product02,
-.insurance-wrap .content02 .product03 {
-    margin-top: 46px;
-}
-
-.insurance-wrap .content02 .total-amount {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    height: 80px;
-    background: #F8F8F8;
-    border-top: 2px solid #979797;
-    border-bottom: 2px solid #000000;
-}
-
-.insurance-wrap .content02 .total-amount .left {
-    width: 389px;
-    text-align: center;
-}
-
-.insurance-wrap .content02 .total-amount .left p {
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 27px;
-    color: #595F69;
-}
-
-.insurance-wrap .content02 .total-amount .left p span {
-    font-weight: 400 !important;
-}
-
-.insurance-wrap .content02 .total-amount .left .text__red {
-    font-weight: 700;
-    color: #E60F0F;
-}
-
-.insurance-wrap .content02 .total-amount .right {
-    width: 1013px;
-}
-
-.insurance-wrap .content02 .total-amount .right ul {
-    width: 100%;
-}
-
-.insurance-wrap .content02 .total-amount .right ul li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -ms-flex-pack: distribute;
-    justify-content: space-around;
-    width: 100%;
-    height: 60px;
-}
-
-.insurance-wrap .content02 .total-amount .right ul li span {
-    display: block;
-    position: relative;
-    width: 75px;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 27px;
-}
-
-
-.insurance-wrap .content02 .bottom-content .company-area .right ul li .inner .price-area span {
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 24px;
-    color: #3F434A;
-}
-
-.insurance-wrap .content02 .bottom-content .company-area .right ul li .inner .btn__product-info {
-    border-radius: 0;
-}
-
-.insurance-wrap .content02 .company-area .size {
-    position: absolute;
-    bottom: -32px;
-    left: 0;
-    width: 72px;
-    height: 22px;
-    text-align: center;
-    color: #fff;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 10px;
-    line-height: 22px;
-    cursor: pointer;
-}
-
-.insurance-wrap .content02 .company-area .size.least {
-    background: #0463FC;
-}
-
-.insurance-wrap .content02 .company-area .size.maximum {
-    background: #E60F0F;
-}
-
-.insurance-wrap .content02 .product-table-wrap .title-header {
-    -webkit-box-align: start;
-    -ms-flex-align: start;
-    align-items: start;
-    height: 47px;
-    margin-top: 0;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #000;
-}
-
-.insurance-wrap .content02 .product-table-wrap .title-header strong {
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px;
-}
-
-.insurance-wrap .content02 .bottom-content .bottom {
-    -webkit-box-shadow: none;
-    box-shadow: none;
-    border-radius: 0px 0px 20px 20px;
-}
-
-.insurance-wrap .content02 .bottom-content .company-area {
-    border-bottom: 0;
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-info__list ul.info__price>li span em {
-    font-weight: 400;
-    font-size: 18px;
-    line-height: 27px;
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: justify;
-    -ms-flex-pack: justify;
-    justify-content: space-between;
-    padding: 0 24px 0 15px;
-    background: #f8f9f9;
-    border-right: 1px solid #e6e6e6;
-    border-bottom: 1px solid #e6e6e6;
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li .right {
-    width: 82px;
-    height: 29px;
-    background: #fff;
-    border: 1px solid #979797;
-    border-radius: 0;
-}
-
-.insurance-wrap .content02 .bottom-content .product-table-wrap .table-area .product-name__list ul>li .rightn {
-    background: #fff;
-    border: 0px solid #979797;
-
-    width: 65px;
-    height: 29px;
-    font-weight: 400;
-    font-size: 18px;
-    line-height: 27px;
-    margin-right: 15px;
-    color: #202020;
-    text-align: right;
-}
-
-.insurance-wrap .content02 .product-name__list .checkbox-area input+label {
-    font-weight: 400;
-    font-size: 15px;
-    line-height: 27px;
-}
-
-.insurance-wrap .content02 .product-name__list .checkbox-area input+label:before {
-    top: 5px;
-}
-
-.insurance-wrap .content02 .product-name__list .right input {
-    display: block;
-    width: 65px;
-    height: 29px;
-    font-weight: 400;
-    font-size: 18px;
-    line-height: 27px;
-    margin-right: 15px;
-    color: #202020;
-    text-align: right;
-}
-
-.insurance-wrap .content02 .bottom-content .company-area {
-    height: auto;
-    padding: 16px 0 0 19px;
-}
-
-.insurance-wrap .content02 .title-header {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: end;
-    -ms-flex-pack: end;
-    justify-content: end;
-    margin-top: 23px;
-}
-
-.insurance-wrap .content02 .title-header span {
-    display: block;
-    margin: 0 37px 7px 0;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 18px;
-    color: #595F69;
-}
-
-.insurance-wrap .content02 .tc-middle {
-    background: #fff;
-}
-
-.insurance-wrap .content03 select,
-.insurance-wrap .content04 select {
-    display: block;
-    position: relative;
-    width: 842px;
-    height: 68px;
-    padding: 0 43px;
-    margin: 38px auto 0;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-    border: 3px solid #304FFD;
-    border-radius: 42px;
-    color: #304FFD;
-    font-weight: 700;
-    font-size: 30px;
-    line-height: 47px;
-    outline: 0 none;
-    -o-appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    cursor: pointer;
-    background: #F8F8F8 url("../images/_select-arrow.svg") no-repeat 96% center;
-}
-
-.insurance-wrap .content03 section:nth-child(2) .title-text,
-.insurance-wrap .content04 section:nth-child(2) .title-text {
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 30px;
-}
-
-.insurance-wrap .content03 section:nth-child(1) {
-    margin-top: 51px;
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(1) {
-    text-align: left;
-    background: #2B579A;
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(2) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(3) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content03 section:nth-child(1) th:nth-child(4) {
-    background: #61A0FF;
-    opacity: 0.7;
-}
-
-.insurance-wrap .content03 section:nth-child(1) td {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-    text-align: right !important;
-}
-
-.insurance-wrap .content03 section:nth-child(1) td strong,
-.insurance-wrap .content03 section:nth-child(1) td span {
-    display: block;
-}
-
-.insurance-wrap .content03 section:nth-child(1) td strong {
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 47px;
-}
-
-.insurance-wrap .content03 section:nth-child(1) td span {
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 20px;
-    color: #595F69;
-}
-
-.insurance-wrap .content03 section:nth-child(1) td.none {
-    text-align: center !important;
-}
-
-.insurance-wrap .content03 section:nth-child(2) {
-    margin-top: 83px;
-    border-bottom: 3px solid #000;
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(1) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(2) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(3) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(4) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content03 section:nth-child(2) th:nth-child(5) {
-    background: #61A0FF;
-    opacity: 0.7;
-}
-
-.insurance-wrap .content03 section:nth-child(2) td {
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 41px;
-}
-
-.insurance-wrap .content04 section:nth-child(1) {
-    margin-top: 51px;
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(1) {
-    text-align: left;
-    background: #2B579A;
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(2) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(3) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(4) {
-    background: #61A0FF;
-    opacity: 0.7;
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(5) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content04 section:nth-child(1) th:nth-child(6) {
-    background: #61A0FF;
-    opacity: 0.7;
-}
-
-.insurance-wrap .content04 section:nth-child(1) td.row {
-    padding: 0 14px !important;
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 36px;
-    text-align: center !important;
-}
-
-.insurance-wrap .content04 section:nth-child(1) td {
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 41px;
-    text-align: right !important;
-}
-
-.insurance-wrap .content04 section:nth-child(1) td strong,
-.insurance-wrap .content04 section:nth-child(1) td span {
-    display: block;
-}
-
-.insurance-wrap .content04 section:nth-child(1) td strong {
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 41px;
-}
-
-.insurance-wrap .content04 section:nth-child(1) td span {
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 20px;
-    color: #595F69;
-}
-
-.insurance-wrap .content04 section:nth-child(1) td.none02 {
-    color: #E60F0F;
-    text-align: center !important;
-}
-
-.insurance-wrap .content04 section:nth-child(2) {
-    margin-top: 83px;
-    border-bottom: 3px solid #000;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(1) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(2) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(3) {
-    background: #2B579A;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(4) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(5) {
-    background: #61A0FF;
-    opacity: 0.7;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(6) {
-    background: #61A0FF;
-}
-
-.insurance-wrap .content04 section:nth-child(2) th:nth-child(7) {
-    background: #61A0FF;
-    opacity: 0.7;
-}
-
-.insurance-wrap .content04 section:nth-child(2) td {
-    font-weight: 700;
-    font-size: 30px;
-    line-height: 44px;
-}
-
-.insurance-wrap .tab-content.show {
-    display: block;
-}
-
-.company__blue {
-    font-weight: 700;
-    color: #2879fb;
-}
-
-.company__red {
-    font-weight: 700;
-    color: #E60F0F;
-}
-
-.company__black {
-    font-weight: 700;
-    color: #0f0000;
-}
-
-
-body .modal__layout .simplifi_main {
-    position: relative;
-    background-color: #fff !important;
-    z-index: 999;
-}
-
-.modal__layout .simplifi_main {
-    position: relative;
-    width: 692px;
-    padding: 40px 20px 40px;
-    border-radius: 15px;
-    background-color: #fff;
-    z-index: 9999 !important;
-}
-
-.modal__layout .simplifi_inner .button-area {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    justify-content: center;
-    margin-top: 24px;
-}
-
-.modal__layout .simplifi_inner .button-area button {
-    width: 105px;
-    height: 35px;
-    border-radius: 17.25px;
-    font-weight: 500;
-    font-size: 12px;
-}
-
-.modal__layout .simplifi_inner .button-area .btn__close {
-    margin-left: 27px;
-    color: #2F2F2F;
-    background: #D3D3D3;
-}
-
-.bottom-content .company-area .right ul li .innerc {
-    position: relative;
-    width: 100px;
-}
-
-.bottom-content .company-area .right ul li .innerc .checkbox-area {
-    margin-left: 35%;
-}
-
-.bottom-content .company-area .right ul li .innerc .price-area {
-    margin-top: 5px;
-}
-
-.bottom-content .company-area .right ul li .innerc .price-area span {
-    display: block;
-    text-align: center;
-}
-
-.bottom-content .company-area .right ul li .innerc .img-area {
-    padding-top: 26px;
-    height: 50px;
-    font-weight: 500;
-    text-align: center;
-    font-size: 14px;
-}
-
-.bottom-content .company-area .right ul li .innerc .btn__product-info {
-    width: 100px;
-    height: 24px;
-    margin-top: 10px;
-    line-height: 19px;
-    background: #22CCE2;
-    border-radius: 3px;
-    color: #fff;
-    font-weight: 700;
-    font-size: 10px;
-}
-
-
-/*# sourceMappingURL=tab.css.map */

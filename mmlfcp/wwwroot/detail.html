@@ -6,11 +6,97 @@
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>한장으로 보는 보험료 비교</title>
-    <link rel="stylesheet" href="./css/common.css?v=26.04.07.1">
-    <link rel='stylesheet' href='./css/detail.css?v=26.03.26.1'>
+    <link rel="stylesheet" href="./css/common.css?v=26.07.20.41">
+    <link rel="stylesheet" href="./css/detail.css?v=26.07.20.41">
+    <script>
+        (function () {
+            try {
+                var u = new URL(location.href);
+                var changed = false;
+                var tok = u.searchParams.get('token');
+                var p = u.searchParams.get('path');
+                var d = u.searchParams.get('device');
+                if (tok) { sessionStorage.setItem('mmlfcp_auth_token', tok); u.searchParams.delete('token'); changed = true; }
+                if (p) { sessionStorage.setItem('mmlfcp_url_path', p); u.searchParams.delete('path'); changed = true; }
+                if (d) { sessionStorage.setItem('mmlfcp_device', d); u.searchParams.delete('device'); changed = true; }
+                if (changed) {
+                    history.replaceState(null, '', u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : '') + u.hash);
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                var t = localStorage.getItem('mmlfcp_ui_theme');
+                var m = localStorage.getItem('mmlfcp_ui_mode') || 'light';
+                var f = localStorage.getItem('mmlfcp_ui_font');
+                var c = localStorage.getItem('mmlfcp_ui_custom_color') || '#2B579A';
+                if (t) document.documentElement.setAttribute('data-theme', t);
+                document.documentElement.setAttribute('data-mode', m === 'dark' ? 'dark' : 'light');
+                if (f) document.documentElement.setAttribute('data-font', f);
+                if (t === 'custom') {
+                    function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
+                    function hexToRgb(hex) {
+                        var h = String(hex || '').replace(/^#/, '');
+                        if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+                        if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+                        return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+                    }
+                    function rgbToHex(r,g,b) {
+                        function to(n){ var s=clamp(Math.round(n),0,255).toString(16); return s.length===1?'0'+s:s; }
+                        return '#'+to(r)+to(g)+to(b);
+                    }
+                    function darken(hex, amt){ var c=hexToRgb(hex); if(!c) return hex; return rgbToHex(c.r*(1-amt),c.g*(1-amt),c.b*(1-amt)); }
+                    function lighten(hex, amt){ var c=hexToRgb(hex); if(!c) return hex; return rgbToHex(c.r+(255-c.r)*amt,c.g+(255-c.g)*amt,c.b+(255-c.b)*amt); }
+                    function mixHex(base, hex, amt){
+                        var a=hexToRgb(base), b=hexToRgb(hex); if(!a||!b) return base;
+                        return rgbToHex(a.r+(b.r-a.r)*amt, a.g+(b.g-a.g)*amt, a.b+(b.b-a.b)*amt);
+                    }
+                    var accent = /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#2B579A';
+                    var isDark = m === 'dark';
+                    var s = document.createElement('style');
+                    s.id = 'mmlfcp-custom-theme';
+                    if (isDark) {
+                        s.textContent = 'html[data-theme="custom"]{' +
+                            '--accent:' + lighten(accent, 0.12) + ';' +
+                            '--accent-hover:' + lighten(accent, 0.22) + ';' +
+                            '--accent-ink:' + lighten(accent, 0.55) + ';' +
+                            '--accent-soft:' + mixHex('#1a222c', accent, 0.28) + ';}';
+                    } else {
+                        s.textContent = 'html[data-theme="custom"]{' +
+                            '--accent:' + accent + ';' +
+                            '--accent-hover:' + darken(accent, 0.14) + ';' +
+                            '--accent-ink:' + darken(accent, 0.28) + ';' +
+                            '--accent-soft:' + lighten(accent, 0.9) + ';' +
+                            '--bg:' + lighten(accent, 0.93) + ';' +
+                            '--bg-accent:' + lighten(accent, 0.88) + ';}';
+                    }
+                    document.head.appendChild(s);
+                }
+                // iframe: 부모 창 테마/모드와 동기화
+                if (window.parent && window.parent !== window) {
+                    var p = window.parent.document.documentElement;
+                    function syncFromParent() {
+                        ['data-theme', 'data-mode', 'data-font'].forEach(function (a) {
+                            var v = p.getAttribute(a);
+                            if (v) document.documentElement.setAttribute(a, v);
+                            else if (a !== 'data-mode') document.documentElement.removeAttribute(a);
+                        });
+                    }
+                    syncFromParent();
+                    try {
+                        new MutationObserver(syncFromParent).observe(p, {
+                            attributes: true,
+                            attributeFilter: ['data-theme', 'data-mode', 'data-font']
+                        });
+                    } catch (_) { /* ignore */ }
+                }
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
 </head>
 
 <body>
+    <div class="loader-container is-active" id="detailLoader" aria-live="polite" aria-busy="true">
+        <div class="loader" role="status" aria-label="불러오는 중"></div>
+    </div>
 
     <!--price 모달-->
     <div class=" modal__layout modal02">
@@ -28,9 +114,10 @@
         <header class='tab-header'>
             <!--탭-->
             <ul class='tab-list'>
-                <li id="premium" class='active'>보험료 최저vs최대</li>
-                <li id="payment">만기 보험료 비교</li>
-                <li id="aging">연령대별 보험료 비교</li>
+                <li id="premium" data-detail-tab="premium" class='active'>보험료 최저vs최대</li>
+                <li id="payment" data-detail-tab="payment">만기 보험료 비교</li>
+                <li id="aging" data-detail-tab="aging">연령대별 보험료 비교</li>
+                <li id="simplifi" data-detail-tab="simplifi">상품유형별 보험료 비교</li>
             </ul>
         </header>
 
@@ -187,7 +274,7 @@
             <!--보험료 비교 화면 - 연령대별 보험료 비교 태그 끝-->
         </main>
     </div>
-    <script type="module" src="./js/src/detail_main.js?v=26.03.26.1"></script>
+    <script type="module" src="./js/src/detail_main.js?v=26.07.21.04"></script>
 
     <script>
         // 1. 상세 페이지(iframe)가 로드되자마자 가짜 히스토리를 심어 브라우저 뒤로가기를 가로챕니다.
