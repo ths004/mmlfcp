@@ -17,7 +17,7 @@ namespace mmlfcp.Controllers
         private readonly ReportSevice _reportService; // Inject
         private readonly IMemoryCache _cache;
 
-        private const int RateLimitPerMinute = 10;
+        private const int RateLimitPerMinute = 20;
 
         public MMLFCPController(IMMLFCPRepository repository, ReportSevice Ssrvice, ILogger<MMLFCPController> logger, IMemoryCache cache)
         {
@@ -320,12 +320,15 @@ namespace mmlfcp.Controllers
                 //string plan_id, String ga_id, String consultant_id
                 var userCoverages = await _repository.GetUserCoverageAsync(authResult.AgencyCompanyCD, authResult.ConsultantID); //사용자 플랜 조회
 
+                if ("A000,A245".Contains(authResult.AgencyCompanyCD) ==false)  //개발계와 테스트계 로그제외
+                {
+                    await _repository.SaveAccesslog(
+                        authResult.AgencyCompanyCD,
+                        authResult.ConsultantID,
+                        remoteip,
+                        plan_id, gender, age);
+                }
 
-                await _repository.SaveAccesslog(
-                    authResult.AgencyCompanyCD,
-                    authResult.ConsultantID,
-                    remoteip,
-                    plan_id, gender, age);
 
                 if (exceptionCompanyCodes.Count > 0)
                 {
